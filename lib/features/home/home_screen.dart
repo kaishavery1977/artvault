@@ -339,7 +339,10 @@ class _StatsGrid extends ConsumerWidget {
           physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: AppSpacing.sm,
           crossAxisSpacing: AppSpacing.sm,
-          childAspectRatio: 1.35,
+          // Fixed cell height (not aspect ratio): on narrow screens an
+          // aspect-ratio cell gets too short for the card content and
+          // overflows. 132dp = 32dp card padding + 96dp content + slack.
+          mainAxisExtent: 132,
           children: [
             StatCard(
               label: 'Paintings',

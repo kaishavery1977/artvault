@@ -178,9 +178,10 @@ class _SummaryRow extends StatelessWidget {
           physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: AppSpacing.sm,
           crossAxisSpacing: AppSpacing.sm,
-          // 1.35 (not 1.5): at 1.5 the fixed-height StatCard content was
-          // 4.8px taller than the cell and triggered a RenderFlex overflow.
-          childAspectRatio: 1.35,
+          // Fixed cell height (not aspect ratio): on narrow screens an
+          // aspect-ratio cell gets too short for the card content and
+          // overflows. 132dp = 32dp card padding + 96dp content + slack.
+          mainAxisExtent: 132,
           children: [
             StatCard(
               label: 'Total value',
