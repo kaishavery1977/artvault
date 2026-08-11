@@ -17,9 +17,15 @@ import '../../data/models/painting.dart';
 class ReportsScreen extends ConsumerWidget {
   const ReportsScreen({super.key});
 
-  Future<void> _export(BuildContext context, _ExportKind kind, List<Painting> paintings) async {
+  Future<void> _export(
+    BuildContext context,
+    _ExportKind kind,
+    List<Painting> paintings,
+  ) async {
     final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(SnackBar(content: Text('Preparing ${kind.label.toLowerCase()}…')));
+    messenger.showSnackBar(
+      SnackBar(content: Text('Preparing ${kind.label.toLowerCase()}…')),
+    );
     try {
       switch (kind) {
         case _ExportKind.pdf:
@@ -27,7 +33,10 @@ class ReportsScreen extends ConsumerWidget {
           await ShareService.instance.sharePdf(pdf, 'artvault_catalog.pdf');
         case _ExportKind.excel:
           final file = await ExportService.instance.exportExcel(paintings);
-          await ShareService.instance.shareFile(file.path, text: 'Collection export');
+          await ShareService.instance.shareFile(
+            file.path,
+            text: 'Collection export',
+          );
         case _ExportKind.csv:
           final file = await ExportService.instance.exportCsv(paintings);
           await ShareService.instance.shareFile(file.path, text: 'CSV export');
@@ -41,9 +50,10 @@ class ReportsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final paintings = (ref.watch(paintingsProvider).valueOrNull ?? const <Painting>[])
-        .where((p) => !p.isDeleted)
-        .toList();
+    final paintings =
+        (ref.watch(paintingsProvider).valueOrNull ?? const <Painting>[])
+            .where((p) => !p.isDeleted)
+            .toList();
     final artists = (ref.watch(artistsProvider).valueOrNull ?? const [])
         .where((a) => !a.isDeleted)
         .toList();
@@ -60,7 +70,10 @@ class ReportsScreen extends ConsumerWidget {
                 AppSpacing.md,
                 AppSpacing.sm,
               ),
-              child: Text('Reports & Analytics', style: AppTheme.display(context, size: 28)),
+              child: Text(
+                'Reports & Analytics',
+                style: AppTheme.display(context, size: 28),
+              ),
             ),
           ),
           SliverPadding(
@@ -110,10 +123,7 @@ class ReportsScreen extends ConsumerWidget {
     }
     final entries = counts.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    return entries
-        .take(6)
-        .map((e) => (e.key, e.value.toDouble()))
-        .toList();
+    return entries.take(6).map((e) => (e.key, e.value.toDouble())).toList();
   }
 
   static List<(String, double)> _uploadTrend(List<Painting> paintings) {
@@ -122,8 +132,11 @@ class ReportsScreen extends ConsumerWidget {
     for (var i = 5; i >= 0; i--) {
       final month = DateTime(now.year, now.month - i, 1);
       final count = paintings
-          .where((p) =>
-              p.createdAt.year == month.year && p.createdAt.month == month.month)
+          .where(
+            (p) =>
+                p.createdAt.year == month.year &&
+                p.createdAt.month == month.month,
+          )
           .length;
       result.add((DateFormat('MMM').format(month), count.toDouble()));
     }
@@ -145,9 +158,15 @@ class _SummaryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final value = paintings.fold<double>(0, (s, p) => s + (p.price ?? 0));
-    final avgW = paintings.where((p) => p.width != null).fold<double>(0, (s, p) => s + p.width!) /
+    final avgW =
+        paintings
+            .where((p) => p.width != null)
+            .fold<double>(0, (s, p) => s + p.width!) /
         (paintings.where((p) => p.width != null).length.clamp(1, 1 << 31));
-    final avgH = paintings.where((p) => p.height != null).fold<double>(0, (s, p) => s + p.height!) /
+    final avgH =
+        paintings
+            .where((p) => p.height != null)
+            .fold<double>(0, (s, p) => s + p.height!) /
         (paintings.where((p) => p.height != null).length.clamp(1, 1 << 31));
 
     return LayoutBuilder(
@@ -159,7 +178,9 @@ class _SummaryRow extends StatelessWidget {
           physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: AppSpacing.sm,
           crossAxisSpacing: AppSpacing.sm,
-          childAspectRatio: 1.5,
+          // 1.35 (not 1.5): at 1.5 the fixed-height StatCard content was
+          // 4.8px taller than the cell and triggered a RenderFlex overflow.
+          childAspectRatio: 1.35,
           children: [
             StatCard(
               label: 'Total value',
@@ -181,7 +202,9 @@ class _SummaryRow extends StatelessWidget {
             ),
             StatCard(
               label: 'Avg. size',
-              value: avgW == 0 ? '—' : '${avgW.toStringAsFixed(0)}×${avgH.toStringAsFixed(0)}',
+              value: avgW == 0
+                  ? '—'
+                  : '${avgW.toStringAsFixed(0)}×${avgH.toStringAsFixed(0)}',
               icon: Icons.straighten,
               color: AppColors.success,
             ),
@@ -204,10 +227,7 @@ class _BarCard extends StatelessWidget {
     final max = data.fold<double>(1, (m, e) => e.$2 > m ? e.$2 : m);
 
     if (data.isEmpty) {
-      return GlassCard(
-        padding: AppSpacing.cardPadding,
-        child: Text(title),
-      );
+      return GlassCard(padding: AppSpacing.cardPadding, child: Text(title));
     }
 
     return GlassCard(
@@ -217,7 +237,9 @@ class _BarCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: AppSpacing.md),
           for (final entry in data)
@@ -258,7 +280,8 @@ class _BarCard extends StatelessWidget {
                                   ],
                                 ),
                               ),
-                              width: (value * 100).clamp(0, 100) *
+                              width:
+                                  (value * 100).clamp(0, 100) *
                                   MediaQuery.sizeOf(context).width /
                                   100,
                             ),
@@ -271,7 +294,10 @@ class _BarCard extends StatelessWidget {
                         child: Text(
                           entry.$2.toStringAsFixed(0),
                           textAlign: TextAlign.right,
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ],
@@ -304,7 +330,9 @@ class _InsightsCard extends StatelessWidget {
     final best = topArtist.isEmpty ? null : topArtist.first.key;
 
     final favorites = paintings.where((p) => p.isFavorite).length;
-    final valued = paintings.where((p) => p.price != null && p.price! > 0).length;
+    final valued = paintings
+        .where((p) => p.price != null && p.price! > 0)
+        .length;
 
     return GlassCard(
       padding: AppSpacing.cardPadding,
@@ -317,14 +345,19 @@ class _InsightsCard extends StatelessWidget {
               const SizedBox(width: AppSpacing.xs),
               Text(
                 'AI Collection Analytics',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
               ),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
           _Row('Most collected artist', best ?? '—'),
           _Row('Favorites', '$favorites of ${paintings.length}'),
-          _Row('With appraised value', '${(paintings.isEmpty ? 0 : (valued / paintings.length * 100).round())}%'),
+          _Row(
+            'With appraised value',
+            '${(paintings.isEmpty ? 0 : (valued / paintings.length * 100).round())}%',
+          ),
           _Row('Favourite medium', _favouriteMedium(paintings)),
         ],
       ),
@@ -357,7 +390,10 @@ class _Row extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: TextStyle(fontSize: 13, color: scheme.onSurface.withValues(alpha: 0.6)),
+              style: TextStyle(
+                fontSize: 13,
+                color: scheme.onSurface.withValues(alpha: 0.6),
+              ),
             ),
           ),
           Text(
@@ -374,18 +410,18 @@ enum _ExportKind { pdf, excel, csv, print }
 
 extension _ExportKindX on _ExportKind {
   String get label => switch (this) {
-        _ExportKind.pdf => 'PDF catalogue',
-        _ExportKind.excel => 'Excel (xlsx)',
-        _ExportKind.csv => 'CSV',
-        _ExportKind.print => 'Print',
-      };
+    _ExportKind.pdf => 'PDF catalogue',
+    _ExportKind.excel => 'Excel (xlsx)',
+    _ExportKind.csv => 'CSV',
+    _ExportKind.print => 'Print',
+  };
 
   IconData get icon => switch (this) {
-        _ExportKind.pdf => Icons.picture_as_pdf_outlined,
-        _ExportKind.excel => Icons.table_chart_outlined,
-        _ExportKind.csv => Icons.grid_on_outlined,
-        _ExportKind.print => Icons.print_outlined,
-      };
+    _ExportKind.pdf => Icons.picture_as_pdf_outlined,
+    _ExportKind.excel => Icons.table_chart_outlined,
+    _ExportKind.csv => Icons.grid_on_outlined,
+    _ExportKind.print => Icons.print_outlined,
+  };
 }
 
 class _ExportCard extends StatelessWidget {

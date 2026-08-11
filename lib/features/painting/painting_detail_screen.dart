@@ -524,21 +524,23 @@ class _TitleBlock extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSpacing.xs),
-              Row(
+              // Tags wrap onto new lines instead of overflowing the row
+              // when the title column is squeezed by the price box.
+              Wrap(
+                spacing: AppSpacing.xs,
+                runSpacing: AppSpacing.xs,
                 children: [
                   TagChip(
                     label: painting.category.isEmpty
                         ? 'Uncategorized'
                         : painting.category,
                   ),
-                  const SizedBox(width: AppSpacing.xs),
                   TagChip(
                     label: painting.medium.isEmpty
                         ? 'Medium unknown'
                         : painting.medium,
                   ),
-                  if (painting.availability.isNotEmpty) ...[
-                    const SizedBox(width: AppSpacing.xs),
+                  if (painting.availability.isNotEmpty)
                     TagChip(
                       label: painting.availability,
                       color: painting.availability == 'Available'
@@ -547,7 +549,6 @@ class _TitleBlock extends StatelessWidget {
                           ? AppColors.error
                           : AppColors.accent,
                     ),
-                  ],
                 ],
               ),
             ],
