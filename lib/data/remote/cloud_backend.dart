@@ -1,0 +1,262 @@
+import 'dart:typed_data';
+
+import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+
+import '../../firebase_options.dart';
+
+/// Centralised gateway to all Firebase services.
+///
+/// The whole app degrades gracefully: if Firebase isn't configured, every
+/// call here is a safe no-op and the app keeps working fully offline
+/// (offline-first architecture). When configured, cloud sync lights up.
+class CloudBackend {
+  CloudBackend._();
+
+  static final CloudBackend instance = CloudBackend._();
+
+  bool _ready = false;
+  bool get isReady => _ready;
+
+  /// Attempts to initialise Firebase. Returns true only on success.
+  Future<bool> initialize() async {
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      _ready = true;
+    } catch (_) {
+      _ready = false;
+    }
+    return _ready;
+  }
+
+  // ------------------------------------------------------------------ Auth --
+
+  Stream<User?> get authStateChanges =>
+      _ready ? FirebaseAuth.instance.authStateChanges() : const Stream.empty();
+
+  User? get currentUser => _ready ? FirebaseAuth.instance.currentUser : null;
+
+  /// UID of the signed-in user (empty when offline / signed out).
+  String get currentUid => currentUser?.uid ?? '';
+
+  Future<User?> signInWithEmail(String email, String password) async {
+    if (!_ready) return null;
+    final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    return cred.user;
+  }
+
+  Future<User?> createAccount(String email, String password) async {
+    if (!_ready) return null;
+    final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    return cred.user;
+  }
+
+  Future<User?> signInWithGoogle() async {
+    if (!_ready) return null;
+    try {
+      await GoogleSignIn.instance.initialize();
+    } catch (_) {
+      // authenticate() below will surface a meaningful error if setup is bad.
+    }
+    final GoogleSignInAccount googleUser;
+    try {
+      googleUser = await GoogleSignIn.instance.authenticate();
+    } on GoogleSignInException catch (e) {
+      debugPrint('GoogleSignInException: ${e.code} — ${e.description} — ${e.details}');
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        // User backed out of the account picker — not an error.
+        return null;
+      }
+      // Configuration / provider errors bubble up so the UI can explain them.
+      rethrow;
+    }
+    final idToken = googleUser.authentication.idToken;
+    if (idToken == null) return null;
+    final credential = GoogleAuthProvider.credential(idToken: idToken);
+    final cred = await FirebaseAuth.instance.signInWithCredential(credential);
+    return cred.user;
+  }
+
+  Future<User?> signInWithApple({
+    required String idToken,
+    required String? rawNonce,
+  }) async {
+    if (!_ready) return null;
+    final oauth = OAuthProvider('apple.com').credential(
+      idToken: idToken,
+      rawNonce: rawNonce,
+    );
+    final cred = await FirebaseAuth.instance.signInWithCredential(oauth);
+    return cred.user;
+  }
+
+  Future<void> sendPasswordReset(String email) async {
+    if (!_ready) return;
+    await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+  }
+
+  Future<void> signOut() async {
+    if (!_ready) return;
+    try {
+      await GoogleSignIn.instance.signOut();
+    } catch (_) {}
+    await FirebaseAuth.instance.signOut();
+  }
+
+  // -------------------------------------------------------------- Firestore --
+
+  Future<void> upsert(String collection, String id, Map<String, dynamic> data) async {
+    if (!_ready) return;
+    await FirebaseFirestore.instance
+        .collection(collection)
+        .doc(id)
+        .set(data, SetOptions(merge: true));
+  }
+
+  Future<void> remove(String collection, String id) async {
+    if (!_ready) return;
+    await FirebaseFirestore.instance.collection(collection).doc(id).delete();
+  }
+
+  /// Fetches every document in [collection]. Pass [owner] (a UID) to only
+  /// fetch documents owned by that user — required under the owner-scoped
+  /// Firestore rules.
+  Future<List<Map<String, dynamic>>> fetchAll(
+    String collection, {
+    String? owner,
+  }) async {
+    if (!_ready) return const [];
+    Query<Map<String, dynamic>> q =
+        FirebaseFirestore.instance.collection(collection);
+    if (owner != null && owner.isNotEmpty) {
+      q = q.where('ownerUid', isEqualTo: owner);
+    }
+    final snap = await q.get();
+    return snap.docs.map((d) => d.data()).toList();
+  }
+
+  /// Fetches a single document by id, or null when it doesn't exist.
+  Future<Map<String, dynamic>?> fetchDoc(String collection, String id) async {
+    if (!_ready) return null;
+    final snap = await FirebaseFirestore.instance
+        .collection(collection)
+        .doc(id)
+        .get();
+    return snap.exists ? snap.data() : null;
+  }
+
+  Stream<List<Map<String, dynamic>>> watchCollection(String collection) {
+    if (!_ready) return const Stream.empty();
+    return FirebaseFirestore.instance.collection(collection).snapshots().map(
+          (snap) => snap.docs.map((d) => d.data()).toList(),
+        );
+  }
+
+  /// Live list of every registered user's profile (`users/{uid}`).
+  Stream<List<Map<String, dynamic>>> watchUsers() =>
+      watchCollection('users');
+
+  Future<List<Map<String, dynamic>>> fetchUsers() async =>
+      fetchAll('users');
+
+  // --------------------------------------------------------------- Storage --
+
+  Future<String?> uploadBytes(String path, Uint8List bytes,
+      {String? contentType}) async {
+    if (!_ready) return null;
+    final ref = FirebaseStorage.instance.ref(path);
+    await ref.putData(
+      bytes,
+      SettableMetadata(
+        contentType: contentType ?? 'image/jpeg',
+        cacheControl: 'public, max-age=31536000',
+      ),
+    );
+    return ref.getDownloadURL();
+  }
+
+  Future<void> deleteFile(String path) async {
+    if (!_ready) return;
+    try {
+      await FirebaseStorage.instance.ref(path).delete();
+    } catch (_) {
+      // File may already be gone — ignore.
+    }
+  }
+
+  // -------------------------------------------------------------- Messaging --
+
+  Future<String?> getFcmToken() async {
+    if (!_ready) return null;
+    try {
+      return await FirebaseMessaging.instance.getToken();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> requestNotificationsPermission() async {
+    if (!_ready) return;
+    try {
+      await FirebaseMessaging.instance.requestPermission();
+    } catch (_) {
+      // ignored
+    }
+  }
+
+  Stream<RemoteMessage> get onMessage =>
+      _ready ? FirebaseMessaging.onMessage : const Stream.empty();
+
+  Future<void> subscribeToTopic(String topic) async {
+    if (!_ready) return;
+    try {
+      await FirebaseMessaging.instance.subscribeToTopic(topic);
+    } catch (_) {}
+  }
+
+  // -------------------------------------------------------------- Analytics --
+
+  void logEvent(String name, [Map<String, Object?>? parameters]) {
+    if (!_ready) return;
+    try {
+      FirebaseAnalytics.instance.logEvent(
+        name: name,
+        parameters: parameters?.cast<String, Object>(),
+      );
+    } catch (_) {}
+  }
+
+  void logError(Object error, StackTrace stackTrace) {
+    if (!_ready) return;
+    try {
+      FirebaseCrashlytics.instance.recordError(error, stackTrace);
+    } catch (_) {}
+  }
+
+  void setUser(String uid, String email) {
+    if (!_ready) return;
+    try {
+      FirebaseCrashlytics.instance.setUserIdentifier(uid);
+      FirebaseAnalytics.instance.setUserId(id: uid);
+      FirebaseAnalytics.instance.logEvent(
+        name: 'user_login',
+        parameters: {'email': email},
+      );
+    } catch (_) {}
+  }
+}

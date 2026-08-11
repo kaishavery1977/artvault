@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "629393260589",
+    "firebase_url": "https://artvault-d69d0-default-rtdb.firebaseio.com",
+    "project_id": "artvault-d69d0",
+    "storage_bucket": "artvault-d69d0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:629393260589:android:0f6b3fb7133e15ddfdb8a4",
+        "android_client_info": {
+          "package_name": "com.artvault.artvault"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "629393260589-vi457ap4uhile1bm8cdmq6qlok6qtbja.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.artvault.artvault",
+            "certificate_hash": "533def59ecb3f707e5ef74ad0f33463097e3ae06"
+          }
+        },
+        {
+          "client_id": "629393260589-kdn446mj2thdkk4klnvsve01ho2pirt1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQvFm_QowkvkhLL7IIwvutwPRzNsXF7_s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "629393260589-kdn446mj2thdkk4klnvsve01ho2pirt1.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "629393260589-ac64h3ghnqv59k16m6inhjur9kmf4rb0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.artvault.artvault2"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

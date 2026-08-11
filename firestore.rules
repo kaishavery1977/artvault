@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isOwner() {
+      return isSignedIn() && resource.data.ownerUid == request.auth.uid;
+    }
+    function incomingOwnedByMe() {
+      return isSignedIn() && request.resource.data.ownerUid == request.auth.uid;
+    }
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Vault collections: every document belongs to exactly one user and can
+    // only be read/written by that user. Queries must filter by ownerUid.
+    match /paintings/{id} {
+      allow read, delete: if isOwner();
+      allow create: if incomingOwnedByMe();
+      allow update: if isOwner() && request.resource.data.ownerUid == request.auth.uid;
+    }
+    match /artists/{id} {
+      allow read, delete: if isOwner();
+      allow create: if incomingOwnedByMe();
+      allow update: if isOwner() && request.resource.data.ownerUid == request.auth.uid;
+    }
+    match /documents/{id} {
+      allow read, delete: if isOwner();
+      allow create: if incomingOwnedByMe();
+      allow update: if isOwner() && request.resource.data.ownerUid == request.auth.uid;
+    }
+    match /notifications/{id} {
+      allow read, delete: if isOwner();
+      allow create: if incomingOwnedByMe();
+      allow update: if isOwner() && request.resource.data.ownerUid == request.auth.uid;
+    }
+
+    // Backups are keyed by the owning user's uid.
+    match /backups/{uid} {
+      allow read, write: if isSignedIn() && uid == request.auth.uid;
+    }
+
+    // User profiles: readable by every signed-in user (the admin panel lists
+    // users, and profile lookups read this collection). Writes are
+    // self-service for profile fields; nobody can self-promote to admin.
+    // Role changes for others require an existing admin — the first admin
+    // must be granted manually in the Firebase console.
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && uid == request.auth.uid
+        && request.resource.data.role == 'curator';
+      allow update: if (isSignedIn() && uid == request.auth.uid
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['uid'])
+        && (request.resource.data.role == resource.data.role
+            || request.resource.data.role != 'admin'))
+        || (isAdmin() && uid != request.auth.uid);
+      allow delete: if isAdmin() && uid != request.auth.uid;
+    }
+  }
+}
