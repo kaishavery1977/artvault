@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -994,6 +995,14 @@ class _QrCard extends StatelessWidget {
 
   const _QrCard({required this.painting});
 
+  void _openFullscreen(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (context) => _QrFullscreenDialog(painting: painting),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -1001,25 +1010,50 @@ class _QrCard extends StatelessWidget {
       padding: AppSpacing.cardPadding,
       child: Row(
         children: [
-          QrImageView(
-            data: QrService.payloadFor(
-              painting.id,
-              title: painting.title,
-              artistName: painting.artistName,
-              price: painting.price,
-              currency: painting.currency,
-              description: painting.description,
-              imageUrl: painting.coverImageUrl,
-            ),
-            size: 92,
-            version: QrVersions.auto,
-            eyeStyle: QrEyeStyle(
-              eyeShape: QrEyeShape.square,
-              color: scheme.primary,
-            ),
-            dataModuleStyle: QrDataModuleStyle(
-              dataModuleShape: QrDataModuleShape.square,
-              color: scheme.primary,
+          // Tap the code to open it full screen so other devices can scan
+          // it easily.
+          GestureDetector(
+            onTap: () => _openFullscreen(context),
+            child: Stack(
+              children: [
+                QrImageView(
+                  data: QrService.payloadFor(
+                    painting.id,
+                    title: painting.title,
+                    artistName: painting.artistName,
+                    price: painting.price,
+                    currency: painting.currency,
+                    description: painting.description,
+                    imageUrl: painting.coverImageUrl,
+                  ),
+                  size: 100,
+                  version: QrVersions.auto,
+                  eyeStyle: QrEyeStyle(
+                    eyeShape: QrEyeShape.square,
+                    color: scheme.primary,
+                  ),
+                  dataModuleStyle: QrDataModuleStyle(
+                    dataModuleShape: QrDataModuleShape.square,
+                    color: scheme.primary,
+                  ),
+                ),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: scheme.surface.withValues(alpha: 0.92),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.zoom_out_map,
+                      size: 13,
+                      color: scheme.primary,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -1035,7 +1069,7 @@ class _QrCard extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  'Point any camera at this code to open the artwork details in ArtVault.',
+                  'Tap the code to view it full screen, then point any camera at it to open the artwork in ArtVault.',
                   style: TextStyle(
                     fontSize: 12,
                     height: 1.4,
@@ -1051,6 +1085,159 @@ class _QrCard extends StatelessWidget {
             onPressed: () => ShareService.instance.shareQr(painting),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Full-screen QR viewer: renders the code large on a white card (dark
+/// modules) so any other device can scan it easily, with the artwork title,
+/// artist and price underneath.
+class _QrFullscreenDialog extends StatelessWidget {
+  final Painting painting;
+
+  const _QrFullscreenDialog({required this.painting});
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final qrSize = math.min(
+      size.width - 80,
+      math.min(size.height * 0.46, 380.0),
+    );
+    final payload = QrService.payloadFor(
+      painting.id,
+      title: painting.title,
+      artistName: painting.artistName,
+      price: painting.price,
+      currency: painting.currency,
+      description: painting.description,
+      imageUrl: painting.coverImageUrl,
+    );
+
+    return Scaffold(
+      backgroundColor: Colors.black.withValues(alpha: 0.94),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // White card + near-black modules: maximum contrast for
+                    // phone cameras to lock onto.
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.4),
+                            blurRadius: 30,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: QrImageView(
+                        data: payload,
+                        size: qrSize,
+                        version: QrVersions.auto,
+                        eyeStyle: const QrEyeStyle(
+                          eyeShape: QrEyeShape.square,
+                          color: Color(0xFF1A1A1A),
+                        ),
+                        dataModuleStyle: const QrDataModuleStyle(
+                          dataModuleShape: QrDataModuleShape.square,
+                          color: Color(0xFF1A1A1A),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text(
+                      painting.title,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      painting.artistName,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.7),
+                        fontSize: 15,
+                      ),
+                    ),
+                    if (painting.price != null) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          Formatters.money(
+                            painting.price,
+                            currency: painting.currency,
+                          ),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      'Point the camera of another device at this code to open '
+                      'the artwork in ArtVault.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.4,
+                        color: Colors.white.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        FilledButton.tonalIcon(
+                          onPressed: () =>
+                              ShareService.instance.shareQr(painting),
+                          icon: const Icon(Icons.share_outlined, size: 18),
+                          label: const Text('Share QR'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: IconButton(
+                tooltip: 'Close',
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
