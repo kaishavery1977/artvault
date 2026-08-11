@@ -226,37 +226,57 @@ class StatCard extends StatelessWidget {
                               ),
                             ],
                     ),
+                    // Two independent FittedBox(scaleDown) blocks in a
+                    // spaceBetween column: the card scales down gracefully on
+                    // any device / font size instead of overflowing its grid
+                    // cell. (No flex children, so FittedBox is always safe.)
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: color.withValues(alpha: isDark ? 0.2 : 0.12),
-                            borderRadius: BorderRadius.circular(
-                              AppSpacing.radiusMd,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.bottomLeft,
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: color.withValues(
+                                alpha: isDark ? 0.2 : 0.12,
+                              ),
+                              borderRadius: BorderRadius.circular(
+                                AppSpacing.radiusMd,
+                              ),
                             ),
+                            child: Icon(icon, size: 22, color: color),
                           ),
-                          child: Icon(icon, size: 22, color: color),
                         ),
-                        const Spacer(),
-                        if (countValue != null && countFormat != null)
-                          AnimatedCountUp(
-                            value: countValue!,
-                            format: countFormat!,
-                            style: valueStyle,
-                          )
-                        else
-                          Text(value, style: valueStyle),
-                        const SizedBox(height: 2),
-                        Text(
-                          label,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant
-                                .withValues(alpha: 0.7),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.bottomLeft,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (countValue != null && countFormat != null)
+                                AnimatedCountUp(
+                                  value: countValue!,
+                                  format: countFormat!,
+                                  style: valueStyle,
+                                )
+                              else
+                                Text(value, style: valueStyle),
+                              const SizedBox(height: 2),
+                              Text(
+                                label,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant
+                                      .withValues(alpha: 0.7),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],

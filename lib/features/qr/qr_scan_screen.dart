@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-import '../../core/theme/app_spacing.dart';
 import '../../core/services/qr_service.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../data/models/painting.dart';
+import '../../data/repositories/painting_repository.dart';
 
 class QrScanScreen extends StatefulWidget {
   const QrScanScreen({super.key});
@@ -27,14 +29,105 @@ class _QrScanScreenState extends State<QrScanScreen> {
     for (final barcode in capture.barcodes) {
       final raw = barcode.rawValue;
       if (raw == null) continue;
-      final paintingId = QrService.parsePaintingId(raw);
-      if (paintingId != null) {
-        _handled = true;
-        _controller.stop();
-        context.push('/painting/$paintingId');
-        return;
-      }
+      final payload = QrService.parsePayload(raw);
+      if (payload == null) continue;
+      _resolve(payload);
+      return;
     }
+  }
+
+  /// Resolves a scanned code: exact id first, then title/artist fallback
+  /// (the id is device-local, so the same artwork scanned from another
+  /// device carries a different id), then offer to add it to this vault.
+  Future<void> _resolve(QrPayload payload) async {
+    _handled = true;
+    await _controller.stop();
+
+    Painting? painting = PaintingRepository.instance.get(payload.paintingId);
+    painting ??= _matchByMetadata(payload);
+    if (painting != null && mounted) {
+      context.push('/painting/${painting.id}');
+      return;
+    }
+
+    // Not in this vault — let the user add a reference copy so the code
+    // works across devices/accounts.
+    final title = payload.title?.trim().isNotEmpty == true
+        ? payload.title!.trim()
+        : null;
+    final artist = payload.artistName?.trim().isNotEmpty == true
+        ? payload.artistName!.trim()
+        : null;
+
+    if (!mounted) return;
+    final add = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.qr_code_2, size: 32),
+        title: Text(title ?? 'Artwork not in this vault'),
+        content: Text(
+          title == null
+              ? 'This QR code points to an artwork that is not in your vault yet. '
+                    'Add it so you can view and manage it here?'
+              : '“$title”${artist != null ? ' by $artist' : ''} is not in your '
+                    'vault yet. Add it so you can view and manage it here?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Add to vault'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+    if (add == true) {
+      final now = DateTime.now();
+      final painting = await PaintingRepository.instance.save(
+        Painting(
+          id: payload.paintingId,
+          title: title ?? 'Scanned artwork',
+          artistId: '',
+          artistName: artist ?? '',
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+      if (mounted) {
+        context.push('/painting/${painting.id}');
+      }
+      return;
+    }
+
+    // Cancelled — resume scanning.
+    _handled = false;
+    await _controller.start();
+  }
+
+  /// Finds a local painting whose title/artist matches the metadata embedded
+  /// in the code (used when the id differs because it came from another
+  /// device).
+  Painting? _matchByMetadata(QrPayload payload) {
+    final title = payload.title?.trim().toLowerCase();
+    final artist = payload.artistName?.trim().toLowerCase();
+    if (title == null && artist == null) return null;
+
+    final all = PaintingRepository.instance.readActive();
+    Painting? best;
+    for (final p in all) {
+      final sameTitle =
+          title != null && p.title.trim().toLowerCase().contains(title);
+      final sameArtist =
+          artist != null && p.artistName.trim().toLowerCase().contains(artist);
+      if (sameTitle && sameArtist) return p; // strongest match
+      if (sameTitle && best == null) best = p;
+    }
+    return best;
   }
 
   @override
@@ -46,10 +139,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
         alignment: Alignment.center,
         children: [
           Positioned.fill(
-            child: MobileScanner(
-              controller: _controller,
-              onDetect: _onDetect,
-            ),
+            child: MobileScanner(controller: _controller, onDetect: _onDetect),
           ),
           Positioned(
             bottom: AppSpacing.xxl + MediaQuery.paddingOf(context).bottom,

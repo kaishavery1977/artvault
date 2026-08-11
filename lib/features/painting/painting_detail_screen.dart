@@ -19,6 +19,7 @@ import '../../core/utils/image_utils.dart';
 import '../../core/widgets/art_image.dart';
 import '../../core/widgets/bits.dart';
 import '../../core/widgets/motion.dart';
+import '../../core/widgets/states.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
 import 'painting_lightbox_screen.dart';
@@ -155,7 +156,16 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
         .toList();
 
     if (painting == null) {
-      return const Scaffold(body: Center(child: Text('Painting not found')));
+      return Scaffold(
+        appBar: AppBar(),
+        body: EmptyState(
+          icon: Icons.image_search_outlined,
+          title: 'Painting not found',
+          subtitle:
+              'This artwork is not in your vault. It may live on another '
+              'device — scan its QR code again to add it here.',
+        ),
+      );
     }
 
     final canEdit = ref.watch(authProvider).canEdit;
@@ -706,7 +716,10 @@ class _Palette extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    // Wrap (not Row): six fixed 44px swatches would overflow narrow screens.
+    return Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.sm,
       children: [
         for (final hex in colors)
           Tooltip(
@@ -714,7 +727,6 @@ class _Palette extends StatelessWidget {
             child: Container(
               width: 44,
               height: 44,
-              margin: const EdgeInsets.only(right: AppSpacing.sm),
               decoration: BoxDecoration(
                 color: ImageUtils.colorFromHex(hex),
                 borderRadius: BorderRadius.circular(14),
@@ -990,7 +1002,11 @@ class _QrCard extends StatelessWidget {
       child: Row(
         children: [
           QrImageView(
-            data: QrService.payloadFor(painting.id),
+            data: QrService.payloadFor(
+              painting.id,
+              title: painting.title,
+              artistName: painting.artistName,
+            ),
             size: 92,
             version: QrVersions.auto,
             eyeStyle: QrEyeStyle(

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
@@ -19,19 +20,43 @@ class ShareService {
 
   static final ShareService instance = ShareService._();
 
-  /// Renders a QR PNG for [painting].
+  /// Renders a QR PNG for [painting], with a white quiet zone so scanners
+  /// (including other phones) can decode it reliably.
   Future<Uint8List> qrPng(Painting painting, {int size = 512}) async {
     final painter = QrPainter(
-      data: QrService.payloadFor(painting.id),
+      data: QrService.payloadFor(
+        painting.id,
+        title: painting.title,
+        artistName: painting.artistName,
+      ),
       version: QrVersions.auto,
       gapless: true,
-      eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square),
+      // A null eyeStyle color crashes QrPainter (qr_flutter 4.1.0 default
+      // `color` is null) — always pass an explicit color.
+      eyeStyle: const QrEyeStyle(
+        eyeShape: QrEyeShape.square,
+        color: Color(0xFF0F172A),
+      ),
       dataModuleStyle: const QrDataModuleStyle(
         dataModuleShape: QrDataModuleShape.square,
         color: Color(0xFF0F172A),
       ),
     );
-    final data = await painter.toImageData(4);
+
+    const margin = 32.0;
+    final total = (size + margin * 2).toInt();
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, total.toDouble(), total.toDouble()),
+      Paint()..color = const Color(0xFFFFFFFF),
+    );
+    canvas.save();
+    canvas.translate(margin, margin);
+    painter.paint(canvas, Size(size.toDouble(), size.toDouble()));
+    canvas.restore();
+    final image = await recorder.endRecording().toImage(total, total);
+    final data = await image.toByteData(format: ui.ImageByteFormat.png);
     return data?.buffer.asUint8List() ?? Uint8List(0);
   }
 
@@ -54,7 +79,9 @@ class ShareService {
       );
     } else if (imageBytes != null) {
       final dir = FileStorageService.instance.exportsDir;
-      final file = File(p.join(dir.path, 'share_${DateTime.now().millisecondsSinceEpoch}.png'));
+      final file = File(
+        p.join(dir.path, 'share_${DateTime.now().millisecondsSinceEpoch}.png'),
+      );
       await file.writeAsBytes(imageBytes);
       params = ShareParams(
         text: text,
@@ -73,24 +100,32 @@ class ShareService {
       await _share(text: _caption(painting));
       return;
     }
-    await _share(
-      text: _caption(painting),
-      files: [path],
-    );
+    await _share(text: _caption(painting), files: [path]);
   }
 
-  /// Share image + full description text.
-  Future<void> shareWithDescription(Painting painting, {String? imagePath}) async {
-    final desc = painting.description.isNotEmpty ? '\n\n${painting.description}' : '';
+  /// Share image + full description text. Defaults to the cover image so
+  /// "Image + text" from the share sheet actually attaches the artwork.
+  Future<void> shareWithDescription(
+    Painting painting, {
+    String? imagePath,
+  }) async {
+    final path = imagePath ?? painting.coverImagePath;
+    final hasImage = path.isNotEmpty && File(path).existsSync();
+    final desc = painting.description.isNotEmpty
+        ? '\n\n${painting.description}'
+        : '';
     await _share(
       text: _caption(painting) + desc,
-      files: imagePath != null ? [imagePath] : null,
+      files: hasImage ? [path] : null,
     );
   }
 
   /// Composes a watermarked copy of the artwork (brand + title bar) and
   /// shares it through the native sheet — ideal for social posts.
-  Future<Uint8List> watermarkedPng(Painting painting, {String? imagePath}) async {
+  Future<Uint8List> watermarkedPng(
+    Painting painting, {
+    String? imagePath,
+  }) async {
     final path = imagePath ?? painting.coverImagePath;
     if (path.isEmpty || !File(path).existsSync()) return Uint8List(0);
     final bytes = await File(path).readAsBytes();
@@ -133,7 +168,10 @@ class ShareService {
   /// Share a QR code image for the painting.
   Future<void> shareQr(Painting painting) async {
     final png = await qrPng(painting);
-    await _share(text: 'Scan to view "${painting.title}" in ArtVault', imageBytes: png);
+    await _share(
+      text: 'Scan to view "${painting.title}" in ArtVault',
+      imageBytes: png,
+    );
   }
 
   /// Share a generated PDF.
@@ -141,7 +179,10 @@ class ShareService {
     final dir = FileStorageService.instance.exportsDir;
     final file = File(p.join(dir.path, filename));
     await file.writeAsBytes(bytes);
-    await _share(text: '${AppConstants.appName} — ${filename.split('.').first}', files: [file.path]);
+    await _share(
+      text: '${AppConstants.appName} — ${filename.split('.').first}',
+      files: [file.path],
+    );
   }
 
   /// Share a file (documents, exports).
