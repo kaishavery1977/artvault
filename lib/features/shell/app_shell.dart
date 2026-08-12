@@ -65,6 +65,10 @@ class _AppShellState extends ConsumerState<AppShell> {
 
     final content = SafeArea(top: false, child: shell);
 
+    // Artists and Documents tabs have their own FABs; showing the shell's
+    // quick-add here would overlap them at the bottom-right corner.
+    final isOwnFabTab = shell.currentIndex == 2 || shell.currentIndex == 3;
+
     return Scaffold(
       body: isDesktop
           ? Row(
@@ -95,7 +99,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                 ],
               ),
             ),
-      floatingActionButton: canEdit
+      floatingActionButton: canEdit && !isOwnFabTab
           ? FloatingActionButton.extended(
               heroTag: 'quick_add',
               onPressed: () => context.push('/painting/new'),
