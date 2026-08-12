@@ -266,8 +266,8 @@ class _VignettePainter extends CustomPainter {
 List<Widget> staggerReveal(
   List<Widget> children, {
   Duration initialDelay = Duration.zero,
-  Duration interval = const Duration(milliseconds: 80),
-  Duration duration = const Duration(milliseconds: 450),
+  Duration interval = const Duration(milliseconds: 140),
+  Duration duration = const Duration(milliseconds: 650),
   double beginOffset = 0.08,
 }) {
   return [

@@ -116,12 +116,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         )
                             .animate(
                               delay: first
-                                  ? const Duration(milliseconds: 260)
+                                  ? const Duration(milliseconds: 450)
                                   : Duration.zero,
                             )
                             .slideY(begin: first ? 0.22 : 0.0)
                             .fadeIn(
-                              duration: 460.ms,
+                              duration: 700.ms,
                               curve: Curves.easeOutCubic,
                             ),
                         const SizedBox(height: AppSpacing.md),
@@ -136,12 +136,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         )
                             .animate(
                               delay: first
-                                  ? const Duration(milliseconds: 400)
+                                  ? const Duration(milliseconds: 700)
                                   : Duration.zero,
                             )
                             .slideY(begin: first ? 0.1 : 0.0)
                             .fadeIn(
-                              duration: 500.ms,
+                              duration: 750.ms,
                               curve: Curves.easeOutCubic,
                             ),
                       ],
@@ -265,12 +265,12 @@ class _SlideIcon extends StatelessWidget {
               .scaleXY(
                 begin: 0.4,
                 end: 1,
-                duration: 620.ms,
+                duration: 1000.ms,
                 curve: Curves.easeOutCubic,
               )
-              .fadeIn(duration: 420.ms)
+              .fadeIn(duration: 700.ms)
               .then()
-              .fadeOut(delay: 320.ms, duration: 700.ms),
+              .fadeOut(delay: 500.ms, duration: 1100.ms),
           // Expanding ring — the splash's stamp shockwave, replayed softly.
           Container(
             width: 168,
@@ -283,27 +283,27 @@ class _SlideIcon extends StatelessWidget {
               ),
             ),
           )
-              .animate(delay: 140.ms)
+              .animate(delay: 250.ms)
               .scaleXY(
                 begin: 0.7,
                 end: 1.5,
-                duration: 820.ms,
+                duration: 1200.ms,
                 curve: Curves.easeOutCubic,
               )
-              .fadeOut(duration: 820.ms),
+              .fadeOut(duration: 1200.ms),
           // The badge itself, dropping in with a settle.
           badge
               .animate(
                 key: ValueKey('onboard_${slide.title}'),
-                delay: 40.ms,
+                delay: 100.ms,
               )
               .scaleXY(
                 begin: 0.55,
                 end: 1,
-                duration: 560.ms,
+                duration: 800.ms,
                 curve: Curves.easeOutBack,
               )
-              .fadeIn(duration: 420.ms),
+              .fadeIn(duration: 650.ms),
         ],
       ),
     );

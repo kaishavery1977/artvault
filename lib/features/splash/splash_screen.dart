@@ -12,7 +12,7 @@ import '../../data/repositories/settings_repository.dart';
 
 /// Cinematic branded launch screen.
 ///
-/// Plays a short staged "video" intro — a spotlight blooms behind the logo,
+/// Plays a staged "video" intro — a spotlight blooms behind the logo,
 /// the mark drops in with a rotation settle, the wordmark reveals
 /// letter-by-letter with a gold shimmer sweep, then a pulsing dot loader
 /// hands off to the next screen with a camera-push exit. Everything is
@@ -33,15 +33,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final Animation<double> _exitOpacity;
 
   /// Total intro runtime before the hand-off starts.
-  static const Duration _introDuration = Duration(milliseconds: 2350);
+  static const Duration _introDuration = Duration(milliseconds: 3400);
 
   @override
   void initState() {
     super.initState();
     _exit = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 420),
-      reverseDuration: const Duration(milliseconds: 280),
+      duration: const Duration(milliseconds: 520),
+      reverseDuration: const Duration(milliseconds: 320),
     );
     _exitScale = CurvedAnimation(parent: _exit, curve: Curves.easeInCubic);
     _exitOpacity = CurvedAnimation(parent: _exit, curve: Curves.easeIn);
@@ -75,7 +75,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     // Camera-push exit, then hand off to the next screen.
     _exit.forward();
-    await Future<void>.delayed(const Duration(milliseconds: 430));
+    await Future<void>.delayed(const Duration(milliseconds: 560));
     if (!mounted) return;
     context.go(target);
   }
@@ -123,12 +123,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         .scaleXY(
                           begin: 0.25,
                           end: 1,
-                          duration: 650.ms,
+                          duration: 1000.ms,
                           curve: Curves.easeOutCubic,
                         )
-                        .fadeIn(duration: 500.ms)
+                        .fadeIn(duration: 700.ms)
                         .then()
-                        .fadeOut(delay: 400.ms, duration: 950.ms),
+                        .fadeOut(delay: 600.ms, duration: 1400.ms),
                     // Expanding shockwave ring, like a stamp landing.
                     Container(
                       width: 132,
@@ -141,14 +141,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         ),
                       ),
                     )
-                        .animate(delay: 220.ms)
+                        .animate(delay: 350.ms)
                         .scaleXY(
                           begin: 0.45,
                           end: 1.65,
-                          duration: 900.ms,
+                          duration: 1300.ms,
                           curve: Curves.easeOutCubic,
                         )
-                        .fadeOut(duration: 900.ms),
+                        .fadeOut(duration: 1300.ms),
                     // The logo tile itself.
                     Container(
                       width: 112,
@@ -174,20 +174,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         color: Colors.white,
                       ),
                     )
-                        .animate(delay: 150.ms)
+                        .animate(delay: 250.ms)
                         .scaleXY(
                           begin: 0.4,
                           end: 1,
-                          duration: 560.ms,
+                          duration: 800.ms,
                           curve: Curves.easeOutBack,
                         )
                         .rotate(
                           begin: -0.12,
                           end: 0,
-                          duration: 560.ms,
+                          duration: 800.ms,
                           curve: Curves.easeOutCubic,
                         )
-                        .fadeIn(duration: 450.ms),
+                        .fadeIn(duration: 600.ms),
                   ],
                 ),
               ),
@@ -198,9 +198,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               // shimmer sweeps across the settled text.
               // =============================================================
               _StaggeredWordmark(color: fg)
-                  .animate(delay: 1200.ms)
+                  .animate(delay: 1800.ms)
                   .shimmer(
-                    duration: 900.ms,
+                    duration: 1200.ms,
                     color: AppColors.accent.withValues(alpha: 0.45),
                   ),
               const SizedBox(height: AppSpacing.xs),
@@ -215,17 +215,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                   letterSpacing: 1.4,
                 ),
               )
-                  .animate(delay: 1350.ms)
+                  .animate(delay: 2000.ms)
                   .slideY(begin: 0.3)
-                  .fadeIn(duration: 500.ms),
+                  .fadeIn(duration: 700.ms),
               const SizedBox(height: AppSpacing.xxl),
 
               // =============================================================
               // Stage 5 — pulsing dot loader.
               // =============================================================
               _PulsingDots(color: fg).animate(
-                delay: 1500.ms,
-              ).fadeIn(duration: 250.ms),
+                delay: 2300.ms,
+              ).fadeIn(duration: 400.ms),
             ],
           ),
         ),
@@ -272,9 +272,9 @@ class _StaggeredWordmark extends StatelessWidget {
             word[i],
             style: AppTheme.display(context, size: 40).copyWith(color: color),
           )
-              .animate(delay: (620 + i * 60).ms)
+              .animate(delay: (900 + i * 90).ms)
               .slideY(begin: 0.6)
-              .fadeIn(duration: 420.ms, curve: Curves.easeOutCubic),
+              .fadeIn(duration: 600.ms, curve: Curves.easeOutCubic),
       ],
     );
   }

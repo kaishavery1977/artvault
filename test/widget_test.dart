@@ -43,13 +43,13 @@ void main() {
     expect(find.text('V'), findsOneWidget);
     expect(find.text('Your Private Gallery'), findsOneWidget);
 
-    // Drain the splash screen's intro (2350ms) and push-out exit (430ms),
+    // Drain the splash screen's intro (3400ms) and push-out exit (560ms),
     // then give the router time to navigate to onboarding (its route
     // transition is 280ms). The final pump drains the delay timers the
-    // incoming page's reveal animations create on mount (longest is 400ms),
+    // incoming page's reveal animations create on mount (longest is 700ms),
     // so nothing is pending when the test ends.
     await tester.pump(const Duration(milliseconds: 2400));
-    await tester.pump(const Duration(milliseconds: 1000));
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 1600));
+    await tester.pump(const Duration(milliseconds: 900));
   });
 }
