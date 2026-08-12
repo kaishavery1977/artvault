@@ -228,7 +228,6 @@ class _AppLockScreenState extends State<AppLockScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
     final fg = isDark ? AppColors.darkText : AppColors.lightText;
     final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     // The PIN pad is shown when the user opted into it, or when it's the only
@@ -237,7 +236,8 @@ class _AppLockScreenState extends State<AppLockScreen>
         _pinMode || (!_fingerprintMethod && !_faceMethod && _passcodeSet);
 
     return Scaffold(
-      backgroundColor: bg,
+      // Transparent so the ambient gradient shows behind the lock screen.
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Stack(
           children: [
@@ -479,6 +479,7 @@ class _Key extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: const EdgeInsets.all(5),
@@ -490,10 +491,15 @@ class _Key extends StatelessWidget {
           height: 56,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: scheme.surfaceContainerHighest.withValues(
-              alpha: enabled ? 1 : 0.4,
+            // Glass key: translucent fill + hairline border. Decoration only.
+            color: scheme.surface.withValues(
+              alpha: enabled ? (isDark ? 0.55 : 0.75) : 0.25,
             ),
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: scheme.onSurface.withValues(alpha: enabled ? 0.07 : 0.03),
+              width: 0.6,
+            ),
           ),
           child: Text(
             label,

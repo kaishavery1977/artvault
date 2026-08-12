@@ -24,6 +24,7 @@ class AuthLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: Stack(
         children: [
@@ -67,12 +68,33 @@ class AuthLayout extends StatelessWidget {
                       Container(
                         padding: AppSpacing.cardPadding,
                         decoration: BoxDecoration(
-                          color: scheme.surface.withValues(alpha: 0.9),
+                          // Frosted glass card over the aurora glow — matches
+                          // the GlassCard treatment. Decoration only.
+                          color: scheme.surface.withValues(
+                            alpha: isDark ? 0.72 : 0.82,
+                          ),
                           borderRadius: BorderRadius.circular(
                             AppSpacing.radiusXl,
                           ),
-                          border: Border.all(
-                            color: scheme.onSurface.withValues(alpha: 0.06),
+                          border: Border(
+                            top: BorderSide(
+                              color: Colors.white.withValues(
+                                alpha: isDark ? 0.20 : 0.65,
+                              ),
+                              width: 0.8,
+                            ),
+                            left: BorderSide(
+                              color: scheme.onSurface.withValues(alpha: 0.06),
+                              width: 0.5,
+                            ),
+                            right: BorderSide(
+                              color: scheme.onSurface.withValues(alpha: 0.06),
+                              width: 0.5,
+                            ),
+                            bottom: BorderSide(
+                              color: scheme.onSurface.withValues(alpha: 0.10),
+                              width: 0.5,
+                            ),
                           ),
                           boxShadow: [
                             BoxShadow(

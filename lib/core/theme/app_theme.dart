@@ -128,9 +128,22 @@ abstract final class AppTheme {
       // APP BAR
       // =======================================================================
       appBarTheme: AppBarTheme(
-        backgroundColor: Colors.transparent,
+        // Frosted glass app bar: translucent fill over the ambient gradient
+        // plus a hairline bottom edge, matching the glass nav bar. Pure
+        // decoration — layout untouched, applies to every screen.
+        backgroundColor: isDark
+            ? AppColors.glassDark(opacity: 0.55)
+            : AppColors.glassLight(opacity: 0.72),
         elevation: 0,
         scrolledUnderElevation: 0,
+        shape: Border(
+          bottom: BorderSide(
+            color: (isDark ? Colors.white : Colors.black).withValues(
+              alpha: 0.08,
+            ),
+            width: 0.6,
+          ),
+        ),
         centerTitle: false,
         foregroundColor: onSurface,
         titleTextStyle: GoogleFonts.playfairDisplay(

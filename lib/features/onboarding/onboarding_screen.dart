@@ -97,27 +97,36 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
-                          width: 160,
-                          height: 160,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                scheme.primary.withValues(alpha: 0.16),
-                                scheme.primary.withValues(alpha: 0.03),
-                              ],
-                            ),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            slide.icon,
-                            size: 64,
-                            color: scheme.primary,
-                          ),
-                        )
+                              width: 160,
+                              height: 160,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    scheme.primary.withValues(alpha: 0.22),
+                                    scheme.primary.withValues(alpha: 0.04),
+                                  ],
+                                ),
+                                shape: BoxShape.circle,
+                                // Glass edge so the circle picks up the ambient
+                                // gradient behind it. Decoration only.
+                                border: Border.all(
+                                  color: scheme.primary.withValues(alpha: 0.10),
+                                  width: 0.6,
+                                ),
+                              ),
+                              child: Icon(
+                                slide.icon,
+                                size: 64,
+                                color: scheme.primary,
+                              ),
+                            )
                             .animate(key: ValueKey('onboard_$i'))
-                            .scale(begin: const Offset(0.7, 0.7), curve: Curves.easeOutBack),
+                            .scale(
+                              begin: const Offset(0.7, 0.7),
+                              curve: Curves.easeOutBack,
+                            ),
                         const SizedBox(height: AppSpacing.xxl),
                         Text(
                           slide.title,
@@ -128,7 +137,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         Text(
                           slide.body,
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(
                                 height: 1.5,
                                 color: scheme.onSurface.withValues(alpha: 0.6),
                               ),
@@ -149,7 +159,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     width: i == _page ? 24 : 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: i == _page ? scheme.primary : scheme.primary.withValues(alpha: 0.2),
+                      color: i == _page
+                          ? scheme.primary
+                          : scheme.primary.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),

@@ -43,7 +43,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final state = ref.read(authProvider);
     if (state.status == AuthStatus.authenticated) {
       // App Lock gate (cold-start biometric / face / passcode lock on launch).
-      final appLock = SettingsRepository.instance.appLockEnabled ||
+      final appLock =
+          SettingsRepository.instance.appLockEnabled ||
           await AuthRepository.instance.biometricEnabled ||
           await AuthRepository.instance.faceLockEnabled ||
           await AuthRepository.instance.passcodeSet;
@@ -63,11 +64,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? AppColors.darkBackground : AppColors.lightBackground;
     final fg = isDark ? AppColors.darkText : AppColors.lightText;
 
     return Scaffold(
-      backgroundColor: bg,
+      // Transparent so the ambient gradient shows through the launch screen.
+      backgroundColor: Colors.transparent,
       body: FadeTransition(
         opacity: _fade,
         child: Center(
@@ -75,37 +76,43 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 112,
-                height: 112,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.secondary, AppColors.accent],
-                  ),
-                  borderRadius: BorderRadius.circular(32),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.secondary.withValues(alpha: 0.4),
-                      blurRadius: 32,
-                      offset: const Offset(0, 12),
+                    width: 112,
+                    height: 112,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [AppColors.secondary, AppColors.accent],
+                      ),
+                      borderRadius: BorderRadius.circular(32),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.secondary.withValues(alpha: 0.4),
+                          blurRadius: 32,
+                          offset: const Offset(0, 12),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.palette,
-                  size: 56,
-                  color: Colors.white,
-                ),
-              )
+                    child: const Icon(
+                      Icons.palette,
+                      size: 56,
+                      color: Colors.white,
+                    ),
+                  )
                   .animate()
-                  .scale(begin: const Offset(0.6, 0.6), curve: Curves.easeOutBack)
+                  .scale(
+                    begin: const Offset(0.6, 0.6),
+                    curve: Curves.easeOutBack,
+                  )
                   .fadeIn(duration: 900.ms),
               const SizedBox(height: AppSpacing.xl),
               Text(
-                'ArtVault',
-                style: AppTheme.display(context, size: 40).copyWith(color: fg),
-              )
+                    'ArtVault',
+                    style: AppTheme.display(
+                      context,
+                      size: 40,
+                    ).copyWith(color: fg),
+                  )
                   .animate()
                   .slideY(begin: 0.2)
                   .fadeIn(duration: 800.ms, delay: 250.ms),
@@ -113,20 +120,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               Text(
                 'Your Private Gallery',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: (isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted),
-                      letterSpacing: 1.4,
-                    ),
-              )
-                  .animate()
-                  .fadeIn(duration: 600.ms, delay: 450.ms),
+                  color: (isDark
+                      ? AppColors.darkTextMuted
+                      : AppColors.lightTextMuted),
+                  letterSpacing: 1.4,
+                ),
+              ).animate().fadeIn(duration: 600.ms, delay: 450.ms),
               const SizedBox(height: AppSpacing.xxl),
               const SizedBox(
                 width: 24,
                 height: 24,
                 child: CircularProgressIndicator(strokeWidth: 2.4),
-              )
-                  .animate()
-                  .fadeIn(delay: 800.ms),
+              ).animate().fadeIn(delay: 800.ms),
             ],
           ),
         ),
