@@ -398,8 +398,23 @@ class _StorageCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final usage = ref.watch(storageUsageProvider).valueOrNull;
+    final device = ref.watch(deviceStorageProvider).valueOrNull;
     final total = stats.storageBytes;
     final usedLabel = total > 0 ? Formatters.bytes(total.toInt()) : '0 B';
+
+    // Phone-wide numbers when available, so the user sees how much is left
+    // on the device — not just what the vault itself has stored.
+    final freeLabel = device != null
+        ? Formatters.bytes(device.freeBytes)
+        : null;
+    final totalDeviceLabel = device != null
+        ? Formatters.bytes(device.totalBytes)
+        : null;
+    final barFraction = device != null
+        ? device.usedFraction
+        : (usage != null && usage.total > 0
+              ? (usage.images + usage.documents) / usage.total
+              : 0);
 
     return GlassCard(
       onTap: () => context.push('/storage'),
@@ -419,7 +434,7 @@ class _StorageCard extends ConsumerWidget {
               ),
               const Spacer(),
               Text(
-                usedLabel,
+                freeLabel ?? usedLabel,
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -432,16 +447,17 @@ class _StorageCard extends ConsumerWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
-              value: usage != null && usage.total > 0
-                  ? (usage.images + usage.documents) / usage.total
-                  : 0,
+              value: barFraction.clamp(0.0, 1.0).toDouble(),
               minHeight: 6,
               backgroundColor: scheme.primary.withValues(alpha: 0.1),
             ),
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            'Images & documents live on-device first, synced to the cloud when connected.',
+            device != null
+                ? '$freeLabel free of $totalDeviceLabel phone storage · '
+                      'vault uses $usedLabel'
+                : 'Images & documents live on-device first, synced to the cloud when connected.',
             style: TextStyle(
               fontSize: 11.5,
               color: scheme.onSurface.withValues(alpha: 0.5),

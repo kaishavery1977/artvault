@@ -1,3 +1,4 @@
+import 'package:disk_space_2/disk_space_2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -262,6 +263,36 @@ final storageUsageProvider = FutureProvider<StorageUsage>((ref) async {
     documents: breakdown.documents,
     exports: breakdown.exports,
   );
+});
+
+/// Phone-wide disk space in bytes (null when the platform doesn't expose it).
+class DeviceStorage {
+  final int freeBytes;
+  final int totalBytes;
+
+  const DeviceStorage({required this.freeBytes, required this.totalBytes});
+
+  int get usedBytes => totalBytes - freeBytes;
+
+  /// Fraction (0..1) of the phone's storage currently in use.
+  double get usedFraction => totalBytes > 0 ? usedBytes / totalBytes : 0;
+}
+
+/// Reads the phone's total and free disk space so the UI can show how much
+/// storage remains on the device, not just what the vault itself uses.
+final deviceStorageProvider = FutureProvider<DeviceStorage?>((ref) async {
+  try {
+    final freeGb = await DiskSpace.getFreeDiskSpace;
+    final totalGb = await DiskSpace.getTotalDiskSpace;
+    if (freeGb == null || totalGb == null) return null;
+    const gb = 1024 * 1024 * 1024;
+    return DeviceStorage(
+      freeBytes: (freeGb * gb).round(),
+      totalBytes: (totalGb * gb).round(),
+    );
+  } catch (_) {
+    return null; // graceful fallback: card shows vault-only usage as before
+  }
 });
 
 /// Single painting looked up by id.

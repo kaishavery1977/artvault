@@ -13,6 +13,7 @@ dependencies:
   crypto: ^3.0.7
   csv: ^8.0.0
   cupertino_icons: ^1.0.9
+  disk_space_2: ^1.0.13
   equatable: ^2.1.0
   excel: ^4.0.6
   file_picker: 12.0.0-beta.7
