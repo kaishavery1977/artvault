@@ -33,6 +33,12 @@ final onboardedProvider = StateProvider<bool>((ref) {
   return SettingsRepository.instance.onboarded;
 });
 
+/// True once the full cinematic splash intro has played; drives the switch
+/// to the shorter quick intro on subsequent launches.
+final splashIntroShownProvider = StateProvider<bool>((ref) {
+  return SettingsRepository.instance.splashIntroShown;
+});
+
 /// Preferred currency used across the UI.
 final currencyProvider = Provider<String>((ref) {
   return SettingsRepository.instance.preferredCurrency;

@@ -5,6 +5,10 @@ abstract final class AppConstants {
 
   // Storage keys
   static const String kOnboarded = 'onboarded';
+
+  /// True once the user has seen the full cinematic splash intro; later
+  /// launches get the shorter quick intro instead.
+  static const String kSplashIntroShown = 'splash_intro_shown';
   static const String kSessionUid = 'session_uid';
   static const String kRememberMe = 'remember_me';
   static const String kThemeMode = 'theme_mode';

@@ -15,6 +15,12 @@ class SettingsRepository {
 
   Future<void> setOnboarded() => _db.setSetting(AppConstants.kOnboarded, true);
 
+  /// Whether the full cinematic splash intro has played at least once.
+  bool get splashIntroShown => _db.getBool(AppConstants.kSplashIntroShown);
+
+  Future<void> setSplashIntroShown() =>
+      _db.setSetting(AppConstants.kSplashIntroShown, true);
+
   ThemeMode get themeMode {
     final v = _db.getString(AppConstants.kThemeMode, 'system');
     return switch (v) {
