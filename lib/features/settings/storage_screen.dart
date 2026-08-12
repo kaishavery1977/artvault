@@ -28,13 +28,15 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
     try {
       await action();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(done)));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(done)));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$done — failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('$done — failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -47,6 +49,7 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
     final cloudReady = ref.watch(cloudReadyProvider);
     final canBackup = ref.watch(authProvider).canManageBackups;
     final usage = ref.watch(storageUsageProvider).valueOrNull;
+    final device = ref.watch(deviceStorageProvider).valueOrNull;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Storage & data')),
@@ -65,7 +68,10 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
                     const SizedBox(width: AppSpacing.sm),
                     Text(
                       'Cloud sync',
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
                     ),
                   ],
                 ),
@@ -79,7 +85,10 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
                 if (!cloudReady)
                   Text(
                     'Connect Firebase (flutterfire configure) to enable cloud backup and sync.',
-                    style: TextStyle(fontSize: 12, color: scheme.onSurface.withValues(alpha: 0.5)),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheme.onSurface.withValues(alpha: 0.5),
+                    ),
                   ),
               ],
             ),
@@ -104,25 +113,36 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
                         : const Icon(Icons.chevron_right, size: 20),
                     onTap: _busy
                         ? null
-                        : () => _run(BackupService.instance.runBackup, 'Backup completed'),
+                        : () => _run(
+                            BackupService.instance.runBackup,
+                            'Backup completed',
+                          ),
                   ),
                   const Divider(height: 1),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: Icon(Icons.cloud_upload_outlined, color: scheme.primary),
+                    leading: Icon(
+                      Icons.cloud_upload_outlined,
+                      color: scheme.primary,
+                    ),
                     title: const Text('Export local backup'),
-                    subtitle: const Text('A single .json bundle of your whole vault'),
+                    subtitle: const Text(
+                      'A single .json bundle of your whole vault',
+                    ),
                     trailing: const Icon(Icons.chevron_right, size: 20),
                     onTap: _busy
                         ? null
                         : () => _run(() async {
-                              final file = await BackupService.instance.exportLocalBackup();
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Saved to ${file.path}')),
-                                );
-                              }
-                            }, 'Backup exported'),
+                            final file = await BackupService.instance
+                                .exportLocalBackup();
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Saved to ${file.path}'),
+                                ),
+                              );
+                            }
+                          }, 'Backup exported'),
                   ),
                 ],
               ),
@@ -146,11 +166,27 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Storage', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                Text(
+                  'Storage',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                  ),
+                ),
                 const SizedBox(height: AppSpacing.md),
-                _UsageRow(label: 'Paintings & thumbnails', value: usage?.images ?? 0),
+                _DeviceStorageRow(device: device),
+                const SizedBox(height: AppSpacing.md),
+                const Divider(height: 1),
+                const SizedBox(height: AppSpacing.md),
+                _UsageRow(
+                  label: 'Paintings & thumbnails',
+                  value: usage?.images ?? 0,
+                ),
                 _UsageRow(label: 'Documents', value: usage?.documents ?? 0),
-                _UsageRow(label: 'Backups & exports', value: usage?.exports ?? 0),
+                _UsageRow(
+                  label: 'Backups & exports',
+                  value: usage?.exports ?? 0,
+                ),
                 const Divider(height: 16),
                 _UsageRow(
                   label: 'Total on device',
@@ -161,7 +197,10 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
                 Text(
                   'ArtVault stores everything on-device first. Nothing leaves '
                   'your device until you enable cloud sync.',
-                  style: TextStyle(fontSize: 12, color: scheme.onSurface.withValues(alpha: 0.5)),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurface.withValues(alpha: 0.5),
+                  ),
                 ),
               ],
             ),
@@ -222,9 +261,14 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Restore backup?'),
-          content: const Text('This replaces your current local vault with the backup file.'),
+          content: const Text(
+            'This replaces your current local vault with the backup file.',
+          ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
               child: const Text('Restore'),
@@ -238,16 +282,16 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
         ref.invalidate(artistsProvider);
         ref.invalidate(documentsProvider);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Vault restored')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Vault restored')));
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Restore failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Restore failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -257,12 +301,15 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
   static List<File> _availableBackups() {
     final dir = FileStorageService.instance.exportsDir;
     if (!dir.existsSync()) return const [];
-    final files = dir
-        .listSync()
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.json'))
-        .toList()
-      ..sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+    final files =
+        dir
+            .listSync()
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.json'))
+            .toList()
+          ..sort(
+            (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()),
+          );
     return files.take(10).toList();
   }
 }
@@ -286,7 +333,9 @@ class _StatusRow extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 13,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ),
@@ -298,11 +347,97 @@ class _StatusRow extends StatelessWidget {
             ),
             child: Text(
               value,
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: color),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _DeviceStorageRow extends StatelessWidget {
+  final DeviceStorage? device;
+
+  const _DeviceStorageRow({required this.device});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final dev = device;
+    if (dev == null) {
+      return Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Phone storage',
+              style: TextStyle(
+                fontSize: 13,
+                color: scheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ),
+          Text(
+            'Not available',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurface.withValues(alpha: 0.5),
+            ),
+          ),
+        ],
+      );
+    }
+    final freeLabel = Formatters.bytes(dev.freeBytes);
+    final totalLabel = Formatters.bytes(dev.totalBytes);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Phone storage',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: scheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+            ),
+            Text(
+              '$freeLabel free',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: scheme.primary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: LinearProgressIndicator(
+            value: dev.usedFraction.clamp(0.0, 1.0).toDouble(),
+            minHeight: 6,
+            backgroundColor: scheme.primary.withValues(alpha: 0.1),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xxs),
+        Text(
+          '$freeLabel free of $totalLabel phone storage',
+          style: TextStyle(
+            fontSize: 11.5,
+            color: scheme.onSurface.withValues(alpha: 0.5),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -312,7 +447,11 @@ class _UsageRow extends StatelessWidget {
   final int value;
   final bool bold;
 
-  const _UsageRow({required this.label, required this.value, this.bold = false});
+  const _UsageRow({
+    required this.label,
+    required this.value,
+    this.bold = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -336,7 +475,9 @@ class _UsageRow extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: bold ? FontWeight.w800 : FontWeight.w600,
-              color: bold ? scheme.primary : scheme.onSurface.withValues(alpha: 0.7),
+              color: bold
+                  ? scheme.primary
+                  : scheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
         ],
