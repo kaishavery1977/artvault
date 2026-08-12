@@ -12,6 +12,7 @@ A Flutter art vault app: a place to store, browse, and appreciate artworks, with
 - Per-commit identity: `ArtVault Dev <dev@artvault.local>` (no global git identity configured; pass per-invocation)
 - Verify with `flutter analyze` and `flutter test` before committing
 - Motion language is shared: splash and onboarding speak the same bloom/ring/cascade vocabulary via `lib/core/widgets/motion.dart`
+- **Branch-per-phase shipping**: every phase is committed on a `feat/<phase>` branch and PR'd to `main` for automatic CodeRabbit review — see `PHASE_WORKFLOW.md`
 
 ## Operating Mode
 Work is planned, executed, and verified through GSD (this `.planning/`), reviewed with CodeRabbit (`coderabbit review --agent`), and driven autonomously via the Ralph loop when a wide outcome prompt is given.
