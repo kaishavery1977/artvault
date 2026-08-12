@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -54,9 +56,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _finish() {
-    SettingsRepository.instance.setOnboarded();
+    // Mark done + hand off immediately; persistence is fire-and-forget and
+    // best-effort (worst case: onboarding plays again on the next launch).
     ref.read(onboardedProvider.notifier).state = true;
     context.go('/login');
+    unawaited(
+      SettingsRepository.instance.setOnboarded().catchError((_) {}),
+    );
   }
 
   @override
@@ -68,6 +74,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final reducedMotion = MediaQuery.disableAnimationsOf(context);
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -100,50 +107,47 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         // The emblem. On the first slide it opens cinematically
                         // — glow bloom, expanding ring, badge settle — echoing
                         // the splash's intro so the camera-push exit hands off
-                        // into it as one continuous shot.
+                        // into it as one continuous shot. Under reduced motion
+                        // everything renders statically.
                         _SlideIcon(
                           slide: slide,
                           scheme: scheme,
                           cinematic: first,
+                          animated: !reducedMotion,
                         ),
                         const SizedBox(height: AppSpacing.xxl),
                         // Title drifts up behind the emblem, then the body
                         // follows — the same cascade the splash uses.
-                        Text(
-                          slide.title,
-                          textAlign: TextAlign.center,
-                          style: AppTheme.display(context),
-                        )
-                            .animate(
-                              delay: first
-                                  ? const Duration(milliseconds: 450)
-                                  : Duration.zero,
-                            )
-                            .slideY(begin: first ? 0.22 : 0.0)
-                            .fadeIn(
-                              duration: 700.ms,
-                              curve: Curves.easeOutCubic,
-                            ),
+                        _Reveal(
+                          delay: first
+                              ? const Duration(milliseconds: 450)
+                              : Duration.zero,
+                          slideY: first ? 0.22 : 0.0,
+                          duration: 700.ms,
+                          child: Text(
+                            slide.title,
+                            textAlign: TextAlign.center,
+                            style: AppTheme.display(context),
+                          ),
+                        ),
                         const SizedBox(height: AppSpacing.md),
-                        Text(
-                          slide.body,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodyLarge
-                              ?.copyWith(
-                                height: 1.5,
-                                color: scheme.onSurface.withValues(alpha: 0.6),
-                              ),
-                        )
-                            .animate(
-                              delay: first
-                                  ? const Duration(milliseconds: 700)
-                                  : Duration.zero,
-                            )
-                            .slideY(begin: first ? 0.1 : 0.0)
-                            .fadeIn(
-                              duration: 750.ms,
-                              curve: Curves.easeOutCubic,
-                            ),
+                        _Reveal(
+                          delay: first
+                              ? const Duration(milliseconds: 700)
+                              : Duration.zero,
+                          slideY: first ? 0.1 : 0.0,
+                          duration: 750.ms,
+                          child: Text(
+                            slide.body,
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context).textTheme.bodyLarge
+                                ?.copyWith(
+                                  height: 1.5,
+                                  color: scheme.onSurface
+                                      .withValues(alpha: 0.6),
+                                ),
+                          ),
+                        ),
                       ],
                     ),
                   );
@@ -187,19 +191,47 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 }
 
+/// Applies the slide's cascade (drift up + fade) unless animations are
+/// disabled, in which case the child renders statically.
+class _Reveal extends StatelessWidget {
+  final Duration delay;
+  final double slideY;
+  final Duration duration;
+  final Widget child;
+
+  const _Reveal({
+    required this.delay,
+    required this.slideY,
+    required this.duration,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.disableAnimationsOf(context)) return child;
+    return child
+        .animate(delay: delay)
+        .slideY(begin: slideY)
+        .fadeIn(duration: duration, curve: Curves.easeOutCubic);
+  }
+}
+
 /// A slide's emblem. On the first slide it opens cinematically — a soft glow
 /// blooms, a thin ring expands like the splash's shockwave, then the badge
 /// settles in — so the splash's camera-push exit hands off into it seamlessly.
-/// Later slides just settle the badge in.
+/// Later slides just settle the badge in. With [animated] false (reduced
+/// motion) the badge renders statically.
 class _SlideIcon extends StatelessWidget {
   final ({IconData icon, String title, String body}) slide;
   final ColorScheme scheme;
   final bool cinematic;
+  final bool animated;
 
   const _SlideIcon({
     required this.slide,
     required this.scheme,
     required this.cinematic,
+    required this.animated,
   });
 
   @override
@@ -230,6 +262,8 @@ class _SlideIcon extends StatelessWidget {
         color: scheme.primary,
       ),
     );
+
+    if (!animated) return badge;
 
     if (!cinematic) {
       return badge
