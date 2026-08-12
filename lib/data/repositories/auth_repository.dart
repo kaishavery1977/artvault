@@ -33,7 +33,11 @@ class AuthRepository {
   }
 
   Future<void> _persistUser(AppUser user) async {
-    await LocalDatabase.instance.put(AppConstants.boxProfile, 'me', user.toJson());
+    await LocalDatabase.instance.put(
+      AppConstants.boxProfile,
+      'me',
+      user.toJson(),
+    );
     await LocalDatabase.instance.setSetting(AppConstants.kSessionUid, user.uid);
     CloudBackend.instance.setUser(user.uid, user.email);
   }
@@ -59,7 +63,11 @@ class AuthRepository {
 
   // ------------------------------------------------------------------ Auth --
 
-  Future<AppUser> signInWithEmail(String email, String password, {bool remember = false}) async {
+  Future<AppUser> signInWithEmail(
+    String email,
+    String password, {
+    bool remember = false,
+  }) async {
     final cloud = CloudBackend.instance;
     if (cloud.isReady) {
       final user = await cloud.signInWithEmail(email, password);
@@ -92,7 +100,9 @@ class AuthRepository {
         return profile;
       }
     }
-    throw AuthException('Registration is unavailable. Configure Firebase to enable accounts.');
+    throw AuthException(
+      'Registration is unavailable. Configure Firebase to enable accounts.',
+    );
   }
 
   Future<AppUser> signInWithGoogle() async {
@@ -172,6 +182,14 @@ class AuthRepository {
   Future<void> sendPasswordReset(String email) =>
       CloudBackend.instance.sendPasswordReset(email);
 
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) => CloudBackend.instance.changePassword(
+    currentPassword: currentPassword,
+    newPassword: newPassword,
+  );
+
   Future<AppUser> restoreSession() async {
     final cached = cachedUser;
     if (cached.uid.isEmpty) {
@@ -207,7 +225,9 @@ class AuthRepository {
       final profiles = await CloudBackend.instance.fetchAll('users');
       final match = profiles.where((m) => m['uid'] == uid).toList();
       if (match.isNotEmpty) {
-        return AppUser.fromJson(match.first).copyWith(lastLogin: DateTime.now());
+        return AppUser.fromJson(
+          match.first,
+        ).copyWith(lastLogin: DateTime.now());
       }
     } catch (_) {}
 
@@ -269,8 +289,9 @@ class AuthRepository {
 
   // -------------------------------------------------------------- Biometrics --
 
-  Future<bool> get biometricEnabled =>
-      Future.value(LocalDatabase.instance.getBool(AppConstants.kBiometricEnabled));
+  Future<bool> get biometricEnabled => Future.value(
+    LocalDatabase.instance.getBool(AppConstants.kBiometricEnabled),
+  );
 
   Future<void> setBiometricEnabled(bool enabled) async {
     // Check availability before persisting so a failed enable never leaves
@@ -278,14 +299,21 @@ class AuthRepository {
     if (enabled && !(await BiometricService.instance.isAvailable)) {
       throw AuthException('Biometrics are not available on this device.');
     }
-    await LocalDatabase.instance.setSetting(AppConstants.kBiometricEnabled, enabled);
+    await LocalDatabase.instance.setSetting(
+      AppConstants.kBiometricEnabled,
+      enabled,
+    );
   }
 
-  Future<bool> get faceLockEnabled =>
-      Future.value(LocalDatabase.instance.getBool(AppConstants.kFaceLockEnabled));
+  Future<bool> get faceLockEnabled => Future.value(
+    LocalDatabase.instance.getBool(AppConstants.kFaceLockEnabled),
+  );
 
   Future<void> setFaceLockEnabled(bool enabled) async {
-    await LocalDatabase.instance.setSetting(AppConstants.kFaceLockEnabled, enabled);
+    await LocalDatabase.instance.setSetting(
+      AppConstants.kFaceLockEnabled,
+      enabled,
+    );
     if (!enabled) {
       await clearFaceEmbedding();
     }
@@ -315,10 +343,7 @@ class AuthRepository {
       'saveFaceEmbedding dims=${clean.length} chars=${encoded.length} '
       'nonZero=${clean.where((v) => v.abs() > 1e-4).length}',
     );
-    await _secure.write(
-      key: AppConstants.kFaceEmbedding,
-      value: encoded,
-    );
+    await _secure.write(key: AppConstants.kFaceEmbedding, value: encoded);
     await FaceDebugLog.instance.log('saveFaceEmbedding write completed');
   }
 

@@ -409,17 +409,19 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                 _Row(
                   icon: Icons.lock_reset,
                   title: 'Change password',
-                  subtitle: 'Update your ArtVault sign-in password',
+                  subtitle: signedIn
+                      ? 'Set a new password right here, no email needed'
+                      : 'Update your ArtVault sign-in password',
+                  trailing: const Icon(Icons.chevron_right, size: 20),
+                  onTap: signedIn ? _changePasswordInApp : _notSignedIn,
+                ),
+                const Divider(height: 16),
+                _Row(
+                  icon: Icons.mark_email_read_outlined,
+                  title: 'Send reset email',
+                  subtitle: 'Get a reset link by email if you forgot it',
                   trailing: const Icon(Icons.chevron_right, size: 20),
                   onTap: () async {
-                    if (!signedIn) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Sign in to change your password'),
-                        ),
-                      );
-                      return;
-                    }
                     if (!CloudBackend.instance.isReady) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -441,7 +443,9 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                     if (ok) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Password reset email sent to $email'),
+                          content: Text(
+                            'Reset link sent to $email. Check spam/junk if it does not arrive in a few minutes.',
+                          ),
                         ),
                       );
                     } else {
@@ -471,6 +475,123 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
         ],
       ),
     );
+  }
+
+  void _notSignedIn() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Sign in to change your password')),
+    );
+  }
+
+  /// In-app password change for signed-in users — current + new password,
+  /// no reset email required. Re-authenticates with Firebase first so the
+  /// change can't be made by someone who borrowed the device.
+  Future<void> _changePasswordInApp() async {
+    final current = TextEditingController();
+    final next = TextEditingController();
+    final confirm = TextEditingController();
+    String? errorText;
+    try {
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (context) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: const Text('Change password'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Enter your current password, then choose a new one. '
+                  'No email is needed for signed-in users.',
+                  style: TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                TextField(
+                  controller: current,
+                  autofocus: true,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Current password',
+                    errorText: errorText,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                TextField(
+                  controller: next,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'New password'),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                TextField(
+                  controller: confirm,
+                  obscureText: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Confirm new password',
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  if (current.text.isEmpty ||
+                      next.text.isEmpty ||
+                      confirm.text.isEmpty) {
+                    setDialogState(() {
+                      errorText = 'Fill in all three fields';
+                    });
+                    return;
+                  }
+                  if (next.text.length < 6) {
+                    setDialogState(() {
+                      errorText = 'New password must be at least 6 characters';
+                    });
+                    return;
+                  }
+                  if (next.text != confirm.text) {
+                    setDialogState(() {
+                      errorText = 'New passwords do not match';
+                    });
+                    return;
+                  }
+                  setDialogState(() => errorText = null);
+                  try {
+                    await AuthRepository.instance.changePassword(
+                      currentPassword: current.text,
+                      newPassword: next.text,
+                    );
+                    if (context.mounted) {
+                      Navigator.pop(context, true);
+                    }
+                  } catch (e) {
+                    setDialogState(() {
+                      errorText = e
+                          .toString()
+                          .replaceFirst('Exception: ', '')
+                          .replaceFirst('firebase_auth/', '');
+                    });
+                  }
+                },
+                child: const Text('Update password'),
+              ),
+            ],
+          ),
+        ),
+      );
+      if (result == true && mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Password changed')));
+      }
+    } finally {
+      current.dispose();
+      next.dispose();
+      confirm.dispose();
+    }
   }
 
   Future<String?> _showResetDialog([String initial = '']) async {

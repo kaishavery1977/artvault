@@ -77,7 +77,9 @@ class CloudBackend {
     try {
       googleUser = await GoogleSignIn.instance.authenticate();
     } on GoogleSignInException catch (e) {
-      debugPrint('GoogleSignInException: ${e.code} — ${e.description} — ${e.details}');
+      debugPrint(
+        'GoogleSignInException: ${e.code} — ${e.description} — ${e.details}',
+      );
       if (e.code == GoogleSignInExceptionCode.canceled) {
         // User backed out of the account picker — not an error.
         return null;
@@ -97,17 +99,54 @@ class CloudBackend {
     required String? rawNonce,
   }) async {
     if (!_ready) return null;
-    final oauth = OAuthProvider('apple.com').credential(
-      idToken: idToken,
-      rawNonce: rawNonce,
-    );
+    final oauth = OAuthProvider(
+      'apple.com',
+    ).credential(idToken: idToken, rawNonce: rawNonce);
     final cred = await FirebaseAuth.instance.signInWithCredential(oauth);
     return cred.user;
   }
 
   Future<void> sendPasswordReset(String email) async {
-    if (!_ready) return;
+    if (!_ready) {
+      throw Exception(
+        'Cloud is not connected. Sign in with an email account to reset your password.',
+      );
+    }
+    // NOTE: with email-enumeration protection enabled (the default for
+    // projects created after Sep 2023), Firebase intentionally returns
+    // success for unknown addresses without sending anything, and
+    // fetchSignInMethodsForEmail returns an empty list even for existing
+    // users — so an existence pre-check is impossible client-side. We
+    // therefore ask Firebase to send and let the user verify delivery;
+    // the surrounding UI tells them to check spam/junk if nothing arrives.
     await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+  }
+
+  /// Changes the signed-in user's password in-app (no email needed) after
+  /// re-authenticating with the current password. Throws when the account
+  /// has no password (e.g. Google-only) or the current password is wrong.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    if (!_ready) {
+      throw Exception(
+        'Cloud is not connected. Sign in with an email account to change your password.',
+      );
+    }
+    final user = FirebaseAuth.instance.currentUser;
+    final email = user?.email;
+    if (user == null || email == null || email.isEmpty) {
+      throw Exception('You must be signed in to change your password.');
+    }
+    final credential = EmailAuthProvider.credential(
+      email: email,
+      password: currentPassword,
+    );
+    // Re-authentication is required before updating the password; this also
+    // fails with a clear error when the account has no password set.
+    await user.reauthenticateWithCredential(credential);
+    await user.updatePassword(newPassword);
   }
 
   Future<void> signOut() async {
@@ -120,7 +159,11 @@ class CloudBackend {
 
   // -------------------------------------------------------------- Firestore --
 
-  Future<void> upsert(String collection, String id, Map<String, dynamic> data) async {
+  Future<void> upsert(
+    String collection,
+    String id,
+    Map<String, dynamic> data,
+  ) async {
     if (!_ready) return;
     await FirebaseFirestore.instance
         .collection(collection)
@@ -141,8 +184,9 @@ class CloudBackend {
     String? owner,
   }) async {
     if (!_ready) return const [];
-    Query<Map<String, dynamic>> q =
-        FirebaseFirestore.instance.collection(collection);
+    Query<Map<String, dynamic>> q = FirebaseFirestore.instance.collection(
+      collection,
+    );
     if (owner != null && owner.isNotEmpty) {
       q = q.where('ownerUid', isEqualTo: owner);
     }
@@ -162,22 +206,24 @@ class CloudBackend {
 
   Stream<List<Map<String, dynamic>>> watchCollection(String collection) {
     if (!_ready) return const Stream.empty();
-    return FirebaseFirestore.instance.collection(collection).snapshots().map(
-          (snap) => snap.docs.map((d) => d.data()).toList(),
-        );
+    return FirebaseFirestore.instance
+        .collection(collection)
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => d.data()).toList());
   }
 
   /// Live list of every registered user's profile (`users/{uid}`).
-  Stream<List<Map<String, dynamic>>> watchUsers() =>
-      watchCollection('users');
+  Stream<List<Map<String, dynamic>>> watchUsers() => watchCollection('users');
 
-  Future<List<Map<String, dynamic>>> fetchUsers() async =>
-      fetchAll('users');
+  Future<List<Map<String, dynamic>>> fetchUsers() async => fetchAll('users');
 
   // --------------------------------------------------------------- Storage --
 
-  Future<String?> uploadBytes(String path, Uint8List bytes,
-      {String? contentType}) async {
+  Future<String?> uploadBytes(
+    String path,
+    Uint8List bytes, {
+    String? contentType,
+  }) async {
     if (!_ready) return null;
     final ref = FirebaseStorage.instance.ref(path);
     await ref.putData(
