@@ -76,25 +76,15 @@ class AuthLayout extends StatelessWidget {
                           borderRadius: BorderRadius.circular(
                             AppSpacing.radiusXl,
                           ),
-                          border: Border(
-                            top: BorderSide(
-                              color: Colors.white.withValues(
-                                alpha: isDark ? 0.20 : 0.65,
-                              ),
-                              width: 0.8,
+                          // Uniform sides: Flutter refuses to paint a
+                          // borderRadius on a Border whose sides have
+                          // different colors (asserts at paint time). The
+                          // single glass-edge color keeps the frosted look.
+                          border: Border.all(
+                            color: Colors.white.withValues(
+                              alpha: isDark ? 0.20 : 0.65,
                             ),
-                            left: BorderSide(
-                              color: scheme.onSurface.withValues(alpha: 0.06),
-                              width: 0.5,
-                            ),
-                            right: BorderSide(
-                              color: scheme.onSurface.withValues(alpha: 0.06),
-                              width: 0.5,
-                            ),
-                            bottom: BorderSide(
-                              color: scheme.onSurface.withValues(alpha: 0.10),
-                              width: 0.5,
-                            ),
+                            width: 0.8,
                           ),
                           boxShadow: [
                             BoxShadow(
