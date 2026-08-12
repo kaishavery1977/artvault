@@ -280,15 +280,18 @@ class DeviceStorage {
 
 /// Reads the phone's total and free disk space so the UI can show how much
 /// storage remains on the device, not just what the vault itself uses.
+///
+/// `disk_space_2` returns values in mebibytes (2^20 bytes) on Android and
+/// iOS, so convert to bytes with 1024*1024 — not 1024^3.
 final deviceStorageProvider = FutureProvider<DeviceStorage?>((ref) async {
   try {
-    final freeGb = await DiskSpace.getFreeDiskSpace;
-    final totalGb = await DiskSpace.getTotalDiskSpace;
-    if (freeGb == null || totalGb == null) return null;
-    const gb = 1024 * 1024 * 1024;
+    final freeMiB = await DiskSpace.getFreeDiskSpace;
+    final totalMiB = await DiskSpace.getTotalDiskSpace;
+    if (freeMiB == null || totalMiB == null) return null;
+    const mib = 1024 * 1024;
     return DeviceStorage(
-      freeBytes: (freeGb * gb).round(),
-      totalBytes: (totalGb * gb).round(),
+      freeBytes: (freeMiB * mib).round(),
+      totalBytes: (totalMiB * mib).round(),
     );
   } catch (_) {
     return null; // graceful fallback: card shows vault-only usage as before
