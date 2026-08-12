@@ -72,9 +72,10 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete painting?'),
+        title: const Text('Move to trash?'),
         content: Text(
-          '“${painting.title}” will be removed from your vault. This cannot be undone.',
+          '“${painting.title}” will be moved to Trash. You can restore it '
+          'anytime from Settings → Recently deleted.',
         ),
         actions: [
           TextButton(
@@ -84,14 +85,28 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: const Text('Move to trash'),
           ),
         ],
       ),
     );
     if (confirmed == true && mounted) {
-      await PaintingRepository.instance.delete(painting.id);
-      if (mounted) context.pop();
+      final id = painting.id;
+      final title = painting.title;
+      await PaintingRepository.instance.delete(id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('“$title” moved to trash'),
+            action: SnackBarAction(
+              label: 'Undo',
+              onPressed: () => PaintingRepository.instance.restore(id),
+            ),
+          ),
+        );
+      context.pop();
     }
   }
 

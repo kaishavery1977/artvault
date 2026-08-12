@@ -10,6 +10,7 @@ import '../../core/widgets/bits.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/app_user.dart';
+import '../../data/models/painting.dart';
 import '../../data/repositories/settings_repository.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -144,6 +145,12 @@ class SettingsScreen extends ConsumerWidget {
                 onTap: () => context.push('/storage'),
               ),
               _SettingTile(
+                icon: Icons.delete_outline,
+                title: 'Recently deleted',
+                subtitle: _trashSubtitle(ref),
+                onTap: () => context.push('/trash'),
+              ),
+              _SettingTile(
                 icon: Icons.info_outline,
                 title: 'About ArtVault',
                 onTap: () => context.push('/about'),
@@ -202,6 +209,17 @@ class SettingsScreen extends ConsumerWidget {
     ('zh', '中文'),
     ('ja', '日本語'),
   ];
+
+  static String _trashSubtitle(WidgetRef ref) {
+    final paintings =
+        ref.watch(paintingsProvider).valueOrNull ?? const <Painting>[];
+    final count = paintings.where((p) => p.isDeleted).length;
+    return switch (count) {
+      0 => 'Nothing in trash',
+      1 => '1 artwork — restore or remove',
+      _ => '$count artworks — restore or remove',
+    };
+  }
 
   static String _languageName(String code) {
     for (final entry in _languages) {

@@ -17,6 +17,7 @@ import '../../features/gallery/search_screen.dart';
 import '../../features/painting/painting_detail_screen.dart';
 import '../../features/painting/painting_form_screen.dart';
 import '../../features/painting/painting_lightbox_screen.dart';
+import '../../features/painting/trash_screen.dart';
 import '../../features/artists/artists_screen.dart';
 import '../../features/artists/artist_detail_screen.dart';
 import '../../features/artists/artist_form_screen.dart';
@@ -218,6 +219,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           );
         },
+      ),
+      GoRoute(
+        path: '/trash',
+        pageBuilder: (_, _) => _page(const TrashScreen()),
       ),
       GoRoute(
         path: '/artist/new',

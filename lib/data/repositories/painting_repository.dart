@@ -43,6 +43,12 @@ class PaintingRepository {
   List<Painting> readActive() =>
       readAll().where((p) => !p.isDeleted).toList();
 
+  /// Paintings currently in the trash (soft-deleted, restorable).
+  List<Painting> readTrash() =>
+      readAll().where((p) => p.isDeleted).toList();
+
+  int countTrash() => readTrash().length;
+
   Painting? get(String id) {
     final raw = _db.getById(AppConstants.boxPaintings, id);
     return raw == null ? null : Painting.fromJson(raw);
@@ -106,21 +112,37 @@ class PaintingRepository {
   Future<void> delete(String id) async {
     final painting = get(id);
     if (painting == null) return;
-    // Soft-delete locally so background sync can remove the remote copy too.
+    // Soft-delete: the record (and its photos) move to Trash so the painting
+    // can be restored. Nothing is permanently removed until purge().
     await _db.put(
       AppConstants.boxPaintings,
       id,
       painting.copyWith(isDeleted: true, needsSync: true).toJson(),
     );
     unawaited(_syncPainting(painting.copyWith(isDeleted: true, needsSync: true)));
-    // Clean up local files.
+    await NotificationService.instance.notify(
+      'Painting moved to trash',
+      '${painting.title} can be restored anytime.',
+      type: 'system',
+    );
+    BackupService.instance.scheduleAutoBackup();
+  }
+
+  /// Permanently removes a painting — record, local photos and cloud copy.
+  /// This cannot be undone.
+  Future<void> purge(String id) async {
+    final painting = get(id);
+    if (painting == null) return;
+    // Remove local photo files, then the record.
     final storage = FileStorageService.instance;
     for (final image in painting.images) {
       await storage.deleteFile(image);
     }
+    await _db.delete(AppConstants.boxPaintings, id);
+    unawaited(_removeRemote(painting));
     await NotificationService.instance.notify(
-      'Painting removed',
-      '${painting.title} was deleted from your vault.',
+      'Painting deleted',
+      '${painting.title} was permanently removed.',
       type: 'system',
     );
     BackupService.instance.scheduleAutoBackup();
@@ -135,6 +157,17 @@ class PaintingRepository {
       painting.copyWith(isDeleted: false, needsSync: true).toJson(),
     );
     BackupService.instance.scheduleAutoBackup();
+  }
+
+  /// Removes the cloud copy without touching the local record (used by purge).
+  Future<void> _removeRemote(Painting painting) async {
+    final cloud = CloudBackend.instance;
+    if (!cloud.isReady || cloud.currentUid.isEmpty) return;
+    try {
+      await cloud.remove(_collection, painting.id);
+    } catch (_) {
+      // Network failure — the remote doc will be cleaned up on the next sync.
+    }
   }
 
   Future<void> toggleFavorite(String id) async {
@@ -208,7 +241,13 @@ class PaintingRepository {
       }
       if (working.isDeleted) {
         await cloud.remove(_collection, working.id);
-        await _db.delete(AppConstants.boxPaintings, working.id);
+        // Keep the local record in Trash (isDeleted) so it can be restored;
+        // the cloud copy stays removed until the item is purged.
+        await _db.put(
+          AppConstants.boxPaintings,
+          working.id,
+          working.copyWith(needsSync: false, synced: true).toJson(),
+        );
         return;
       }
       await cloud.upsert(_collection, working.id, working.toJson());
