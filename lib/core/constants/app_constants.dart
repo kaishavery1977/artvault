@@ -40,44 +40,118 @@ abstract final class AppConstants {
 
   // Categories & mediums & styles vocabulary (used for filters + AI tagging)
   static const List<String> categories = [
-    'Abstract', 'Landscape', 'Portrait', 'Still Life', 'Figurative',
-    'Modern', 'Contemporary', 'Impressionist', 'Expressionist', 'Surreal',
-    'Minimalist', 'Religious', 'Mythological', 'Architecture', 'Floral',
-    'Marine', 'Wildlife', 'Urban', 'Calligraphy', 'Other',
+    'Abstract',
+    'Landscape',
+    'Portrait',
+    'Still Life',
+    'Figurative',
+    'Modern',
+    'Contemporary',
+    'Impressionist',
+    'Expressionist',
+    'Surreal',
+    'Minimalist',
+    'Religious',
+    'Mythological',
+    'Architecture',
+    'Floral',
+    'Marine',
+    'Wildlife',
+    'Urban',
+    'Calligraphy',
+    'Other',
   ];
 
   static const List<String> mediums = [
-    'Oil on Canvas', 'Acrylic on Canvas', 'Watercolor', 'Gouache',
-    'Pastel', 'Ink', 'Charcoal', 'Graphite', 'Mixed Media',
-    'Oil on Board', 'Tempera', 'Fresco', 'Encaustic', 'Photography',
-    'Digital Art', 'Print', 'Sculpture', 'Textile', 'Other',
+    'Oil on Canvas',
+    'Acrylic on Canvas',
+    'Watercolor',
+    'Gouache',
+    'Pastel',
+    'Ink',
+    'Charcoal',
+    'Graphite',
+    'Mixed Media',
+    'Oil on Board',
+    'Tempera',
+    'Fresco',
+    'Encaustic',
+    'Photography',
+    'Digital Art',
+    'Print',
+    'Sculpture',
+    'Textile',
+    'Other',
   ];
 
   static const List<String> styles = [
-    'Realism', 'Impressionism', 'Expressionism', 'Cubism', 'Surrealism',
-    'Abstract', 'Minimalism', 'Pop Art', 'Baroque', 'Rococo',
-    'Romanticism', 'Renaissance', 'Modernism', 'Contemporary', 'Naïve',
-    'Post-Impressionism', 'Art Deco', 'Art Nouveau', 'Fauvism', 'Other',
+    'Realism',
+    'Impressionism',
+    'Expressionism',
+    'Cubism',
+    'Surrealism',
+    'Abstract',
+    'Minimalism',
+    'Pop Art',
+    'Baroque',
+    'Rococo',
+    'Romanticism',
+    'Renaissance',
+    'Modernism',
+    'Contemporary',
+    'Naïve',
+    'Post-Impressionism',
+    'Art Deco',
+    'Art Nouveau',
+    'Fauvism',
+    'Other',
   ];
 
   static const List<String> documentTypes = [
-    'Certificate', 'Invoice', 'Ownership', 'Insurance',
-    'Biography', 'Restoration Report', 'Appraisal', 'Other',
+    'Certificate',
+    'Invoice',
+    'Ownership',
+    'Insurance',
+    'Biography',
+    'Restoration Report',
+    'Appraisal',
+    'Other',
   ];
 
   static const List<String> currencies = [
-    'USD', 'EUR', 'GBP', 'INR', 'AED', 'CAD', 'AUD', 'JPY', 'CHF', 'SGD',
+    'USD',
+    'EUR',
+    'GBP',
+    'INR',
+    'AED',
+    'CAD',
+    'AUD',
+    'JPY',
+    'CHF',
+    'SGD',
   ];
 
   static const List<String> dimensionUnits = ['cm', 'in'];
 
   static const List<String> availabilityOptions = [
-    'Available', 'Sold', 'On Loan', 'In Storage', 'Restoration', 'Not For Sale',
+    'Available',
+    'Sold',
+    'On Loan',
+    'In Storage',
+    'Restoration',
+    'Not For Sale',
   ];
 
   /// Deep-link scheme used by generated QR codes:
   /// `artvault://artwork/{id}`.
   static const String deepLinkScheme = 'artvault';
+
+  /// HTTPS endpoint of the `sendPasswordReset` Cloud Function. It generates
+  /// the official Firebase reset link and delivers it through the project's
+  /// own SMTP sender (lands in the inbox, not spam). Falls back to Firebase's
+  /// built-in sender when the function isn't deployed yet.
+  static const String resetBackendUrl =
+      'https://us-central1-artvault-d69d0.cloudfunctions.net/sendPasswordReset';
 
   /// Similarity threshold (0..1) above which an uploaded artwork is flagged
   /// as a likely duplicate of an existing one.

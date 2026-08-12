@@ -1,6 +1,9 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:http/http.dart' as http;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,6 +13,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../../core/constants/app_constants.dart';
 import '../../firebase_options.dart';
 
 /// Centralised gateway to all Firebase services.
@@ -112,6 +116,14 @@ class CloudBackend {
         'Cloud is not connected. Sign in with an email account to reset your password.',
       );
     }
+    // Prefer the backend-mediated sender: a Cloud Function generates the
+    // official Firebase reset link and delivers it through the project's own
+    // SMTP (so it lands in the inbox instead of spam). It can also tell us
+    // honestly whether the account exists (the client can't — Firebase's
+    // email-enumeration protection masks it). Falls back to Firebase's
+    // built-in sender only when the function isn't deployed/reachable.
+    final backendHandled = await _sendPasswordResetViaBackend(email);
+    if (backendHandled) return;
     // NOTE: with email-enumeration protection enabled (the default for
     // projects created after Sep 2023), Firebase intentionally returns
     // success for unknown addresses without sending anything, and
@@ -120,6 +132,47 @@ class CloudBackend {
     // therefore ask Firebase to send and let the user verify delivery;
     // the surrounding UI tells them to check spam/junk if nothing arrives.
     await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+  }
+
+  /// Calls the `sendPasswordReset` Cloud Function.
+  ///
+  /// Returns `true` when the backend answered (success OR an authoritative
+  /// error that should be surfaced to the user), and `false` when it is
+  /// unreachable (function not deployed, network down) so the caller can fall
+  /// back to Firebase's built-in sender.
+  Future<bool> _sendPasswordResetViaBackend(String email) async {
+    try {
+      final resp = await http
+          .post(
+            Uri.parse(AppConstants.resetBackendUrl),
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({'email': email}),
+          )
+          .timeout(const Duration(seconds: 20));
+      // Cloud Functions answers with JSON {ok, error}. Anything else (e.g. an
+      // HTML 404 from the platform) means the function isn't deployed yet.
+      final decoded = _tryDecodeJson(resp.body);
+      if (decoded == null) return false;
+      if (resp.statusCode == 200 && decoded['ok'] == true) return true;
+      throw Exception(
+        (decoded['error'] as String?) ??
+            'Could not send the reset email. Please try again.',
+      );
+    } on TimeoutException {
+      return false;
+    } on http.ClientException {
+      // DNS / connection failure — the function isn't reachable.
+      return false;
+    }
+  }
+
+  static Map<String, dynamic>? _tryDecodeJson(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } catch (_) {
+      return null;
+    }
   }
 
   /// Changes the signed-in user's password in-app (no email needed) after
