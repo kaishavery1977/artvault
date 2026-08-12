@@ -7,7 +7,8 @@
 1.4 ✅ Pacing stretch (~1.5×)
 1.5 ⬜ CodeRabbit review of 1.1–1.4 + Phase 1.6, fix findings
 1.6 ✅ Repeat-launch quick intro + reduced-motion splash (committed `23494f4` `d3f3fed` `85857a4`)
-1.7 ⬜ Gate the onboarding reveal on reduced motion too
+1.7 ✅ Onboarding reveal gated on reduced motion (committed `1dfb0d0` on `feat/onboarding-polish`, PR #1)
+1.8 ⬜ Land PR #1 after CodeRabbit review (squash merge)
 
 ## Phase 2: Auth & Onboarding Completion
 - Finish auth flows (sign-in paths beyond staggered fields)
