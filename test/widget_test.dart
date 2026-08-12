@@ -1,7 +1,9 @@
-// Basic Flutter widget test: verifies the app boots to the branded splash
-// screen. The app is a Riverpod ConsumerWidget, so it must be pumped inside
-// a ProviderScope. The real providers that read local storage (Hive) or
-// Firebase are overridden so the test runs without a device or emulator.
+// Widget tests for the branded boot sequence: full cinematic splash on first
+// launch, quick intro on repeat launches, and a static render when the system
+// requests reduced motion. The app is a Riverpod ConsumerWidget, so it must be
+// pumped inside a ProviderScope. The real providers that read local storage
+// (Hive) or Firebase are overridden so the test runs without a device or
+// emulator.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,17 +23,23 @@ class _FakeAuthController extends AuthController {
   }
 }
 
+/// Shared provider overrides: storage-backed providers are pinned to fixed
+/// values so no Hive/Firebase access happens during the test.
+List<Override> _overrides({required bool introShown}) => [
+      themeModeProvider.overrideWith((ref) => ThemeMode.system),
+      localeProvider.overrideWith((ref) => 'en'),
+      onboardedProvider.overrideWith((ref) => false),
+      splashIntroShownProvider.overrideWith((ref) => introShown),
+      cloudReadyProvider.overrideWith((ref) => false),
+      authProvider.overrideWith((ref) => _FakeAuthController()),
+    ];
+
 void main() {
-  testWidgets('App boots to splash', (WidgetTester tester) async {
+  testWidgets('App boots to the full splash on first launch',
+      (WidgetTester tester) async {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          themeModeProvider.overrideWith((ref) => ThemeMode.system),
-          localeProvider.overrideWith((ref) => 'en'),
-          onboardedProvider.overrideWith((ref) => false),
-          cloudReadyProvider.overrideWith((ref) => false),
-          authProvider.overrideWith((ref) => _FakeAuthController()),
-        ],
+        overrides: _overrides(introShown: false),
         child: const ArtVaultApp(),
       ),
     );
@@ -51,5 +59,59 @@ void main() {
     await tester.pump(const Duration(milliseconds: 2400));
     await tester.pump(const Duration(milliseconds: 1600));
     await tester.pump(const Duration(milliseconds: 900));
+
+    // The full intro hands off into onboarding.
+    expect(find.text('Curate Your Collection'), findsOneWidget);
+  });
+
+  testWidgets('Repeat launches get the quick intro', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: _overrides(introShown: true),
+        child: const ArtVaultApp(),
+      ),
+    );
+    await tester.pump();
+
+    // Quick variant: logo + wordmark fade (500ms), letters fade close
+    // together — the cinematic extras (tagline, dot loader) are absent.
+    expect(find.text('Your Private Gallery'), findsNothing);
+
+    // Quick intro (700ms) + short exit hold (280ms) + route transition
+    // (280ms), then drain the onboarding mount timers.
+    await tester.pump(const Duration(milliseconds: 750));
+    await tester.pump(const Duration(milliseconds: 1200));
+    await tester.pump(const Duration(milliseconds: 900));
+
+    expect(find.text('Curate Your Collection'), findsOneWidget);
+  });
+
+  testWidgets('Reduced motion shows a static splash and skips the exit',
+      (WidgetTester tester) async {
+    tester.binding.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(
+      tester.binding.platformDispatcher.clearAccessibilityFeaturesTestValue,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: _overrides(introShown: false),
+        child: const ArtVaultApp(),
+      ),
+    );
+    await tester.pump();
+
+    // Static wordmark (single Text, no letter stagger) and no tagline.
+    expect(find.text('ArtVault'), findsOneWidget);
+    expect(find.text('Your Private Gallery'), findsNothing);
+
+    // 350ms static hold, direct hand-off (no exit), route transition,
+    // then drain the onboarding mount timers.
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 900));
+
+    expect(find.text('Curate Your Collection'), findsOneWidget);
   });
 }
