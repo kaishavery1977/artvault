@@ -10,6 +10,7 @@ import '../auth/face_scan_screen.dart';
 import '../../core/providers/providers.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/settings_repository.dart';
+import '../../data/remote/cloud_backend.dart';
 
 class SecurityScreen extends ConsumerStatefulWidget {
   const SecurityScreen({super.key});
@@ -95,12 +96,16 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
       if (!mounted) return;
       if (saved == null || saved.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not save your face. Please try again.')),
+          const SnackBar(
+            content: Text('Could not save your face. Please try again.'),
+          ),
         );
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Face lock set up. Only your face can unlock.')),
+        const SnackBar(
+          content: Text('Face lock set up. Only your face can unlock.'),
+        ),
       );
     }
     await AuthRepository.instance.setFaceLockEnabled(value);
@@ -129,9 +134,9 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
     if (pin == null) return;
     await AuthRepository.instance.setPasscode(pin);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passcode updated')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Passcode updated')));
     }
   }
 
@@ -228,7 +233,9 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
           ),
           FilledButton(
             onPressed: () async {
-              final valid = await AuthRepository.instance.verifyPasscode(pin.text);
+              final valid = await AuthRepository.instance.verifyPasscode(
+                pin.text,
+              );
               if (context.mounted) Navigator.pop(context, valid);
             },
             child: const Text('Verify'),
@@ -245,7 +252,9 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('No unlock method available on this device. Set a passcode first.'),
+            content: Text(
+              'No unlock method available on this device. Set a passcode first.',
+            ),
           ),
         );
       }
@@ -272,7 +281,13 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('App lock', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                Text(
+                  'App lock',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                  ),
+                ),
                 const SizedBox(height: AppSpacing.sm),
                 _Row(
                   icon: Icons.lock_outline,
@@ -284,10 +299,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Switch(
-                          value: _appLock,
-                          onChanged: _toggleAppLock,
-                        ),
+                      : Switch(value: _appLock, onChanged: _toggleAppLock),
                 ),
                 const Divider(height: 16),
                 _Row(
@@ -309,13 +321,13 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                   onTap: _faceAvailable
                       ? null
                       : () => ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Face Unlock is not set up on this device. '
-                                'Enable Face Unlock in your phone settings first.',
-                              ),
+                          const SnackBar(
+                            content: Text(
+                              'Face Unlock is not set up on this device. '
+                              'Enable Face Unlock in your phone settings first.',
                             ),
                           ),
+                        ),
                 ),
                 const Divider(height: 16),
                 _Row(
@@ -332,18 +344,20 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                         )
                       : Switch(
                           value: _biometric,
-                          onChanged: _fingerprintAvailable ? _toggleBiometric : null,
+                          onChanged: _fingerprintAvailable
+                              ? _toggleBiometric
+                              : null,
                         ),
                   onTap: _fingerprintAvailable
                       ? null
                       : () => ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'No fingerprint is set up on this device. '
-                                'Add one in your phone settings first.',
-                              ),
+                          const SnackBar(
+                            content: Text(
+                              'No fingerprint is set up on this device. '
+                              'Add one in your phone settings first.',
                             ),
                           ),
+                        ),
                 ),
                 const Divider(height: 16),
                 _Row(
@@ -358,18 +372,21 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Switch(
-                          value: _passcodeSet,
-                          onChanged: _togglePasscode,
-                        ),
+                      : Switch(value: _passcodeSet, onChanged: _togglePasscode),
                   onTap: _passcodeSet ? _changePasscode : null,
                 ),
-                if (_available || _faceAvailable || _fingerprintAvailable || _passcodeSet)
+                if (_available ||
+                    _faceAvailable ||
+                    _fingerprintAvailable ||
+                    _passcodeSet)
                   Padding(
                     padding: const EdgeInsets.only(top: AppSpacing.sm),
                     child: Text(
                       'Fingerprint uses the device sensor; Face lock scans with the front camera when the phone does not expose Face Unlock to apps.',
-                      style: TextStyle(fontSize: 12, color: scheme.onSurface.withValues(alpha: 0.5)),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: scheme.onSurface.withValues(alpha: 0.5),
+                      ),
                     ),
                   ),
               ],
@@ -381,7 +398,13 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Account', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                Text(
+                  'Account',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                  ),
+                ),
                 const SizedBox(height: AppSpacing.sm),
                 _Row(
                   icon: Icons.lock_reset,
@@ -391,18 +414,45 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                   onTap: () async {
                     if (!signedIn) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Sign in to change your password')),
+                        const SnackBar(
+                          content: Text('Sign in to change your password'),
+                        ),
                       );
                       return;
                     }
-                    final ok = await _showResetDialog();
+                    if (!CloudBackend.instance.isReady) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Cloud is not connected. Sign in with an email account to reset your password.',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+                    final email = await _showResetDialog(
+                      auth.user?.email ?? '',
+                    );
+                    if (email == null || email.isEmpty) return;
+                    final ok = await ref
+                        .read(authProvider.notifier)
+                        .forgotPassword(email);
+                    if (!context.mounted) return;
                     if (ok) {
-                      await ref.read(authProvider.notifier).forgotPassword(auth.user!.email);
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Password reset email sent')),
-                        );
-                      }
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Password reset email sent to $email'),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            auth.error ??
+                                'Could not send the reset email. Check the address and try again.',
+                          ),
+                        ),
+                      );
                     }
                   },
                 ),
@@ -413,16 +463,19 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
           Text(
             'Your data is stored locally on this device and encrypted with the platform keychain. '
             'When cloud sync is enabled, your vault is protected with Firebase Authentication.',
-            style: TextStyle(fontSize: 12, color: scheme.onSurface.withValues(alpha: 0.5)),
+            style: TextStyle(
+              fontSize: 12,
+              color: scheme.onSurface.withValues(alpha: 0.5),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Future<bool> _showResetDialog() async {
-    final controller = TextEditingController();
-    final ok = await showDialog<bool>(
+  Future<String?> _showResetDialog([String initial = '']) async {
+    final controller = TextEditingController(text: initial);
+    final email = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Reset password'),
@@ -432,16 +485,19 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
           decoration: const InputDecoration(labelText: 'Email'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.isNotEmpty),
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
             child: const Text('Send reset link'),
           ),
         ],
       ),
     );
     controller.dispose();
-    return ok ?? false;
+    return email;
   }
 }
 

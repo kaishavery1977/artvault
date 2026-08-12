@@ -94,10 +94,18 @@ class AuthController extends StateNotifier<AuthState> {
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 
-  Future<bool> signInWithEmail(String email, String password, {bool remember = false}) async {
+  Future<bool> signInWithEmail(
+    String email,
+    String password, {
+    bool remember = false,
+  }) async {
     state = state.copyWith(busy: true, clearError: true);
     try {
-      final user = await _repo.signInWithEmail(email, password, remember: remember);
+      final user = await _repo.signInWithEmail(
+        email,
+        password,
+        remember: remember,
+      );
       state = AuthState(status: AuthStatus.authenticated, user: user);
       return true;
     } catch (e) {
@@ -149,7 +157,15 @@ class AuthController extends StateNotifier<AuthState> {
       state = state.copyWith(busy: false);
       return true;
     } catch (e) {
-      state = state.copyWith(busy: false, error: _message(e));
+      // Keep the real reason (unknown account, wrong address, network…) —
+      // "Sign-in failed" would be misleading for a reset request.
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      state = state.copyWith(
+        busy: false,
+        error: msg.isEmpty
+            ? 'Could not send the reset email. Check the address and try again.'
+            : msg,
+      );
       return false;
     }
   }
@@ -216,9 +232,13 @@ final usersProvider = StreamProvider<List<AppUser>>((ref) async* {
   final cloud = CloudBackend.instance;
   if (cloud.isReady) {
     yield* cloud.watchUsers().map(
-          (list) => list.map(AppUser.fromJson).toList()
-            ..sort((a, b) => a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase())),
-        );
+      (list) => list.map(AppUser.fromJson).toList()
+        ..sort(
+          (a, b) => a.displayName.toLowerCase().compareTo(
+            b.displayName.toLowerCase(),
+          ),
+        ),
+    );
   } else {
     yield [AuthRepository.instance.cachedUser];
   }
@@ -230,11 +250,7 @@ class StorageUsage {
   final int documents;
   final int exports;
 
-  const StorageUsage({
-    this.images = 0,
-    this.documents = 0,
-    this.exports = 0,
-  });
+  const StorageUsage({this.images = 0, this.documents = 0, this.exports = 0});
 
   int get total => images + documents + exports;
 }
@@ -258,10 +274,12 @@ final paintingByIdProvider = Provider.family<Painting?, String>((ref, id) {
 });
 
 /// Documents attached to one painting.
-final documentsForPaintingProvider = Provider.family<List<ArtDocument>, String>((ref, id) {
-  final docs = ref.watch(documentsProvider).valueOrNull ?? const [];
-  return docs.where((d) => d.paintingId == id && !d.isDeleted).toList();
-});
+final documentsForPaintingProvider = Provider.family<List<ArtDocument>, String>(
+  (ref, id) {
+    final docs = ref.watch(documentsProvider).valueOrNull ?? const [];
+    return docs.where((d) => d.paintingId == id && !d.isDeleted).toList();
+  },
+);
 
 /// Live computed stats for the dashboard.
 class VaultStats {
@@ -288,16 +306,14 @@ final vaultStatsProvider = Provider<VaultStats>((ref) {
   final documents = ref.watch(documentsProvider).valueOrNull ?? const [];
 
   final active = paintings.where((p) => !p.isDeleted).toList();
-  final value = active.fold<double>(
-    0,
-    (sum, p) => sum + (p.price ?? 0),
-  );
+  final value = active.fold<double>(0, (sum, p) => sum + (p.price ?? 0));
   return VaultStats(
     paintings: active.length,
     artists: artists.where((a) => !a.isDeleted).length,
     documents: documents.where((d) => !d.isDeleted).length,
     collectionValue: value,
-    storageBytes: (ref.watch(storageUsageProvider).valueOrNull?.total ?? 0).toDouble(),
+    storageBytes: (ref.watch(storageUsageProvider).valueOrNull?.total ?? 0)
+        .toDouble(),
     favorites: active.where((p) => p.isFavorite).length,
   );
 });

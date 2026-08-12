@@ -113,9 +113,9 @@ class SettingsScreen extends ConsumerWidget {
             title: 'Security',
             children: [
               _SettingTile(
-                icon: Icons.fingerprint,
-                title: 'Biometric lock',
-                subtitle: 'Unlock with fingerprint / Face ID',
+                icon: Icons.shield_outlined,
+                title: 'Lock & security',
+                subtitle: 'App lock, passcode, face & fingerprint',
                 onTap: () => context.push('/security'),
               ),
             ],
@@ -157,13 +157,18 @@ class SettingsScreen extends ConsumerWidget {
               ),
               ListTile(
                 leading: const Icon(Icons.logout, color: Colors.redAccent),
-                title: const Text('Sign out', style: TextStyle(color: Colors.redAccent)),
+                title: const Text(
+                  'Sign out',
+                  style: TextStyle(color: Colors.redAccent),
+                ),
                 onTap: () async {
                   final confirmed = await showDialog<bool>(
                     context: context,
                     builder: (context) => AlertDialog(
                       title: const Text('Sign out?'),
-                      content: const Text('Your vault stays on this device and in the cloud.'),
+                      content: const Text(
+                        'Your vault stays on this device and in the cloud.',
+                      ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context, false),
@@ -189,7 +194,9 @@ class SettingsScreen extends ConsumerWidget {
               'ArtVault v1.0.0',
               style: TextStyle(
                 fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.35),
               ),
             ),
           ),
@@ -246,9 +253,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 subtitle: Text(entry.$1, style: const TextStyle(fontSize: 11)),
-                trailing: current == entry.$1
-                    ? const Icon(Icons.check)
-                    : null,
+                trailing: current == entry.$1 ? const Icon(Icons.check) : null,
                 onTap: () => Navigator.pop(context, entry.$1),
               ),
           ],
@@ -273,7 +278,8 @@ class SettingsScreen extends ConsumerWidget {
             for (final currency in AppConstants.currencies)
               ListTile(
                 title: Text(currency),
-                trailing: SettingsRepository.instance.preferredCurrency == currency
+                trailing:
+                    SettingsRepository.instance.preferredCurrency == currency
                     ? const Icon(Icons.check)
                     : null,
                 onTap: () => Navigator.pop(context, currency),
@@ -299,7 +305,10 @@ class SettingsScreen extends ConsumerWidget {
         title: const Text('Library location'),
         content: TextField(controller: controller, autofocus: true),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
             child: const Text('Save'),
@@ -329,19 +338,33 @@ class _UserCard extends StatelessWidget {
       padding: AppSpacing.cardPadding,
       child: Row(
         children: [
-          Avatar(name: name, imagePath: user?.photoPath, imageUrl: user?.photoUrl, radius: 28),
+          Avatar(
+            name: name,
+            imagePath: user?.photoPath,
+            imageUrl: user?.photoUrl,
+            radius: 28,
+          ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
                 const SizedBox(height: 2),
                 Text(
                   email.isEmpty ? 'Local session' : email,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, color: scheme.onSurface.withValues(alpha: 0.55)),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurface.withValues(alpha: 0.55),
+                  ),
                 ),
               ],
             ),
@@ -372,14 +395,21 @@ class _Group extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.xs, AppSpacing.lg, AppSpacing.xs, AppSpacing.xs),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xs,
+            AppSpacing.lg,
+            AppSpacing.xs,
+            AppSpacing.xs,
+          ),
           child: Text(
             title.toUpperCase(),
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.2,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.45),
             ),
           ),
         ),
@@ -390,7 +420,13 @@ class _Group extends StatelessWidget {
               for (var i = 0; i < children.length; i++) ...[
                 children[i],
                 if (i < children.length - 1)
-                  Divider(height: 1, indent: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.06)),
+                  Divider(
+                    height: 1,
+                    indent: 16,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.06),
+                  ),
               ],
             ],
           ),
@@ -420,8 +456,12 @@ class _SettingTile extends StatelessWidget {
     return ListTile(
       leading: Icon(icon),
       title: Text(title),
-      subtitle: subtitle == null ? null : Text(subtitle!, style: const TextStyle(fontSize: 12)),
-      trailing: trailing ?? (onTap == null ? null : const Icon(Icons.chevron_right, size: 20)),
+      subtitle: subtitle == null
+          ? null
+          : Text(subtitle!, style: const TextStyle(fontSize: 12)),
+      trailing:
+          trailing ??
+          (onTap == null ? null : const Icon(Icons.chevron_right, size: 20)),
       onTap: onTap,
     );
   }
@@ -434,9 +474,18 @@ class _ThemeSelector extends ConsumerWidget {
     return SegmentedButton<ThemeMode>(
       showSelectedIcon: false,
       segments: const [
-        ButtonSegment(value: ThemeMode.system, icon: Icon(Icons.brightness_auto, size: 16)),
-        ButtonSegment(value: ThemeMode.light, icon: Icon(Icons.light_mode, size: 16)),
-        ButtonSegment(value: ThemeMode.dark, icon: Icon(Icons.dark_mode, size: 16)),
+        ButtonSegment(
+          value: ThemeMode.system,
+          icon: Icon(Icons.brightness_auto, size: 16),
+        ),
+        ButtonSegment(
+          value: ThemeMode.light,
+          icon: Icon(Icons.light_mode, size: 16),
+        ),
+        ButtonSegment(
+          value: ThemeMode.dark,
+          icon: Icon(Icons.dark_mode, size: 16),
+        ),
       ],
       selected: {mode},
       onSelectionChanged: (selection) {
