@@ -5,8 +5,9 @@
 1.2 ✅ Staggered login fields
 1.3 ✅ Onboarding first-slide reveal
 1.4 ✅ Pacing stretch (~1.5×)
-1.5 ⬜ CodeRabbit review of 1.1–1.4, fix findings
-1.6 ⬜ Reduce-motion & repeat-launch handling (skip splash on subsequent launches, respect `prefers-reduced-motion`)
+1.5 ⬜ CodeRabbit review of 1.1–1.4 + Phase 1.6, fix findings
+1.6 ✅ Repeat-launch quick intro + reduced-motion splash (committed `23494f4` `d3f3fed` `85857a4`)
+1.7 ⬜ Gate the onboarding reveal on reduced motion too
 
 ## Phase 2: Auth & Onboarding Completion
 - Finish auth flows (sign-in paths beyond staggered fields)
