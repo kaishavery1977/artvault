@@ -200,7 +200,9 @@ class StatCard extends StatelessWidget {
                   child: Ink(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: surface,
+                      // Translucent fill so the ambient gradient shows
+                      // through — decoration only, layout untouched.
+                      color: surface.withValues(alpha: isDark ? 0.55 : 0.78),
                       borderRadius: BorderRadius.circular(
                         AppSpacing.radiusCard,
                       ),

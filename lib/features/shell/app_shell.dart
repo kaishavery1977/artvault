@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,11 +22,31 @@ class AppShell extends ConsumerStatefulWidget {
 }
 
 const _shellDestinations = [
-  (icon: Icons.space_dashboard_outlined, selected: Icons.space_dashboard, label: 'Home'),
-  (icon: Icons.grid_view_outlined, selected: Icons.grid_view_rounded, label: 'Gallery'),
-  (icon: Icons.person_outline, selected: Icons.person_rounded, label: 'Artists'),
-  (icon: Icons.description_outlined, selected: Icons.description_rounded, label: 'Documents'),
-  (icon: Icons.settings_outlined, selected: Icons.settings_rounded, label: 'Settings'),
+  (
+    icon: Icons.space_dashboard_outlined,
+    selected: Icons.space_dashboard,
+    label: 'Home',
+  ),
+  (
+    icon: Icons.grid_view_outlined,
+    selected: Icons.grid_view_rounded,
+    label: 'Gallery',
+  ),
+  (
+    icon: Icons.person_outline,
+    selected: Icons.person_rounded,
+    label: 'Artists',
+  ),
+  (
+    icon: Icons.description_outlined,
+    selected: Icons.description_rounded,
+    label: 'Documents',
+  ),
+  (
+    icon: Icons.settings_outlined,
+    selected: Icons.settings_rounded,
+    label: 'Settings',
+  ),
 ];
 
 class _AppShellState extends ConsumerState<AppShell> {
@@ -59,17 +81,19 @@ class _AppShellState extends ConsumerState<AppShell> {
           : content,
       bottomNavigationBar: isDesktop
           ? null
-          : NavigationBar(
-              selectedIndex: shell.currentIndex,
-              onDestinationSelected: _go,
-              destinations: [
-                for (final d in _shellDestinations)
-                  NavigationDestination(
-                    icon: Icon(d.icon),
-                    selectedIcon: Icon(d.selected),
-                    label: d.label,
-                  ),
-              ],
+          : _GlassNavBar(
+              child: NavigationBar(
+                selectedIndex: shell.currentIndex,
+                onDestinationSelected: _go,
+                destinations: [
+                  for (final d in _shellDestinations)
+                    NavigationDestination(
+                      icon: Icon(d.icon),
+                      selectedIcon: Icon(d.selected),
+                      label: d.label,
+                    ),
+                ],
+              ),
             ),
       floatingActionButton: canEdit
           ? FloatingActionButton.extended(
@@ -79,6 +103,35 @@ class _AppShellState extends ConsumerState<AppShell> {
               label: const Text('Upload'),
             )
           : null,
+    );
+  }
+}
+
+/// Frosted-glass wrapper for the bottom navigation bar.
+///
+/// The [BackdropFilter] blurs the ambient gradient behind the bar — a single
+/// static strip, so the blur cost is negligible and nothing scrolls under it
+/// (layout stays identical, so no overflow or occlusion risk).
+class _GlassNavBar extends StatelessWidget {
+  final Widget child;
+
+  const _GlassNavBar({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final edge = (isDark ? Colors.white : Colors.black).withValues(alpha: 0.12);
+
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: edge, width: 0.6)),
+          ),
+          child: child,
+        ),
+      ),
     );
   }
 }
@@ -113,8 +166,9 @@ class _DesktopNav extends StatelessWidget {
                 const SizedBox(width: AppSpacing.sm),
                 Text(
                   'ArtVault',
-                  style: theme.textTheme.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ],
             ),

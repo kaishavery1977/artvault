@@ -18,20 +18,36 @@ abstract final class AppTheme {
     final isDark = brightness == Brightness.dark;
 
     // Surface colors
-    final background = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final background = isDark
+        ? AppColors.darkBackground
+        : AppColors.lightBackground;
     final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-    final surfaceVariant = isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant;
-    final surfaceContainer = isDark ? AppColors.darkSurfaceContainer : AppColors.lightSurfaceContainer;
-    final surfaceContainerHigh = isDark ? AppColors.darkSurfaceContainerHigh : AppColors.lightSurfaceContainerHigh;
-    final surfaceContainerHighest = isDark ? AppColors.darkSurfaceContainerHighest : AppColors.lightSurfaceContainerHighest;
+    final surfaceVariant = isDark
+        ? AppColors.darkSurfaceVariant
+        : AppColors.lightSurfaceVariant;
+    final surfaceContainer = isDark
+        ? AppColors.darkSurfaceContainer
+        : AppColors.lightSurfaceContainer;
+    final surfaceContainerHigh = isDark
+        ? AppColors.darkSurfaceContainerHigh
+        : AppColors.lightSurfaceContainerHigh;
+    final surfaceContainerHighest = isDark
+        ? AppColors.darkSurfaceContainerHighest
+        : AppColors.lightSurfaceContainerHighest;
 
     // Text colors
-    final onSurface = isDark ? AppColors.darkOnSurface : AppColors.lightOnSurface;
-    final onSurfaceVariant = isDark ? AppColors.darkOnSurfaceVariant : AppColors.lightOnSurfaceVariant;
+    final onSurface = isDark
+        ? AppColors.darkOnSurface
+        : AppColors.lightOnSurface;
+    final onSurfaceVariant = isDark
+        ? AppColors.darkOnSurfaceVariant
+        : AppColors.lightOnSurfaceVariant;
 
     // Outline
     final outline = isDark ? AppColors.darkOutline : AppColors.lightOutline;
-    final outlineVariant = isDark ? AppColors.darkOutlineVariant : AppColors.lightOutlineVariant;
+    final outlineVariant = isDark
+        ? AppColors.darkOutlineVariant
+        : AppColors.lightOutlineVariant;
 
     // Brand / accent colors
     final primary = isDark ? AppColors.brand100 : AppColors.brand700;
@@ -52,8 +68,12 @@ abstract final class AppTheme {
     // Semantic colors
     final error = isDark ? AppColors.errorDark : AppColors.errorLight;
     final onError = isDark ? Colors.black : Colors.white;
-    final errorContainer = isDark ? AppColors.errorDark.withValues(alpha: 0.15) : AppColors.errorLight.withValues(alpha: 0.15);
-    final onErrorContainer = isDark ? AppColors.errorDark : AppColors.errorLight;
+    final errorContainer = isDark
+        ? AppColors.errorDark.withValues(alpha: 0.15)
+        : AppColors.errorLight.withValues(alpha: 0.15);
+    final onErrorContainer = isDark
+        ? AppColors.errorDark
+        : AppColors.errorLight;
 
     final scheme = ColorScheme(
       brightness: brightness,
@@ -91,7 +111,10 @@ abstract final class AppTheme {
       useMaterial3: true,
       brightness: brightness,
       colorScheme: scheme,
-      scaffoldBackgroundColor: background,
+      // Transparent so the AmbientBackground gradient (injected via
+      // MaterialApp.builder) shows through every Scaffold, letting
+      // translucent surfaces read as glassmorphism.
+      scaffoldBackgroundColor: Colors.transparent,
       fontFamily: GoogleFonts.inter().fontFamily,
     );
 
@@ -138,7 +161,9 @@ abstract final class AppTheme {
       // NAVIGATION BAR
       // =======================================================================
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: surface,
+        backgroundColor: isDark
+            ? AppColors.glassDark(opacity: 0.66)
+            : AppColors.glassLight(opacity: 0.80),
         elevation: 0,
         height: 64,
         indicatorColor: primary.withValues(alpha: 0.12),
@@ -240,7 +265,10 @@ abstract final class AppTheme {
         ),
         disabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusInput),
-          borderSide: BorderSide(color: outlineVariant.withValues(alpha: 0.5), width: 0.5),
+          borderSide: BorderSide(
+            color: outlineVariant.withValues(alpha: 0.5),
+            width: 0.5,
+          ),
         ),
         hintStyle: GoogleFonts.inter(
           color: onSurfaceVariant.withValues(alpha: 0.6),
@@ -256,10 +284,7 @@ abstract final class AppTheme {
           color: onSurfaceVariant.withValues(alpha: 0.7),
           fontSize: 12,
         ),
-        errorStyle: GoogleFonts.inter(
-          color: error,
-          fontSize: 12,
-        ),
+        errorStyle: GoogleFonts.inter(color: error, fontSize: 12),
         prefixIconColor: onSurfaceVariant,
         suffixIconColor: onSurfaceVariant,
       ),
@@ -268,86 +293,89 @@ abstract final class AppTheme {
       // BUTTONS
       // =======================================================================
       elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: primary,
-          foregroundColor: onPrimary,
-          disabledBackgroundColor: surfaceVariant,
-          disabledForegroundColor: onSurfaceVariant.withValues(alpha: 0.5),
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          minimumSize: const Size(0, 52),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
-          ),
-          padding: AppSpacing.buttonPadding,
-          textStyle: GoogleFonts.inter(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.3,
-          ),
-        ).copyWith(
-          overlayColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.hovered)) {
-              return onPrimary.withValues(alpha: 0.08);
-            }
-            if (states.contains(WidgetState.pressed)) {
-              return onPrimary.withValues(alpha: 0.12);
-            }
-            return null;
-          }),
-        ),
+        style:
+            ElevatedButton.styleFrom(
+              backgroundColor: primary,
+              foregroundColor: onPrimary,
+              disabledBackgroundColor: surfaceVariant,
+              disabledForegroundColor: onSurfaceVariant.withValues(alpha: 0.5),
+              elevation: 0,
+              shadowColor: Colors.transparent,
+              minimumSize: const Size(0, 52),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
+              ),
+              padding: AppSpacing.buttonPadding,
+              textStyle: GoogleFonts.inter(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
+              ),
+            ).copyWith(
+              overlayColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.hovered)) {
+                  return onPrimary.withValues(alpha: 0.08);
+                }
+                if (states.contains(WidgetState.pressed)) {
+                  return onPrimary.withValues(alpha: 0.12);
+                }
+                return null;
+              }),
+            ),
       ),
 
       outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: primary,
-          disabledForegroundColor: onSurfaceVariant.withValues(alpha: 0.5),
-          elevation: 0,
-          side: BorderSide(color: primary.withValues(alpha: 0.5), width: 1),
-          minimumSize: const Size(0, 52),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
-          ),
-          padding: AppSpacing.buttonPadding,
-          textStyle: GoogleFonts.inter(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.3,
-          ),
-        ).copyWith(
-          overlayColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.hovered)) {
-              return primary.withValues(alpha: 0.06);
-            }
-            if (states.contains(WidgetState.pressed)) {
-              return primary.withValues(alpha: 0.10);
-            }
-            return null;
-          }),
-        ),
+        style:
+            OutlinedButton.styleFrom(
+              foregroundColor: primary,
+              disabledForegroundColor: onSurfaceVariant.withValues(alpha: 0.5),
+              elevation: 0,
+              side: BorderSide(color: primary.withValues(alpha: 0.5), width: 1),
+              minimumSize: const Size(0, 52),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
+              ),
+              padding: AppSpacing.buttonPadding,
+              textStyle: GoogleFonts.inter(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
+              ),
+            ).copyWith(
+              overlayColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.hovered)) {
+                  return primary.withValues(alpha: 0.06);
+                }
+                if (states.contains(WidgetState.pressed)) {
+                  return primary.withValues(alpha: 0.10);
+                }
+                return null;
+              }),
+            ),
       ),
 
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: primary,
-          disabledForegroundColor: onSurfaceVariant.withValues(alpha: 0.5),
-          minimumSize: const Size(0, 44),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-          ),
-          padding: AppSpacing.buttonPaddingSm,
-          textStyle: GoogleFonts.inter(
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
-        ).copyWith(
-          overlayColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.hovered)) {
-              return primary.withValues(alpha: 0.06);
-            }
-            return null;
-          }),
-        ),
+        style:
+            TextButton.styleFrom(
+              foregroundColor: primary,
+              disabledForegroundColor: onSurfaceVariant.withValues(alpha: 0.5),
+              minimumSize: const Size(0, 44),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              ),
+              padding: AppSpacing.buttonPaddingSm,
+              textStyle: GoogleFonts.inter(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ).copyWith(
+              overlayColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.hovered)) {
+                  return primary.withValues(alpha: 0.06);
+                }
+                return null;
+              }),
+            ),
       ),
 
       filledButtonTheme: FilledButtonThemeData(
@@ -368,21 +396,22 @@ abstract final class AppTheme {
       ),
 
       iconButtonTheme: IconButtonThemeData(
-        style: IconButton.styleFrom(
-          foregroundColor: onSurface,
-          disabledForegroundColor: onSurfaceVariant.withValues(alpha: 0.4),
-          minimumSize: const Size(44, 44),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-          ),
-        ).copyWith(
-          overlayColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.hovered)) {
-              return onSurface.withValues(alpha: 0.06);
-            }
-            return null;
-          }),
-        ),
+        style:
+            IconButton.styleFrom(
+              foregroundColor: onSurface,
+              disabledForegroundColor: onSurfaceVariant.withValues(alpha: 0.4),
+              minimumSize: const Size(44, 44),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+              ),
+            ).copyWith(
+              overlayColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.hovered)) {
+                  return onSurface.withValues(alpha: 0.06);
+                }
+                return null;
+              }),
+            ),
       ),
 
       floatingActionButtonTheme: FloatingActionButtonThemeData(
@@ -403,7 +432,9 @@ abstract final class AppTheme {
       // DIALOG
       // =======================================================================
       dialogTheme: DialogThemeData(
-        backgroundColor: surface,
+        backgroundColor: isDark
+            ? AppColors.glassDark(opacity: 0.94)
+            : AppColors.glassLight(opacity: 0.97),
         elevation: 4,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusDialog),
@@ -418,14 +449,19 @@ abstract final class AppTheme {
           fontWeight: FontWeight.w400,
           color: onSurfaceVariant,
         ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        actionsPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 12,
+        ),
       ),
 
       // =======================================================================
       // BOTTOM SHEET
       // =======================================================================
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: surface,
+        backgroundColor: isDark
+            ? AppColors.glassDark(opacity: 0.92)
+            : AppColors.glassLight(opacity: 0.96),
         elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
@@ -443,10 +479,7 @@ abstract final class AppTheme {
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: isDark ? AppColors.darkSurface : AppColors.brand800,
-        contentTextStyle: GoogleFonts.inter(
-          color: Colors.white,
-          fontSize: 14,
-        ),
+        contentTextStyle: GoogleFonts.inter(color: Colors.white, fontSize: 14),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
         ),
@@ -655,29 +688,108 @@ abstract final class AppTheme {
   }
 
   static TextTheme _buildTextTheme(ThemeData base, bool isDark) {
-    final onSurface = isDark ? AppColors.darkOnSurface : AppColors.lightOnSurface;
-    final onSurfaceVariant = isDark ? AppColors.darkOnSurfaceVariant : AppColors.lightOnSurfaceVariant;
+    final onSurface = isDark
+        ? AppColors.darkOnSurface
+        : AppColors.lightOnSurface;
+    final onSurfaceVariant = isDark
+        ? AppColors.darkOnSurfaceVariant
+        : AppColors.lightOnSurfaceVariant;
 
     final baseTextTheme = base.textTheme;
     final inter = GoogleFonts.inter;
     final playfair = GoogleFonts.playfairDisplay;
 
     return baseTextTheme.copyWith(
-      displayLarge: playfair(fontSize: 36, fontWeight: FontWeight.w700, color: onSurface, height: 1.1),
-      displayMedium: playfair(fontSize: 30, fontWeight: FontWeight.w700, color: onSurface, height: 1.15),
-      displaySmall: playfair(fontSize: 26, fontWeight: FontWeight.w600, color: onSurface, height: 1.2),
-      headlineLarge: playfair(fontSize: 24, fontWeight: FontWeight.w600, color: onSurface, height: 1.2),
-      headlineMedium: playfair(fontSize: 22, fontWeight: FontWeight.w600, color: onSurface, height: 1.2),
-      headlineSmall: inter(fontSize: 20, fontWeight: FontWeight.w700, color: onSurface, height: 1.25),
-      titleLarge: inter(fontSize: 18, fontWeight: FontWeight.w700, color: onSurface, height: 1.3),
-      titleMedium: inter(fontSize: 16, fontWeight: FontWeight.w600, color: onSurface, height: 1.35),
-      titleSmall: inter(fontSize: 14, fontWeight: FontWeight.w600, color: onSurface, height: 1.4),
-      bodyLarge: inter(fontSize: 16, fontWeight: FontWeight.w400, color: onSurface, height: 1.5),
-      bodyMedium: inter(fontSize: 14, fontWeight: FontWeight.w400, color: onSurfaceVariant, height: 1.5),
-      bodySmall: inter(fontSize: 13, fontWeight: FontWeight.w400, color: onSurfaceVariant, height: 1.45),
-      labelLarge: inter(fontSize: 14, fontWeight: FontWeight.w600, color: onSurface, height: 1.4),
-      labelMedium: inter(fontSize: 13, fontWeight: FontWeight.w600, color: onSurfaceVariant, height: 1.4),
-      labelSmall: inter(fontSize: 11, fontWeight: FontWeight.w600, color: onSurfaceVariant, height: 1.35),
+      displayLarge: playfair(
+        fontSize: 36,
+        fontWeight: FontWeight.w700,
+        color: onSurface,
+        height: 1.1,
+      ),
+      displayMedium: playfair(
+        fontSize: 30,
+        fontWeight: FontWeight.w700,
+        color: onSurface,
+        height: 1.15,
+      ),
+      displaySmall: playfair(
+        fontSize: 26,
+        fontWeight: FontWeight.w600,
+        color: onSurface,
+        height: 1.2,
+      ),
+      headlineLarge: playfair(
+        fontSize: 24,
+        fontWeight: FontWeight.w600,
+        color: onSurface,
+        height: 1.2,
+      ),
+      headlineMedium: playfair(
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+        color: onSurface,
+        height: 1.2,
+      ),
+      headlineSmall: inter(
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        color: onSurface,
+        height: 1.25,
+      ),
+      titleLarge: inter(
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+        color: onSurface,
+        height: 1.3,
+      ),
+      titleMedium: inter(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: onSurface,
+        height: 1.35,
+      ),
+      titleSmall: inter(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: onSurface,
+        height: 1.4,
+      ),
+      bodyLarge: inter(
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+        color: onSurface,
+        height: 1.5,
+      ),
+      bodyMedium: inter(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: onSurfaceVariant,
+        height: 1.5,
+      ),
+      bodySmall: inter(
+        fontSize: 13,
+        fontWeight: FontWeight.w400,
+        color: onSurfaceVariant,
+        height: 1.45,
+      ),
+      labelLarge: inter(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: onSurface,
+        height: 1.4,
+      ),
+      labelMedium: inter(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: onSurfaceVariant,
+        height: 1.4,
+      ),
+      labelSmall: inter(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        color: onSurfaceVariant,
+        height: 1.35,
+      ),
     );
   }
 
@@ -698,10 +810,18 @@ abstract final class AppTheme {
   // UTILITY HELPERS
   // ===========================================================================
   static BorderRadius cardRadius = BorderRadius.circular(AppSpacing.radiusCard);
-  static BorderRadius buttonRadius = BorderRadius.circular(AppSpacing.radiusButton);
-  static BorderRadius inputRadius = BorderRadius.circular(AppSpacing.radiusInput);
+  static BorderRadius buttonRadius = BorderRadius.circular(
+    AppSpacing.radiusButton,
+  );
+  static BorderRadius inputRadius = BorderRadius.circular(
+    AppSpacing.radiusInput,
+  );
   static BorderRadius chipRadius = BorderRadius.circular(AppSpacing.radiusChip);
-  static BorderRadius dialogRadius = BorderRadius.circular(AppSpacing.radiusDialog);
-  static BorderRadius bottomSheetRadius = BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusBottomSheet));
+  static BorderRadius dialogRadius = BorderRadius.circular(
+    AppSpacing.radiusDialog,
+  );
+  static BorderRadius bottomSheetRadius = BorderRadius.vertical(
+    top: Radius.circular(AppSpacing.radiusBottomSheet),
+  );
   static BorderRadius fullRadius = BorderRadius.circular(AppSpacing.radiusFull);
 }

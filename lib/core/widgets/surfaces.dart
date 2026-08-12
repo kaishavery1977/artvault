@@ -39,18 +39,29 @@ class GlassCard extends StatelessWidget {
     final onSurface = theme.colorScheme.onSurface;
 
     final baseColor = tint ?? surface;
+    // Translucent fill so the ambient gradient shows through the card — this
+    // is what makes the surface read as glass. Alphas are tuned so text stays
+    // readable on both themes; this is decoration only, no layout impact.
     final effectiveGradient =
         gradient ??
         LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            baseColor,
-            isDark
-                ? baseColor.withValues(alpha: 0.95)
-                : baseColor.withValues(alpha: 0.98),
-          ],
+          colors: isDark
+              ? [
+                  baseColor.withValues(alpha: 0.52),
+                  baseColor.withValues(alpha: 0.66),
+                ]
+              : [
+                  baseColor.withValues(alpha: 0.72),
+                  baseColor.withValues(alpha: 0.84),
+                ],
         );
+
+    // A brighter top edge mimics light catching the top of the glass.
+    final topEdge = (isDark ? Colors.white : Colors.white).withValues(
+      alpha: isDark ? 0.20 : 0.65,
+    );
 
     final card = Container(
       padding: padding,
@@ -58,7 +69,21 @@ class GlassCard extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: effectiveGradient,
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: outline.withValues(alpha: 0.5), width: 0.5),
+        border: Border(
+          top: BorderSide(color: topEdge, width: 0.8),
+          left: BorderSide(
+            color: outline.withValues(alpha: isDark ? 0.28 : 0.5),
+            width: 0.5,
+          ),
+          right: BorderSide(
+            color: outline.withValues(alpha: isDark ? 0.28 : 0.5),
+            width: 0.5,
+          ),
+          bottom: BorderSide(
+            color: outline.withValues(alpha: isDark ? 0.35 : 0.55),
+            width: 0.5,
+          ),
+        ),
         boxShadow: hasShadow
             ? (isDark
                   ? [
