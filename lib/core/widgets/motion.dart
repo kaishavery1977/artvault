@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 import '../theme/app_spacing.dart';
 
@@ -253,6 +254,29 @@ class _VignettePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _VignettePainter oldDelegate) =>
       oldDelegate.strength != strength;
+}
+
+/// Wraps a list of widgets in staggered slide-up + fade-in entrances.
+///
+/// Each child animates a little after the previous one, so a column of form
+/// fields or settings tiles cascades into view. The list is index-stable, so
+/// rebuilding (e.g. toggling a visibility switch) doesn't replay the
+/// animation. All transforms/opacity — GPU-cheap, no blur, safe on budget
+/// phones.
+List<Widget> staggerReveal(
+  List<Widget> children, {
+  Duration initialDelay = Duration.zero,
+  Duration interval = const Duration(milliseconds: 80),
+  Duration duration = const Duration(milliseconds: 450),
+  double beginOffset = 0.08,
+}) {
+  return [
+    for (var i = 0; i < children.length; i++)
+      children[i]
+          .animate(delay: initialDelay + interval * i)
+          .slideY(begin: beginOffset)
+          .fadeIn(duration: duration, curve: Curves.easeOutCubic),
+  ];
 }
 
 /// Standard skeleton placeholder block used inside shimmer loaders.

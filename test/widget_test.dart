@@ -37,12 +37,19 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('ArtVault'), findsOneWidget);
+    // The wordmark reveals letter-by-letter, so each letter is its own Text
+    // — assert on the letters rather than the joined string.
+    expect(find.text('A'), findsOneWidget);
+    expect(find.text('V'), findsOneWidget);
+    expect(find.text('Your Private Gallery'), findsOneWidget);
 
-    // Drain the splash screen's startup timer, then give the router time to
-    // finish navigating (which starts new finite animations) so no timers are
-    // pending when the test ends.
-    await tester.pump(const Duration(milliseconds: 1800));
-    await tester.pump(const Duration(milliseconds: 600));
+    // Drain the splash screen's intro (2350ms) and push-out exit (430ms),
+    // then give the router time to navigate to onboarding (its route
+    // transition is 280ms). The final pump drains the delay timers the
+    // incoming page's reveal animations create on mount (longest is 400ms),
+    // so nothing is pending when the test ends.
+    await tester.pump(const Duration(milliseconds: 2400));
+    await tester.pump(const Duration(milliseconds: 1000));
+    await tester.pump(const Duration(milliseconds: 500));
   });
 }

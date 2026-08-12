@@ -7,6 +7,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/utils/validators.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_fields.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/providers/providers.dart';
 import '../../data/repositories/auth_repository.dart';
 import 'auth_layout.dart';
@@ -33,7 +34,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _checkBiometric() async {
-    final enabled = await AuthRepository.instance.biometricEnabled ||
+    final enabled =
+        await AuthRepository.instance.biometricEnabled ||
         await AuthRepository.instance.faceLockEnabled;
     if (enabled) {
       final available = await BiometricService.instance.isAvailable;
@@ -66,7 +68,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Enable biometrics from Security settings after signing in.'),
+          content: Text(
+            'Enable biometrics from Security settings after signing in.',
+          ),
         ),
       );
       return;
@@ -119,8 +123,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
             child: Row(
               children: [
-                Icon(Icons.error_outline,
-                    size: 18, color: Theme.of(context).colorScheme.error),
+                Icon(
+                  Icons.error_outline,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.error,
+                ),
                 const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: Text(
@@ -137,7 +144,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         Form(
           key: _formKey,
           child: Column(
-            children: [
+            // Fields cascade in one by one — matches the cinematic splash
+            // intro. Index-stable, so toggling the visibility switch or
+            // remember-me never replays the animation.
+            children: staggerReveal([
               AppTextField(
                 controller: _email,
                 label: 'Email',
@@ -158,7 +168,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 onChanged: (_) {},
                 suffixIcon: IconButton(
                   icon: Icon(
-                    _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                    _obscure
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
                     size: 20,
                   ),
                   onPressed: () => setState(() => _obscure = !_obscure),
@@ -175,9 +187,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           onChanged: (v) => setState(() => _remember = v),
                         ),
                         const SizedBox(width: 4),
-                        // Flexible + ellipsis so the label never overflows the
-                        // card (was overflowing by ~2px and showing the debug
-                        // "OVERFLOWED BY 2.0 PIXELS" banner).
+                        // Flexible + ellipsis so the label never overflows
+                        // the card (was overflowing by ~2px and showing the
+                        // debug "OVERFLOWED BY 2.0 PIXELS" banner).
                         const Flexible(
                           child: Text(
                             'Remember me',
@@ -199,7 +211,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 loading: auth.busy,
                 onPressed: _submit,
               ),
-            ],
+            ], initialDelay: const Duration(milliseconds: 150)),
           ),
         ),
         if (_biometricAvailable) ...[
