@@ -13,7 +13,11 @@ import '../../data/repositories/settings_repository.dart';
 import '../../data/remote/cloud_backend.dart';
 
 class SecurityScreen extends ConsumerStatefulWidget {
-  const SecurityScreen({super.key});
+  /// Injectable availability probe (test seam). When null, the real
+  /// [BiometricService] is queried.
+  final Future<BiometricAvailability> Function()? availabilityProbe;
+
+  const SecurityScreen({super.key, this.availabilityProbe});
 
   @override
   ConsumerState<SecurityScreen> createState() => _SecurityScreenState();
@@ -36,20 +40,25 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
   }
 
   Future<void> _load() async {
+    final availability = widget.availabilityProbe != null
+        ? await widget.availabilityProbe!()
+        : await BiometricService.instance.availability;
     final enabled = await AuthRepository.instance.biometricEnabled;
-    final available = await BiometricService.instance.isAvailable;
-    final fingerprintAvailable = await BiometricService.instance.hasFingerprint;
     final faceEnabled = await AuthRepository.instance.faceLockEnabled;
-    final faceAvailable = await BiometricService.instance.hasFaceId;
     final appLock = SettingsRepository.instance.appLockEnabled;
-    final passcodeSet = await AuthRepository.instance.passcodeSet;
+    // Secure storage can fail (lockout, plugin hiccup) — never freeze the
+    // whole screen on a spinner because of it.
+    var passcodeSet = false;
+    try {
+      passcodeSet = await AuthRepository.instance.passcodeSet;
+    } catch (_) {}
     if (mounted) {
       setState(() {
         _biometric = enabled;
-        _available = available;
-        _fingerprintAvailable = fingerprintAvailable;
+        _available = availability.any;
+        _fingerprintAvailable = availability.fingerprint;
         _faceLock = faceEnabled;
-        _faceAvailable = faceAvailable;
+        _faceAvailable = availability.face;
         _appLock = appLock;
         _passcodeSet = passcodeSet;
         _loading = false;
@@ -88,7 +97,18 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
         );
         return;
       }
-      await AuthRepository.instance.saveFaceEmbedding(emb);
+      try {
+        await AuthRepository.instance.saveFaceEmbedding(emb);
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not save your face. Please try again.'),
+            ),
+          );
+        }
+        return;
+      }
       if (!mounted) return;
       // Confirm the write actually landed before enabling the setting — a
       // failed save would otherwise route the user to an unlockable lock.
@@ -110,6 +130,118 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
     }
     await AuthRepository.instance.setFaceLockEnabled(value);
     if (mounted) setState(() => _faceLock = value);
+  }
+
+  /// Once Face lock is on, tapping the row manages it: re-scan replaces the
+  /// stored embedding, or the lock can be removed — so a changed face (new
+  /// look, new phone) never strands the user on an unlockable lock.
+  Future<void> _showFaceManageSheet() async {
+    final action = await showModalBottomSheet<_FaceAction>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.face_retouching_natural),
+              title: const Text('Re-scan face'),
+              subtitle: const Text(
+                'Replace the face used to unlock ArtVault',
+              ),
+              onTap: () => Navigator.pop(context, _FaceAction.rescan),
+            ),
+            ListTile(
+              leading: const Icon(Icons.lock_open),
+              title: const Text('Remove face lock'),
+              subtitle: const Text('Stop unlocking ArtVault with your face'),
+              onTap: () => Navigator.pop(context, _FaceAction.remove),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || action == null) return;
+    switch (action) {
+      case _FaceAction.rescan:
+        await _rescanFace();
+      case _FaceAction.remove:
+        await _toggleFaceLock(false);
+    }
+  }
+
+  Future<void> _rescanFace() async {
+    final emb = await context.push<List<double>>(
+      '/face-scan',
+      extra: const FaceScanScreen(mode: FaceScanMode.enroll),
+    );
+    if (!mounted || emb == null || emb.isEmpty) return;
+    try {
+      await AuthRepository.instance.saveFaceEmbedding(emb);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Face updated — your new scan is now active'),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not save the new face. Please try again.'),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Fingerprints live in the phone's settings; once unlock is enabled the
+  /// row offers a self-test and a way to turn it off, and points the user
+  /// where to add new prints.
+  Future<void> _showFingerprintManageSheet() async {
+    final action = await showModalBottomSheet<_FingerprintAction>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.fingerprint),
+              title: const Text('Test fingerprint'),
+              subtitle: const Text('Confirm the sensor recognises your print'),
+              onTap: () => Navigator.pop(context, _FingerprintAction.test),
+            ),
+            ListTile(
+              leading: const Icon(Icons.lock_open),
+              title: const Text('Remove fingerprint unlock'),
+              subtitle: const Text('Stop unlocking ArtVault with a fingerprint'),
+              onTap: () => Navigator.pop(context, _FingerprintAction.remove),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || action == null) return;
+    switch (action) {
+      case _FingerprintAction.test:
+        await _testFingerprint();
+      case _FingerprintAction.remove:
+        await _toggleBiometric(false);
+    }
+  }
+
+  Future<void> _testFingerprint() async {
+    final ok = await AuthRepository.instance.verifyFingerprint();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok ? 'Fingerprint recognized ✓' : 'Fingerprint verification failed',
+        ),
+      ),
+    );
   }
 
   Future<void> _togglePasscode(bool value) async {
@@ -305,7 +437,9 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                 _Row(
                   icon: Icons.face_retouching_natural,
                   title: 'Unlock with Face lock',
-                  subtitle: _faceAvailable
+                  subtitle: _faceLock
+                      ? 'On — tap to re-scan or remove your face'
+                      : _faceAvailable
                       ? 'Scan your face with the camera to unlock'
                       : 'No camera available for face unlock',
                   trailing: _loading
@@ -319,7 +453,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                           onChanged: _faceAvailable ? _toggleFaceLock : null,
                         ),
                   onTap: _faceAvailable
-                      ? null
+                      ? (_faceLock ? _showFaceManageSheet : null)
                       : () => ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text(
@@ -333,7 +467,9 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                 _Row(
                   icon: Icons.fingerprint,
                   title: 'Unlock with Fingerprint',
-                  subtitle: _fingerprintAvailable
+                  subtitle: _biometric
+                      ? 'On — tap to test it. New prints are added in your phone settings'
+                      : _fingerprintAvailable
                       ? 'Use the fingerprint sensor to unlock'
                       : 'Not set up — add a fingerprint in your device settings',
                   trailing: _loading
@@ -349,7 +485,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                               : null,
                         ),
                   onTap: _fingerprintAvailable
-                      ? null
+                      ? (_biometric ? _showFingerprintManageSheet : null)
                       : () => ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text(
@@ -649,3 +785,7 @@ class _Row extends StatelessWidget {
     );
   }
 }
+
+enum _FaceAction { rescan, remove }
+
+enum _FingerprintAction { test, remove }

@@ -310,12 +310,19 @@ class AuthRepository {
   );
 
   Future<void> setFaceLockEnabled(bool enabled) async {
+    // Flag first — it's what routes the user to an unlockable App Lock — so
+    // a secure-storage hiccup while deleting the embedding must never strand
+    // the setting ON.
     await LocalDatabase.instance.setSetting(
       AppConstants.kFaceLockEnabled,
       enabled,
     );
     if (!enabled) {
-      await clearFaceEmbedding();
+      try {
+        await clearFaceEmbedding();
+      } catch (_) {
+        // Best-effort cleanup; the flag is already off.
+      }
     }
   }
 
