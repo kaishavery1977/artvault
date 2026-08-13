@@ -236,7 +236,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 loading: auth.busy,
                 onPressed: _submit,
               ),
-            ], initialDelay: const Duration(milliseconds: 300)),
+            ], initialDelay: const Duration(milliseconds: 300), context: context),
           ),
         ),
         if (_biometricAvailable) ...[
