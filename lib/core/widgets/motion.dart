@@ -281,18 +281,20 @@ class GradientShimmerText extends StatefulWidget {
 
 class _GradientShimmerTextState extends State<GradientShimmerText>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: widget.duration,
-  );
+  late final AnimationController _controller;
+  bool _started = false;
 
   @override
   void initState() {
     super.initState();
-    _started = false;
+    // Created eagerly so the reduced-motion path (which never touches the
+    // controller during its life) still disposes it cleanly — a lazy `late`
+    // initializer would create the ticker mid-dispose and crash.
+    _controller = AnimationController(
+      vsync: this,
+      duration: widget.duration,
+    );
   }
-
-  bool _started = false;
 
   @override
   void didChangeDependencies() {
@@ -318,31 +320,56 @@ class _GradientShimmerTextState extends State<GradientShimmerText>
 
   @override
   Widget build(BuildContext context) {
-    final sweep = 0.5 + 0.6 * _controller.value; // 0.5 → 1.1
+    // Two layers: the base is an opaque palette gradient across the full text
+    // (always readable), and the sweep is a narrow white band that travels
+    // across it, brightening rather than erasing. Under reduced motion only
+    // the base renders — the text is never invisible in any state.
+    final baseStyle = widget.style.copyWith(color: Colors.white);
+    final base = ShaderMask(
+      blendMode: BlendMode.srcIn,
+      shaderCallback: (bounds) {
+        final colors = widget.colors.length == 1
+            ? [widget.colors.first, widget.colors.first]
+            : widget.colors;
+        return LinearGradient(
+          begin: Alignment(-1, 0),
+          end: Alignment(1, 0),
+          colors: colors,
+          stops: [
+            for (var i = 0; i < colors.length; i++)
+              i / (colors.length - 1),
+          ],
+        ).createShader(bounds);
+      },
+      child: Text(widget.text, style: baseStyle),
+    );
+
+    if (MediaQuery.disableAnimationsOf(context)) return base;
+
     return AnimatedBuilder(
       animation: _controller,
-      builder: (context, child) {
-        return ShaderMask(
-          blendMode: BlendMode.srcIn,
-          shaderCallback: (bounds) {
-            return LinearGradient(
-              begin: Alignment(-1 + sweep - 0.6, 0),
-              end: Alignment(-1 + sweep + 0.4, 0),
-              colors: [
+      builder: (context, child) => Stack(
+        clipBehavior: Clip.none,
+        children: [
+          child!,
+          ShaderMask(
+            blendMode: BlendMode.srcIn,
+            shaderCallback: (bounds) => LinearGradient(
+              begin: Alignment(-1 + 2.4 * _controller.value, 0),
+              end: Alignment(-0.4 + 2.4 * _controller.value, 0),
+              colors: const [
                 Colors.transparent,
-                ...widget.colors,
+                Colors.white,
+                Colors.white,
                 Colors.transparent,
               ],
-              stops: [
-                for (var i = 0; i < widget.colors.length + 2; i++)
-                  i / (widget.colors.length + 1),
-              ],
-            ).createShader(bounds);
-          },
-          child: child,
-        );
-      },
-      child: Text(widget.text, style: widget.style.copyWith(color: Colors.white)),
+              stops: const [0.0, 0.35, 0.65, 1.0],
+            ).createShader(bounds),
+            child: Text(widget.text, style: baseStyle),
+          ),
+        ],
+      ),
+      child: base,
     );
   }
 }

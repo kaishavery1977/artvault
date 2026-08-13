@@ -402,37 +402,42 @@ class _QrScanScreenState extends State<QrScanScreen>
             bottom: AppSpacing.xxl + MediaQuery.paddingOf(context).bottom,
             left: 0,
             right: 0,
-            child: RevealEntrance(
-              delay: const Duration(milliseconds: 160),
-              duration: const Duration(milliseconds: 420),
-              reducedMotion: reduced,
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                padding: AppSpacing.cardPadding,
-                decoration: BoxDecoration(
-                  color: scheme.surface.withValues(alpha: 0.92),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.qr_code_2, color: scheme.primary),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Text(
-                        'Point the camera at an ArtVault QR code to open its artwork.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: scheme.onSurface.withValues(alpha: 0.7),
-                        ),
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              padding: AppSpacing.cardPadding,
+              decoration: BoxDecoration(
+                color: scheme.surface.withValues(alpha: 0.92),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.qr_code_2, color: scheme.primary),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      'Point the camera at an ArtVault QR code to open its artwork.',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: scheme.onSurface.withValues(alpha: 0.7),
                       ),
                     ),
-                    IconButton(
-                      tooltip: 'Toggle torch',
-                      icon: const Icon(Icons.flashlight_on_outlined),
-                      onPressed: () => _controller.toggleTorch(),
-                    ),
-                  ],
-                ),
+                  ),
+                  IconButton(
+                    tooltip: 'Toggle torch',
+                    icon: const Icon(Icons.flashlight_on_outlined),
+                    // The toggle is visible from the first frame — never
+                    // wrapped in an entrance animation — and guarded so a
+                    // device without a flash just no-ops instead of crashing
+                    // the camera session.
+                    onPressed: () {
+                      try {
+                        _controller.toggleTorch();
+                      } catch (_) {
+                        // No torch on this device — nothing to toggle.
+                      }
+                    },
+                  ),
+                ],
               ),
             ),
           ),
