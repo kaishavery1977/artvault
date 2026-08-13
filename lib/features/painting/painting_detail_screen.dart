@@ -281,16 +281,23 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
                     ),
                     child: Hero(
                       tag: 'painting-${painting.id}',
-                      child: PageView.builder(
-                        itemCount: images.length,
-                        onPageChanged: (i) => setState(() => _imageIndex = i),
-                        itemBuilder: (context, i) => InteractiveViewer(
-                          minScale: 0.8,
-                          maxScale: 4,
-                          child: ArtImage(
-                            path: images[i],
-                            url: i < urls.length ? urls[i] : null,
-                            fit: BoxFit.contain,
+                      // A slow settle-zoom as the artwork arrives — the
+                      // lens finding its focus before the metadata reads in.
+                      child: KenBurns(
+                        begin: 1.1,
+                        duration: const Duration(milliseconds: 2000),
+                        child: PageView.builder(
+                          itemCount: images.length,
+                          onPageChanged: (i) =>
+                              setState(() => _imageIndex = i),
+                          itemBuilder: (context, i) => InteractiveViewer(
+                            minScale: 0.8,
+                            maxScale: 4,
+                            child: ArtImage(
+                              path: images[i],
+                              url: i < urls.length ? urls[i] : null,
+                              fit: BoxFit.contain,
+                            ),
                           ),
                         ),
                       ),
@@ -331,69 +338,74 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
               padding: AppSpacing.screenPadding,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _TitleBlock(painting: painting, canEdit: canEdit),
-                  const SizedBox(height: AppSpacing.lg),
-                  _InfoGrid(painting: painting),
-                  const SizedBox(height: AppSpacing.lg),
-                  if (painting.description.isNotEmpty) ...[
-                    SectionHeader(title: 'Description'),
-                    Text(
-                      painting.description,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(height: 1.55),
+                children: staggerReveal(
+                  [
+                    _TitleBlock(painting: painting, canEdit: canEdit),
+                    const SizedBox(height: AppSpacing.lg),
+                    _InfoGrid(painting: painting),
+                    const SizedBox(height: AppSpacing.lg),
+                    if (painting.description.isNotEmpty) ...[
+                      SectionHeader(title: 'Description'),
+                      Text(
+                        painting.description,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(height: 1.55),
+                      ),
+                    ],
+                    if (painting.tags.isNotEmpty ||
+                        painting.aiTags.isNotEmpty) ...[
+                      SectionHeader(title: 'Tags'),
+                      Wrap(
+                        spacing: AppSpacing.xs,
+                        runSpacing: AppSpacing.xs,
+                        children: [
+                          for (final t in {...painting.tags, ...painting.aiTags})
+                            TagChip(label: t),
+                        ],
+                      ),
+                    ],
+                    if (painting.dominantColors.isNotEmpty) ...[
+                      SectionHeader(title: 'AI palette'),
+                      _Palette(colors: painting.dominantColors),
+                    ],
+                    const SizedBox(height: AppSpacing.sm),
+                    _AiAnalysisCard(painting: painting),
+                    SectionHeader(title: 'Documents'),
+                    _DocumentsSection(
+                      paintingId: painting.id,
+                      canEdit: canEdit,
+                      onAdd: () => _addDocument(painting),
+                      onOpen: _openDocument,
                     ),
-                  ],
-                  if (painting.tags.isNotEmpty ||
-                      painting.aiTags.isNotEmpty) ...[
-                    SectionHeader(title: 'Tags'),
-                    Wrap(
-                      spacing: AppSpacing.xs,
-                      runSpacing: AppSpacing.xs,
-                      children: [
-                        for (final t in {...painting.tags, ...painting.aiTags})
-                          TagChip(label: t),
-                      ],
-                    ),
-                  ],
-                  if (painting.dominantColors.isNotEmpty) ...[
-                    SectionHeader(title: 'AI palette'),
-                    _Palette(colors: painting.dominantColors),
-                  ],
-                  const SizedBox(height: AppSpacing.sm),
-                  _AiAnalysisCard(painting: painting),
-                  SectionHeader(title: 'Documents'),
-                  _DocumentsSection(
-                    paintingId: painting.id,
-                    canEdit: canEdit,
-                    onAdd: () => _addDocument(painting),
-                    onOpen: _openDocument,
-                  ),
-                  SectionHeader(title: 'QR code'),
-                  _QrCard(painting: painting),
-                  if (related.isNotEmpty) ...[
-                    SectionHeader(title: 'Related paintings'),
-                    SizedBox(
-                      height: 190,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        padding: EdgeInsets.zero,
-                        itemCount: related.length,
-                        separatorBuilder: (_, _) =>
-                            const SizedBox(width: AppSpacing.sm),
-                        itemBuilder: (context, i) => SizedBox(
-                          width: 150,
-                          child: PaintingGridCard(
-                            painting: related[i],
-                            heroTag: 'painting-${related[i].id}',
+                    SectionHeader(title: 'QR code'),
+                    _QrCard(painting: painting),
+                    if (related.isNotEmpty) ...[
+                      SectionHeader(title: 'Related paintings'),
+                      SizedBox(
+                        height: 190,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          padding: EdgeInsets.zero,
+                          itemCount: related.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(width: AppSpacing.sm),
+                          itemBuilder: (context, i) => SizedBox(
+                            width: 150,
+                            child: PaintingGridCard(
+                              painting: related[i],
+                              heroTag: 'painting-${related[i].id}',
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                    ],
+                    const SizedBox(height: AppSpacing.xl),
                   ],
-                  const SizedBox(height: AppSpacing.xl),
-                ],
+                  initialDelay: const Duration(milliseconds: 150),
+                  interval: const Duration(milliseconds: 70),
+                  context: context,
+                ),
               ),
             ),
           ),

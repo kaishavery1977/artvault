@@ -13,6 +13,8 @@ Goal: the app's opening moments (splash → onboarding → login) feel deliberat
 - Widget tests re-timed for the longer timeline (wordmark asserted as letters; mount-time delay timers drained)
 - **RalphLoop goals A (offline-first) & B (premium browsing)**: PR #2 (sync edge fixes: trash/purge resurrection, tombstone queue; 10 no-network tests) and PR #3 (debounced instant search, lightbox Hero hand-off, cascade gallery stagger; 5 tests). Both open for CodeRabbit review.
 - **RalphLoop goal — auth flows complete**: biometric manage sheets (re-scan face, test/remove fingerprint), offline guards for Google/Apple sign-in, guarded secure-storage reads so Security can't freeze, GlassCard paint-crash fix; 'Built by Kais Havery' About credit; 12 new auth tests.
+- **Restore & profile fixes** (PR #5 `feat/vault-restore-fixes`): auto-pull vault on login so the home section populates without pressing Sync; `_pullRemote` URL adoption + `_syncPainting` URL alignment (photos no longer missing after cloud restore); local-first profile restore so name/avatar edits survive re-login; avatar upload to storage with `photoUrl`; storage.rules avatar entry; 13 tests.
+- **App-wide animation overhaul** (PR #6 `feat/app-animations`): ticker-only `RevealEntrance`/`KenBurns`/`GradientShimmerText`/`ShakeOnError` primitives (no pending timers, reduced-motion gated); shell tab fade+drift; home greeting shimmer + welcome spotlight; gallery/search/trash/artist/documents/notifications/reports/users item cascades; detail Ken Burns hero; register/forgot cascade; lock-screen PIN shake; settings/profile/security/storage/backup card cascades; shimmering About credit.
 
 ### Commits
 - `3c54379` feat: cinematic splash intro and staggered login fields
@@ -33,10 +35,11 @@ Goal: the app's opening moments (splash → onboarding → login) feel deliberat
 
 ### Verification
 - `flutter analyze`: clean
-- `flutter test`: 15/15 green (3 boot + 3 onboarding + 12 auth)
-- PRs #1–#4 open (`onboarding-polish`, `offline-hardening`, `vault-browsing-polish`, `auth-flows-polish` → main) awaiting CodeRabbit review
-- Working tree: clean (on `feat/auth-flows-polish`)
+- `flutter test`: 33/33 green (3 boot + 12 auth + 5 browse + 13 restore/profile)
+- PRs #1–#5 merged into `main`; PR #6 (`feat/app-animations` → main) open for CodeRabbit review
+- Working tree: clean (on `feat/app-animations`)
 
 ## Next Steps (candidate)
-- Land PRs #1–#4 after CodeRabbit review; squash merge per branch-per-phase workflow
+- Land PR #6 (`feat/app-animations`) after CodeRabbit review; squash merge per branch-per-phase workflow
+- Build merged `main` onto the phone via wireless debugging so the animation overhaul can be felt live
 - Auth flows: remaining sign-in path completeness (social provider scopes, account recovery UX)

@@ -7,6 +7,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/bits.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/artist.dart';
@@ -95,6 +96,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  ...staggerReveal([
                   Center(
                     child: Column(
                       children: [
@@ -170,6 +172,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                       ],
                     ),
                   const SizedBox(height: AppSpacing.xl),
+                  ], context: context),
                 ],
               ),
             ),

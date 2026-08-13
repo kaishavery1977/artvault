@@ -6,6 +6,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/utils/validators.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_fields.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/providers/providers.dart';
 import 'auth_layout.dart';
 
@@ -83,7 +84,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         Form(
           key: _formKey,
           child: Column(
-            children: [
+            // Fields cascade in one by one, matching the login screen and
+            // the cinematic splash intro.
+            children: staggerReveal([
               AppTextField(
                 controller: _name,
                 label: 'Full name',
@@ -130,7 +133,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 loading: auth.busy,
                 onPressed: _submit,
               ),
-            ],
+            ], initialDelay: const Duration(milliseconds: 100), context: context),
           ),
         ),
       ],

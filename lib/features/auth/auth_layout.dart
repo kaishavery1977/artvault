@@ -51,10 +51,11 @@ class AuthLayout extends StatelessWidget {
                         curve: Curves.easeOutBack,
                       ),
                       const SizedBox(height: AppSpacing.md),
-                      Text(
-                        'ArtVault',
-                        textAlign: TextAlign.center,
+                      GradientShimmerText(
+                        text: 'ArtVault',
                         style: AppTheme.display(context, size: 32),
+                        colors: [scheme.primary, scheme.secondary, scheme.tertiary],
+                        duration: const Duration(milliseconds: 1100),
                       ),
                       const SizedBox(height: AppSpacing.xs),
                       Text(

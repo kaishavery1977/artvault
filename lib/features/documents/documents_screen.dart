@@ -10,6 +10,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/share_service.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
@@ -62,7 +63,7 @@ class DocumentsScreen extends ConsumerWidget {
                     delegate: SliverChildBuilderDelegate(
                       (context, i) {
                         final doc = docs[i];
-                        return _DocumentTile(
+                        final tile = _DocumentTile(
                           doc: doc,
                           paintingTitle: titleFor(doc.paintingId),
                           canEdit: canEdit,
@@ -80,6 +81,12 @@ class DocumentsScreen extends ConsumerWidget {
                               context.push('/painting/${doc.paintingId}');
                             }
                           },
+                        );
+                        return revealListItem(
+                          tile,
+                          i,
+                          key: ValueKey(doc.id),
+                          context: context,
                         );
                       },
                       childCount: docs.length,

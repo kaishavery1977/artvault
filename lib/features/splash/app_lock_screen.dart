@@ -8,6 +8,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/biometric_service.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/widgets/success_overlay.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../auth/face_scan_screen.dart';
@@ -46,6 +47,9 @@ class _AppLockScreenState extends State<AppLockScreen>
   bool _pinMode = false;
   String _pin = '';
   String _status = 'Checking security…';
+
+  /// Increments on every wrong passcode so the pad shakes in place.
+  int _shakeTick = 0;
 
   bool get _fingerprintMethod => _fingerprintOn && _fingerprintAvailable;
   bool get _faceMethod => _faceOn && _faceAvailable;
@@ -199,6 +203,7 @@ class _AppLockScreenState extends State<AppLockScreen>
       _checking = false;
       _pin = '';
       _status = 'Incorrect passcode. Try again.';
+      _shakeTick++;
     });
   }
 
@@ -291,12 +296,15 @@ class _AppLockScreenState extends State<AppLockScreen>
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     if (showPinPad)
-                      _PinPad(
-                        length: AppConstants.kPasscodeLength,
-                        entered: _pin.length,
-                        enabled: !_checking,
-                        onDigit: _onDigit,
-                        onBackspace: _onBackspace,
+                      ShakeOnError(
+                        tick: _shakeTick,
+                        child: _PinPad(
+                          length: AppConstants.kPasscodeLength,
+                          entered: _pin.length,
+                          enabled: !_checking,
+                          onDigit: _onDigit,
+                          onBackspace: _onBackspace,
+                        ),
                       )
                     else ...[
                       if (_faceMethod) ...[

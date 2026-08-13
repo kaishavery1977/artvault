@@ -6,6 +6,7 @@ import '../../core/services/qr_service.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/art_image.dart';
+import '../../core/widgets/motion.dart';
 import '../../data/models/painting.dart';
 import '../../data/repositories/painting_repository.dart';
 
@@ -16,12 +17,42 @@ class QrScanScreen extends StatefulWidget {
   State<QrScanScreen> createState() => _QrScanScreenState();
 }
 
-class _QrScanScreenState extends State<QrScanScreen> {
+class _QrScanScreenState extends State<QrScanScreen>
+    with SingleTickerProviderStateMixin {
   final MobileScannerController _controller = MobileScannerController();
   bool _handled = false;
 
+  /// Drives the sweeping scan line across the viewfinder. Stops when a code
+  /// is locked so the frame visibly "catches" the code before resolving.
+  late final AnimationController _line = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2400),
+  );
+
+  /// Bump to replay the success pulse (green ring + check) after a catch.
+  int _successTick = 0;
+
+  bool _lineStarted = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Keep the sweep in sync with the current motion preference and scan
+    // state rather than relying on _lineStarted alone: reduced motion (or a
+    // code already being handled) must never start the patrol line, and a
+    // late preference change stops it.
+    if (MediaQuery.disableAnimationsOf(context) || _handled) {
+      _line.stop();
+      return;
+    }
+    if (_lineStarted) return;
+    _lineStarted = true;
+    _line.repeat();
+  }
+
   @override
   void dispose() {
+    _line.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -33,6 +64,8 @@ class _QrScanScreenState extends State<QrScanScreen> {
       if (raw == null) continue;
       final payload = QrService.parsePayload(raw);
       if (payload == null) continue;
+      setState(() => _successTick++);
+      _line.stop(); // freeze the sweep — the frame has caught the code
       _resolve(payload);
       return;
     }
@@ -86,8 +119,12 @@ class _QrScanScreenState extends State<QrScanScreen> {
       return;
     }
 
-    // Cancelled — resume scanning.
-    _handled = false;
+    // Cancelled — clear the stale success overlay and resume scanning.
+    setState(() {
+      _handled = false;
+      _successTick = 0;
+    });
+    if (!MediaQuery.disableAnimationsOf(context)) _line.repeat();
     await _controller.start();
   }
 
@@ -309,6 +346,12 @@ class _QrScanScreenState extends State<QrScanScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    final lineT = CurvedAnimation(
+      parent: _line,
+      curve: Curves.easeInOutCubic,
+    );
+
     return Scaffold(
       appBar: AppBar(title: const Text('Scan a QR code')),
       body: Stack(
@@ -316,6 +359,55 @@ class _QrScanScreenState extends State<QrScanScreen> {
         children: [
           Positioned.fill(
             child: MobileScanner(controller: _controller, onDetect: _onDetect),
+          ),
+          // Viewfinder frame: brackets scale in, then the sweep line patrols
+          // the window while the camera is live. A caught code flashes the
+          // ring + check before resolving.
+          IgnorePointer(
+            child: Center(
+              child: RevealEntrance(
+                delay: const Duration(milliseconds: 80),
+                duration: const Duration(milliseconds: 420),
+                beginOffset: 0.04,
+                reducedMotion: reduced,
+                child: SizedBox(
+                  width: 248,
+                  height: 248,
+                  child: AnimatedBuilder(
+                    animation: _line,
+                    builder: (context, _) => Stack(
+                      children: [
+                        _CornerBrackets(color: scheme.primary),
+                        if (!reduced)
+                          Positioned(
+                            left: 12,
+                            right: 12,
+                            top: 10 + 228 * lineT.value,
+                            child: Container(
+                              height: 2,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    scheme.primary.withValues(alpha: 0),
+                                    scheme.primary,
+                                    scheme.primary.withValues(alpha: 0),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        // Success pulse: ring + check replay on each catch.
+                        if (_successTick > 0)
+                          _ScanSuccessPulse(
+                            tick: _successTick,
+                            color: const Color(0xFF22C55E),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
           Positioned(
             bottom: AppSpacing.xxl + MediaQuery.paddingOf(context).bottom,
@@ -344,7 +436,17 @@ class _QrScanScreenState extends State<QrScanScreen> {
                   IconButton(
                     tooltip: 'Toggle torch',
                     icon: const Icon(Icons.flashlight_on_outlined),
-                    onPressed: () => _controller.toggleTorch(),
+                    // The toggle is visible from the first frame — never
+                    // wrapped in an entrance animation — and guarded so a
+                    // device without a flash just no-ops instead of crashing
+                    // the camera session.
+                    onPressed: () {
+                      try {
+                        _controller.toggleTorch();
+                      } catch (_) {
+                        // No torch on this device — nothing to toggle.
+                      }
+                    },
                   ),
                 ],
               ),
@@ -352,6 +454,129 @@ class _QrScanScreenState extends State<QrScanScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Four rounded corner brackets framing the scan window.
+class _CornerBrackets extends StatelessWidget {
+  final Color color;
+
+  const _CornerBrackets({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    const len = 26.0;
+    const thick = 3.5;
+    const radius = 6.0;
+    final b = Border(
+      top: BorderSide(color: color, width: thick),
+      bottom: BorderSide(color: color, width: thick),
+      left: BorderSide(color: color, width: thick),
+      right: BorderSide(color: color, width: thick),
+    );
+    Widget corner(Alignment a) => Align(
+          alignment: a,
+          child: SizedBox(
+            width: len,
+            height: len,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(radius),
+                border: Border(
+                  top: a.y < 0 ? b.top : BorderSide.none,
+                  bottom: a.y > 0 ? b.bottom : BorderSide.none,
+                  left: a.x < 0 ? b.left : BorderSide.none,
+                  right: a.x > 0 ? b.right : BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+        );
+    return Stack(
+      children: [
+        corner(const Alignment(-1, -1)),
+        corner(const Alignment(1, -1)),
+        corner(const Alignment(-1, 1)),
+        corner(const Alignment(1, 1)),
+      ],
+    );
+  }
+}
+
+/// A one-shot success pulse (expanding ring + check) that replays each time
+/// [tick] increments. Ticker-only — no timers.
+class _ScanSuccessPulse extends StatefulWidget {
+  final int tick;
+  final Color color;
+
+  const _ScanSuccessPulse({required this.tick, required this.color});
+
+  @override
+  State<_ScanSuccessPulse> createState() => _ScanSuccessPulseState();
+}
+
+class _ScanSuccessPulseState extends State<_ScanSuccessPulse>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 700),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.forward();
+  }
+
+  @override
+  void didUpdateWidget(_ScanSuccessPulse oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.tick != widget.tick) _controller.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        // Under reduced motion render the pulse's final, settled state
+        // (the check) immediately instead of animating it.
+        final t = Curves.easeOutCubic.transform(
+          reduced ? 1.0 : _controller.value,
+        );
+        return Positioned.fill(
+          child: IgnorePointer(
+            child: Center(
+              child: Container(
+                width: 140 * t + 40,
+                height: 140 * t + 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: widget.color.withValues(alpha: (1 - t) * 0.9),
+                    width: 3,
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.check_rounded,
+                    size: 44,
+                    color: widget.color,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

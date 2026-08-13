@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/bits.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
@@ -128,10 +128,15 @@ class UsersScreen extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.lg),
               for (var i = 0; i < users.length; i++) ...[
-                _UserRow(
-                  user: users[i],
-                  isMe: me?.uid == users[i].uid,
-                  onRoleChanged: (role) => _changeRole(context, ref, users[i], role),
+                revealListItem(
+                  _UserRow(
+                    user: users[i],
+                    isMe: me?.uid == users[i].uid,
+                    onRoleChanged: (role) => _changeRole(context, ref, users[i], role),
+                  ),
+                  i,
+                  key: ValueKey(users[i].uid),
+                  context: context,
                 ),
                 if (i < users.length - 1)
                   const SizedBox(height: AppSpacing.sm),
@@ -213,7 +218,7 @@ class _UserRow extends StatelessWidget {
           ),
         ],
       ),
-    ).animate().fadeIn(duration: 250.ms);
+    );
   }
 }
 

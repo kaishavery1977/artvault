@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
@@ -346,7 +347,12 @@ class _GalleryHeader extends StatelessWidget {
           ),
         ],
       ),
-    );
+    )
+        // Header settles in as one unit, then the search bar follows — the
+        // toolbar choreography every list screen in the app shares.
+        .animate(key: ValueKey('gallery-header'))
+        .fadeIn(duration: 420.ms, curve: Curves.easeOutCubic)
+        .slideY(begin: 0.04, duration: 420.ms, curve: Curves.easeOutCubic);
   }
 }
 

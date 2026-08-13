@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_spacing.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/widgets/states.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/app_notification.dart';
@@ -52,7 +53,12 @@ class NotificationsScreen extends ConsumerWidget {
             separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
             itemBuilder: (context, index) {
               final n = sorted[index];
-              return _NotificationTile(notification: n);
+              return revealListItem(
+                _NotificationTile(notification: n),
+                index,
+                key: ValueKey(n.id),
+                context: context,
+              );
             },
           );
         },
