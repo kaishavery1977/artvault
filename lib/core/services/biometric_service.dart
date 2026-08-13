@@ -10,6 +10,25 @@ import 'package:local_auth/local_auth.dart';
 /// camera face scan instead.
 enum FaceAuthResult { success, failed, needsCameraScan }
 
+/// Which unlock methods the device actually supports right now.
+class BiometricAvailability {
+  /// Any biometric (fingerprint or face) usable for unlock.
+  final bool any;
+
+  /// A fingerprint-capable (strong) biometric is enrolled.
+  final bool fingerprint;
+
+  /// A face-unlock path is available (front camera on Android, Face ID on
+  /// iOS).
+  final bool face;
+
+  const BiometricAvailability({
+    required this.any,
+    required this.fingerprint,
+    required this.face,
+  });
+}
+
 /// Wraps platform biometric authentication (fingerprint / Face ID).
 class BiometricService {
   BiometricService._();
@@ -85,6 +104,16 @@ class BiometricService {
     final types = await availableTypes();
     return types.contains(BiometricType.fingerprint) ||
         types.contains(BiometricType.strong);
+  }
+
+  /// One combined probe so callers (and tests) can read all three states in
+  /// a single call.
+  Future<BiometricAvailability> get availability async {
+    return BiometricAvailability(
+      any: await isAvailable,
+      fingerprint: await hasFingerprint,
+      face: await hasFaceId,
+    );
   }
 
   /// Authenticates with the generic biometric prompt (system picks the
