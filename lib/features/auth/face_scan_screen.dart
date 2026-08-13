@@ -543,8 +543,14 @@ class _FaceScanScreenState extends State<FaceScanScreen>
     _pulse.dispose();
     _success.dispose();
     _cancelAnim.dispose();
-    _controller?.stopImageStream();
-    _controller?.dispose();
+    // Only stop the image stream when one is actually active — the camera
+    // plugin throws if stopImageStream is called while nothing is streaming
+    // (e.g. the lock gate tears the screen down before the stream starts).
+    final cam = _controller;
+    if (cam != null && cam.value.isStreamingImages) {
+      cam.stopImageStream();
+    }
+    cam?.dispose();
     _detector.close();
     super.dispose();
   }
