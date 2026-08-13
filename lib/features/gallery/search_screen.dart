@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,6 +30,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   bool _speechReady = false;
   String _spoken = '';
 
+  /// Live-search debounce: search is fully local (pure CPU), so results can
+  /// update as the user types — but only after a short pause so every
+  /// keystroke doesn't churn the list.
+  static const _debounceDuration = Duration(milliseconds: 280);
+  Timer? _debounce;
+
   @override
   void initState() {
     super.initState();
@@ -35,8 +43,35 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Future<void> _initSpeech() async {
-    final ok = await _speech.initialize();
-    if (mounted) setState(() => _speechReady = ok);
+    // Speech is an optional enhancement — a missing plugin or mic failure
+    // must never break opening or using search.
+    try {
+      final ok = await _speech.initialize();
+      if (mounted) setState(() => _speechReady = ok);
+    } catch (_) {
+      _speechReady = false;
+    }
+  }
+
+  Future<void> _stopListening() async {
+    try {
+      await _speech.stop();
+    } catch (_) {
+      // Mic teardown can race with dispose — never let it throw.
+    }
+  }
+
+  /// Live search as the user types (debounced), with an instant reset back
+  /// to the suggestions screen once the field is cleared.
+  void _onTextChanged(String text) {
+    _debounce?.cancel();
+    if (text.trim().isEmpty) {
+      if (_query != null) setState(() => _query = null);
+      return;
+    }
+    _debounce = Timer(_debounceDuration, () {
+      if (mounted) _runSearch(text);
+    });
   }
 
   Future<void> _toggleListen() async {
@@ -78,8 +113,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _controller.dispose();
-    _speech.stop();
+    _stopListening();
     super.dispose();
   }
 
@@ -103,6 +139,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   border: InputBorder.none,
                   filled: false,
                 ),
+                onChanged: _onTextChanged,
                 onSubmitted: _runSearch,
               ),
             ),

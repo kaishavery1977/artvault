@@ -167,6 +167,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
                     (context, i) => PaintingGridCard(
                       painting: visible[i],
                       heroTag: 'painting-${visible[i].id}',
+                      staggerIndex: i,
                     ),
                     childCount: visible.length,
                   ),
@@ -199,7 +200,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
                   crossAxisSpacing: AppSpacing.sm,
                   childCount: visible.length,
                   itemBuilder: (context, i) =>
-                      _MasonryCard(painting: visible[i]),
+                      _MasonryCard(painting: visible[i], staggerIndex: i),
                 ),
               ),
             },
@@ -367,8 +368,9 @@ class _GallerySkeletonCard extends StatelessWidget {
 /// Masonry cell with variable height driven by the artwork's orientation.
 class _MasonryCard extends StatelessWidget {
   final Painting painting;
+  final int? staggerIndex;
 
-  const _MasonryCard({required this.painting});
+  const _MasonryCard({required this.painting, this.staggerIndex});
 
   @override
   Widget build(BuildContext context) {
@@ -378,7 +380,10 @@ class _MasonryCard extends StatelessWidget {
       children: [
         AspectRatio(
           aspectRatio: isPortrait ? 3 / 4 : 4 / 3,
-          child: PaintingGridCard(painting: painting),
+          child: PaintingGridCard(
+            painting: painting,
+            staggerIndex: staggerIndex,
+          ),
         ),
         Padding(
           padding: const EdgeInsets.only(

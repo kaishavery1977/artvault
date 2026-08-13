@@ -23,11 +23,16 @@ class PaintingGridCard extends ConsumerWidget {
   /// colliding.
   final String? heroTag;
 
+  /// Position of this card inside a scrolling grid, used to cascade the
+  /// entrance animation card-by-card. Leave null for no stagger.
+  final int? staggerIndex;
+
   const PaintingGridCard({
     super.key,
     required this.painting,
     this.onTap,
     this.heroTag,
+    this.staggerIndex,
   });
 
   @override
@@ -39,87 +44,90 @@ class PaintingGridCard extends ConsumerWidget {
       fit: BoxFit.cover,
     );
 
-    return PressScale(
-      child:
-          ClipRRect(
-                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    if (heroTag != null)
-                      Hero(tag: heroTag!, child: image)
-                    else
-                      image,
-                    // Bottom scrim for readability.
-                    Positioned.fill(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.55),
-                            ],
-                            stops: const [0.45, 1.0],
-                          ),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      top: AppSpacing.xs,
-                      right: AppSpacing.xs,
-                      child: _FavoriteButton(painting: painting),
-                    ),
-                    Positioned(
-                      left: AppSpacing.sm,
-                      right: AppSpacing.sm,
-                      bottom: AppSpacing.sm,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            painting.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            painting.artistName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.85),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap:
-                            onTap ??
-                            () => context.push('/painting/${painting.id}'),
-                        onLongPress: canEdit
-                            ? () =>
-                                  context.push('/painting/edit/${painting.id}')
-                            : null,
-                      ),
-                    ),
+    Widget card = ClipRRect(
+      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (heroTag != null)
+            Hero(tag: heroTag!, child: image)
+          else
+            image,
+          // Bottom scrim for readability.
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.55),
                   ],
+                  stops: const [0.45, 1.0],
                 ),
-              )
-              .animate()
-              .fadeIn(duration: 300.ms)
-              .slideY(begin: 0.05, curve: Curves.easeOut),
+              ),
+            ),
+          ),
+          Positioned(
+            top: AppSpacing.xs,
+            right: AppSpacing.xs,
+            child: _FavoriteButton(painting: painting),
+          ),
+          Positioned(
+            left: AppSpacing.sm,
+            right: AppSpacing.sm,
+            bottom: AppSpacing.sm,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  painting.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  painting.artistName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.85),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap:
+                  onTap ?? () => context.push('/painting/${painting.id}'),
+              onLongPress: canEdit
+                  ? () => context.push('/painting/edit/${painting.id}')
+                  : null,
+            ),
+          ),
+        ],
+      ),
     );
+
+    // Cascade the entrance when the grid passes an index; respect the
+    // system reduced-motion preference like the rest of the app.
+    if (!MediaQuery.disableAnimationsOf(context)) {
+      card = card
+          .animate(delay: Duration(milliseconds: (staggerIndex ?? 0) * 45))
+          .fadeIn(duration: 300.ms)
+          .slideY(begin: 0.05, curve: Curves.easeOut);
+    }
+
+    return PressScale(child: card);
   }
 }
 
