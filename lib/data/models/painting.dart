@@ -181,10 +181,14 @@ class Painting {
     );
   }
 
+  /// Marks the record as fully mirrored to the cloud.
+  ///
+  /// Deliberately does NOT touch [isDeleted] — sync state is orthogonal to
+  /// trash state, and clearing it here would resurrect a trashed painting
+  /// on the next background sync.
   Painting markSynced() => copyWith(
         needsSync: false,
         synced: true,
-        isDeleted: false,
       );
 
   Map<String, dynamic> toJson() => {
