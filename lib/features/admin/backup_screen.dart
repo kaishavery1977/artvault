@@ -12,6 +12,9 @@ import '../../core/services/file_storage_service.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
+import '../../data/repositories/artist_repository.dart';
+import '../../data/repositories/document_repository.dart';
+import '../../data/repositories/painting_repository.dart';
 
 /// Admin backup & restore management.
 ///
@@ -165,6 +168,12 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
       },
       'Cloud backup restored',
     );
+    // Pull the live paintings collection afterwards — a snapshot can carry
+    // metadata without image URLs (backup taken before uploads finished), so
+    // this re-fetches the authoritative docs and repairs the missing photos.
+    await PaintingRepository.instance.syncNow();
+    await ArtistRepository.instance.syncNow();
+    await DocumentRepository.instance.syncNow();
     ref.invalidate(paintingsProvider);
     ref.invalidate(artistsProvider);
     ref.invalidate(documentsProvider);

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:disk_space_2/disk_space_2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -95,10 +97,21 @@ class AuthController extends StateNotifier<AuthState> {
       try {
         final user = await _repo.restoreSession();
         state = AuthState(status: AuthStatus.authenticated, user: user);
+        _pullVaultInBackground();
         return;
       } catch (_) {}
     }
     state = const AuthState(status: AuthStatus.unauthenticated);
+  }
+
+  /// Pulls the cloud vault after a successful sign-in so the home screen
+  /// isn't empty until the user manually taps Sync. Fire-and-forget: the
+  /// repositories are offline-first and each sync is a safe no-op when
+  /// Firebase isn't configured.
+  void _pullVaultInBackground() {
+    unawaited(PaintingRepository.instance.syncNow());
+    unawaited(ArtistRepository.instance.syncNow());
+    unawaited(DocumentRepository.instance.syncNow());
   }
 
   Future<bool> signInWithEmail(
@@ -114,6 +127,7 @@ class AuthController extends StateNotifier<AuthState> {
         remember: remember,
       );
       state = AuthState(status: AuthStatus.authenticated, user: user);
+      _pullVaultInBackground();
       return true;
     } catch (e) {
       state = state.copyWith(busy: false, error: _message(e));
@@ -126,6 +140,7 @@ class AuthController extends StateNotifier<AuthState> {
     try {
       final user = await _repo.register(name, email, password);
       state = AuthState(status: AuthStatus.authenticated, user: user);
+      _pullVaultInBackground();
       return true;
     } catch (e) {
       state = state.copyWith(busy: false, error: _message(e));
@@ -138,6 +153,7 @@ class AuthController extends StateNotifier<AuthState> {
     try {
       final user = await _repo.signInWithGoogle();
       state = AuthState(status: AuthStatus.authenticated, user: user);
+      _pullVaultInBackground();
       return true;
     } catch (e) {
       state = state.copyWith(busy: false, error: _message(e));
@@ -150,6 +166,7 @@ class AuthController extends StateNotifier<AuthState> {
     try {
       final user = await _repo.signInWithApple();
       state = AuthState(status: AuthStatus.authenticated, user: user);
+      _pullVaultInBackground();
       return true;
     } catch (e) {
       state = state.copyWith(busy: false, error: _message(e));

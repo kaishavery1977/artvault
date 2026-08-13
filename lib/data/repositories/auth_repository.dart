@@ -220,7 +220,34 @@ class AuthRepository {
     final email = (firebaseUser.email as String?) ?? '';
     final name = (firebaseUser.displayName as String?) ?? 'ArtVault User';
 
-    // Check Firestore for an existing profile (preserves assigned role).
+    // The locally cached profile is the source of truth for the user's own
+    // edits (display name, avatar, bio). It survives re-logins, so an edit
+    // made when the cloud write failed is never silently discarded — the
+    // local copy wins and is re-pushed below.
+    final cached = cachedUser;
+    if (cached.uid == uid) {
+      var profile = cached;
+      // Keep admin-assigned role from the cloud when available.
+      try {
+        final profiles = await CloudBackend.instance.fetchAll('users');
+        final match = profiles.where((m) => m['uid'] == uid).toList();
+        if (match.isNotEmpty) {
+          profile = cached.copyWith(role: AppUser.fromJson(match.first).role);
+        }
+      } catch (_) {}
+      // Repair the cloud copy with the local profile (best-effort).
+      try {
+        await CloudBackend.instance.upsert(
+          'users',
+          uid,
+          profile.copyWith(lastLogin: DateTime.now()).toJson(),
+        );
+      } catch (_) {}
+      return profile.copyWith(lastLogin: DateTime.now());
+    }
+
+    // First login on this device — check Firestore for an existing profile
+    // (preserves assigned role) before creating a fresh one.
     try {
       final profiles = await CloudBackend.instance.fetchAll('users');
       final match = profiles.where((m) => m['uid'] == uid).toList();
@@ -257,6 +284,10 @@ class AuthRepository {
   }
 
   /// Updates the local + cloud copy of the signed-in profile.
+  ///
+  /// The local box is written first and is authoritative; the cloud mirror is
+  /// best-effort, so a failed/offline write never discards the edit — the
+  /// next login re-pushes the local profile ([_loadOrCreateProfile]).
   Future<void> updateProfile({
     String? displayName,
     String? bio,
@@ -277,13 +308,18 @@ class AuthRepository {
       'me',
       updated.toJson(),
     );
-    await CloudBackend.instance.upsert('users', me.uid, {
-      'displayName': ?displayName,
-      'bio': ?bio,
-      'photoPath': ?photoPath,
-      'photoUrl': ?photoUrl,
-      if (role != null) 'role': role.wire,
-    });
+    try {
+      await CloudBackend.instance.upsert('users', me.uid, {
+        'displayName': ?displayName,
+        'bio': ?bio,
+        'photoPath': ?photoPath,
+        'photoUrl': ?photoUrl,
+        if (role != null) 'role': role.wire,
+      });
+    } catch (_) {
+      // Cloud write failed (offline etc.) — local edit is already saved and
+      // will be re-pushed on the next login.
+    }
     CloudBackend.instance.setUser(me.uid, me.email);
   }
 

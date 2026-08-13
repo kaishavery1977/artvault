@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:uuid/uuid.dart';
 
 import '../../core/constants/app_constants.dart';
@@ -261,33 +262,58 @@ class PaintingRepository {
 
       // Ensure the remote doc exists (with ownership) before uploading files,
       // so the Storage rules can authorise uploads via the Firestore doc.
-      await cloud.upsert(_collection, working.id, working.toJson());
+      // Merge a minimal doc: writing the full payload here could clobber
+      // remote image URLs we haven't mirrored yet (see below).
+      await cloud.upsert(_collection, working.id, {'ownerUid': uid});
 
-      // Upload any local images not yet mirrored.
-      final urls = [...working.imageUrls];
+      // Upload any local images not yet mirrored. URLs are stored per-image
+      // index so each position always matches its local file; padding keeps
+      // the alignment when an earlier image was never uploaded.
+      final urls = alignUrls(working.images, working.imageUrls);
       for (var i = 0; i < working.images.length; i++) {
-        final local = working.images[i];
-        if (i < urls.length && urls[i].isNotEmpty) continue;
-        final file = File(local);
+        if (urls[i].isNotEmpty) continue;
+        final file = File(working.images[i]);
         if (!await file.exists()) continue;
-        final name = local.split(Platform.pathSeparator).last;
+        final name = working.images[i].split(Platform.pathSeparator).last;
         final url = await cloud.uploadBytes(
           'paintings/${working.id}/$name',
           await file.readAsBytes(),
           contentType: 'image/jpeg',
         );
-        if (url != null) urls.add(url);
+        if (url != null) urls[i] = url;
       }
-      if (urls.length < working.images.length) {
-        // Missing remote mirrors for some images — keep dirty.
-        working = working.copyWith(imageUrls: urls, needsSync: true);
-      } else {
+
+      final allMirrored = !urls.any((u) => u.isEmpty);
+      final data = working.toJson();
+      if (allMirrored) {
+        data['imageUrls'] = urls;
+        data['coverImageUrl'] =
+            urls.isNotEmpty ? urls.first : working.coverImageUrl;
+        working = working
+            .copyWith(
+              imageUrls: urls,
+              coverImageUrl:
+                  urls.isNotEmpty ? urls.first : working.coverImageUrl,
+            )
+            .markSynced();
+      } else if (urls.any((u) => u.isNotEmpty)) {
+        // Some images mirrored, others not — keep dirty but never erase the
+        // remote URLs we still hold (omitting them preserves remote state via
+        // merge, so a restored painting's URLs can't be clobbered with []).
+        data['imageUrls'] =
+            urls.where((u) => u.isNotEmpty).toList();
         working = working.copyWith(
-          imageUrls: urls,
-          coverImageUrl: urls.isNotEmpty ? urls.first : working.coverImageUrl,
-        ).markSynced();
+          imageUrls: data['imageUrls'] as List<String>,
+          needsSync: true,
+        );
+      } else {
+        // Nothing mirrored (files missing / offline) — leave the remote doc
+        // untouched so existing URLs survive; keep the record dirty.
+        data.remove('imageUrls');
+        data.remove('coverImageUrl');
+        working = working.copyWith(needsSync: true);
       }
-      await cloud.upsert(_collection, working.id, working.toJson());
+      await cloud.upsert(_collection, working.id, data);
       await _db.put(AppConstants.boxPaintings, working.id, working.toJson());
     } catch (_) {
       // Network failure — leave dirty, retried on next sync.
@@ -306,8 +332,12 @@ class PaintingRepository {
         // Never resurrect a painting purged locally (offline purge).
         if (tombstones.contains(painting.id)) continue;
         final local = get(painting.id);
-        if (local == null || painting.updatedAt.isAfter(local.updatedAt)) {
-          await _db.put(AppConstants.boxPaintings, painting.id, painting.toJson());
+        if (shouldAdoptRemote(local, painting)) {
+          await _db.put(
+            AppConstants.boxPaintings,
+            painting.id,
+            painting.toJson(),
+          );
         }
       }
     } catch (_) {}
@@ -315,4 +345,34 @@ class PaintingRepository {
 
   /// Generates a fresh id for a new painting.
   static String newId() => const Uuid().v4();
+
+  /// Pads [urls] so each position lines up with the image at the same index
+  /// in [images]. Existing URLs are kept in place; missing slots become ''
+  /// so the upload loop can fill exactly the gaps. This keeps the
+  /// images[i] ↔ urls[i] pairing stable across partial uploads.
+  @visibleForTesting
+  static List<String> alignUrls(List<String> images, List<String> urls) {
+    final aligned = List<String>.from(urls);
+    while (aligned.length < images.length) {
+      aligned.add('');
+    }
+    return aligned;
+  }
+
+  /// Whether the remote copy should overwrite the local one during a pull.
+  ///
+  /// True when there's no local copy, when the remote is newer, or when the
+  /// local copy has no image URLs but the remote does — a backup restore can
+  /// carry metadata without mirrors, and adopting the remote restores the
+  /// photos.
+  @visibleForTesting
+  static bool shouldAdoptRemote(Painting? local, Painting remote) {
+    if (local == null) return true;
+    if (remote.updatedAt.isAfter(local.updatedAt)) return true;
+    final localNeedsUrls = local.imageUrls.isEmpty &&
+        local.coverImageUrl.isEmpty;
+    final remoteHasUrls =
+        remote.imageUrls.isNotEmpty || remote.coverImageUrl.isNotEmpty;
+    return localNeedsUrls && remoteHasUrls;
+  }
 }

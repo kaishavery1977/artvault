@@ -12,6 +12,7 @@ import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/app_user.dart';
 import '../../data/repositories/auth_repository.dart';
+import '../../data/remote/cloud_backend.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -69,7 +70,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
     if (file == null) return;
     final path = await FileStorageService.instance.importImage(File(file.path));
-    await AuthRepository.instance.updateProfile(photoPath: path);
+    // Mirror the avatar to cloud storage so it survives re-installs and
+    // shows on other devices (local path alone is device-specific).
+    String? photoUrl;
+    final cloud = CloudBackend.instance;
+    final uid = ref.read(authProvider).user?.uid;
+    if (cloud.isReady && uid != null && uid.isNotEmpty) {
+      try {
+        photoUrl = await cloud.uploadBytes(
+          'users/$uid/avatar.jpg',
+          await File(path).readAsBytes(),
+          contentType: 'image/jpeg',
+        );
+      } catch (_) {
+        // Upload failed — local avatar still works; retried on next login's
+        // profile re-push only for metadata, so best-effort here is fine.
+      }
+    }
+    await AuthRepository.instance.updateProfile(
+      photoPath: path,
+      photoUrl: photoUrl ?? '',
+    );
     await ref.read(authProvider.notifier).refreshProfile();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -85,6 +106,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     await ref.read(authProvider.notifier).refreshProfile();
     if (path.isNotEmpty) {
       await FileStorageService.instance.deleteFile(path);
+    }
+    // Best-effort cleanup of the mirrored cloud avatar.
+    final uid = user?.uid;
+    if (uid != null && uid.isNotEmpty) {
+      try {
+        await CloudBackend.instance.deleteFile('users/$uid/avatar.jpg');
+      } catch (_) {}
     }
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
