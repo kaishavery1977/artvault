@@ -11,7 +11,9 @@
 1.8 ⬜ Land PR #1 after CodeRabbit review (squash merge)
 
 ## Phase 2: Auth & Onboarding Completion
-- Finish auth flows (sign-in paths beyond staggered fields)
+1.1 ✅ Auth flows polish (biometric manage sheets, offline Google/Apple guards, About credit) — `feat/auth-flows-polish`, PR #4
+1.2 ⬜ Land PRs #1–#4 after CodeRabbit review (squash merge)
+1.3 ⬜ Social provider scopes / account recovery UX
 - Onboarding completion → main vault entry
 
 ## Phase 3: Vault Core

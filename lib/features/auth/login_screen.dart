@@ -10,6 +10,7 @@ import '../../core/widgets/app_fields.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/providers/providers.dart';
 import '../../data/repositories/auth_repository.dart';
+import '../../data/remote/cloud_backend.dart';
 import 'auth_layout.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -53,13 +54,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _google() async {
+    // Social sign-in goes through Firebase — explain instead of firing a
+    // doomed request when the device is offline.
+    if (!CloudBackend.instance.isReady) {
+      _showOfflineSocial('Google');
+      return;
+    }
     final ok = await ref.read(authProvider.notifier).signInWithGoogle();
     if (ok && mounted) context.go('/home');
   }
 
   Future<void> _apple() async {
+    if (!CloudBackend.instance.isReady) {
+      _showOfflineSocial('Apple');
+      return;
+    }
     final ok = await ref.read(authProvider.notifier).signInWithApple();
     if (ok && mounted) context.go('/home');
+  }
+
+  void _showOfflineSocial(String provider) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '$provider sign-in needs an internet connection. '
+          'Connect and try again.',
+        ),
+      ),
+    );
   }
 
   Future<void> _biometric() async {

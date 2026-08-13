@@ -11,6 +11,8 @@ Goal: the app's opening moments (splash → onboarding → login) feel deliberat
 - **Phase 1.6 — launch experience v2**: full 3.4s intro on first launch; ~700ms quick logo+wordmark fade on repeat launches; static render + no camera-push under reduced motion. Flag write is best-effort so a storage hiccup never blocks the hand-off. Widget tests cover all three variants (full / quick / reduced-motion via `FakeAccessibilityFeatures`).
 - **RalphLoop goal C — onboarding complete & delightful**: best-effort persistence on finish (fire-and-forget; worst case onboarding replays), slide reveal gates on `MediaQuery.disableAnimationsOf` (roadmap 1.7 ✅). Verification surfaced and fixed two real device bugs: AuthLayout `Border` per-side colors + `borderRadius` paint assert, and login footer/remember-me rows overflowing on narrow widths. New Hive test harness (fake `PathProviderPlatform` over a temp dir) + shared test helpers (providers pinned, google_fonts runtime fetch off); 3 new onboarding tests (Skip → login, Next walkthrough, reduced-motion static).
 - Widget tests re-timed for the longer timeline (wordmark asserted as letters; mount-time delay timers drained)
+- **RalphLoop goals A (offline-first) & B (premium browsing)**: PR #2 (sync edge fixes: trash/purge resurrection, tombstone queue; 10 no-network tests) and PR #3 (debounced instant search, lightbox Hero hand-off, cascade gallery stagger; 5 tests). Both open for CodeRabbit review.
+- **RalphLoop goal — auth flows complete**: biometric manage sheets (re-scan face, test/remove fingerprint), offline guards for Google/Apple sign-in, guarded secure-storage reads so Security can't freeze, GlassCard paint-crash fix; 'Built by Kais Havery' About credit; 12 new auth tests.
 
 ### Commits
 - `3c54379` feat: cinematic splash intro and staggered login fields
@@ -24,14 +26,17 @@ Goal: the app's opening moments (splash → onboarding → login) feel deliberat
 - `1dfb0d0` feat(onboarding): best-effort persistence on finish, reduced-motion gating (branch `feat/onboarding-polish`)
 - `993e11e` fix(auth): prevent paint crash and narrow-screen overflows
 - `9415114` test(onboarding): cover skip, walkthrough, and reduced-motion render
+- `64aca61` fix(auth): replace illegal per-side borders and overflow-prone rows (branch `feat/auth-flows-polish`)
+- `b15a1e4` feat(security): manage face lock and fingerprint after enrollment
+- `02ebf84` feat(about): credit the builder on the About screen
+- `6d38076` test(auth): cover validation, offline social guard, biometric manage
 
 ### Verification
 - `flutter analyze`: clean
-- `flutter test`: green (3 boot tests: full / quick / reduced-motion + 3 onboarding tests)
-- PR #1 open (`feat/onboarding-polish` → main) awaiting CodeRabbit review
-- Working tree: clean (on `main`)
+- `flutter test`: 15/15 green (3 boot + 3 onboarding + 12 auth)
+- PRs #1–#4 open (`onboarding-polish`, `offline-hardening`, `vault-browsing-polish`, `auth-flows-polish` → main) awaiting CodeRabbit review
+- Working tree: clean (on `feat/auth-flows-polish`)
 
 ## Next Steps (candidate)
-- Land PR #1 after CodeRabbit review; squash merge per branch-per-phase workflow
-- RalphLoop goals A (offline-first hardening) and B (premium vault browsing) queued
-- Remaining auth/onboarding flow completeness
+- Land PRs #1–#4 after CodeRabbit review; squash merge per branch-per-phase workflow
+- Auth flows: remaining sign-in path completeness (social provider scopes, account recovery UX)
