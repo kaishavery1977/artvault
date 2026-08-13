@@ -20,4 +20,11 @@
 - Artwork storage/browsing (Firestore + Storage rules enforcement)
 - Main vault UI
 
+## Phase 4: App-Wide Motion (in progress)
+4.1 ✅ Ticker-only motion primitives (RevealEntrance, KenBurns, GradientShimmerText, ShakeOnError) — no pending timers, reduced-motion gated
+4.2 ✅ Browse choreography: shell tab fade+drift, home greeting shimmer + welcome spotlight, gallery/search/trash/artist cascades, detail Ken Burns hero
+4.3 ✅ Auth choreography: gradient wordmark, register/forgot cascade, lock-screen PIN shake
+4.4 ✅ Settings/admin/lists cascades + shimmering About credit
+4.5 ⬜ Land PR #6 after CodeRabbit review (squash merge); build onto phone for live feel-check
+
 *Phases 2–3 are placeholders to be refined via GSD planning; do not treat as commitments.*
