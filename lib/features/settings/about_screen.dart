@@ -101,6 +101,41 @@ class AboutScreen extends StatelessWidget {
               style: TextStyle(fontSize: 12, color: scheme.onSurface.withValues(alpha: 0.4)),
             ),
           ),
+          const SizedBox(height: AppSpacing.lg),
+          Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: scheme.primary.withValues(alpha: 0.35),
+                ),
+                color: scheme.primary.withValues(alpha: 0.08),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.brush, size: 15, color: scheme.primary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Built by Kais Havery',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: scheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Center(
+            child: Text(
+              'Every masterpiece starts with a single brushstroke.',
+              style: TextStyle(fontSize: 12, color: scheme.onSurface.withValues(alpha: 0.4)),
+            ),
+          ),
           const SizedBox(height: AppSpacing.xl),
         ],
       ),
