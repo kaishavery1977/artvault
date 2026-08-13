@@ -155,12 +155,48 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         ],
       );
     } else if (quick) {
-      // Return launch: logo + wordmark fade in quickly; no bloom, ring,
-      // letter stagger, shimmer, or dot loader.
+      // Return launch: the logo still does its video-like entrance — the
+      // spotlight blooms behind it and the mark drops in with a rotation
+      // settle — compressed to fit the short intro. Only the letter
+      // stagger, shimmer, tagline and dot loader are skipped.
       content = Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          mark.animate().fadeIn(duration: 500.ms),
+          SizedBox(
+            width: 200,
+            height: 200,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Soft gold spotlight blooming open behind the mark.
+                _Spotlight()
+                    .animate()
+                    .scaleXY(
+                      begin: 0.25,
+                      end: 1,
+                      duration: 500.ms,
+                      curve: Curves.easeOutCubic,
+                    )
+                    .fadeIn(duration: 400.ms),
+                // The logo tile dropping in with a rotation settle.
+                _LogoMark()
+                    .animate(delay: 100.ms)
+                    .scaleXY(
+                      begin: 0.4,
+                      end: 1,
+                      duration: 450.ms,
+                      curve: Curves.easeOutBack,
+                    )
+                    .rotate(
+                      begin: -0.12,
+                      end: 0,
+                      duration: 450.ms,
+                      curve: Curves.easeOutCubic,
+                    )
+                    .fadeIn(duration: 350.ms),
+              ],
+            ),
+          ),
           const SizedBox(height: AppSpacing.xl),
           _StaggeredWordmark(color: fg, quick: true),
         ],

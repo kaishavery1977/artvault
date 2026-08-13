@@ -2,6 +2,7 @@
 // launch, quick intro on repeat launches, and a static render when the system
 // requests reduced motion.
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -50,9 +51,15 @@ void main() {
     );
     await tester.pump();
 
-    // Quick variant: logo + wordmark fade (500ms), letters fade close
-    // together — the cinematic extras (tagline, dot loader) are absent.
+    // Quick variant: the logo mark still does its video-like entrance
+    // (spotlight bloom + drop-in) and the wordmark fades — only the
+    // cinematic extras (tagline, dot loader) are skipped.
     expect(find.text('Your Private Gallery'), findsNothing);
+    // Mid-intro: the palette mark and the first letters are on screen.
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byIcon(Icons.palette), findsOneWidget);
+    expect(find.text('A'), findsOneWidget);
+    expect(find.text('V'), findsOneWidget);
 
     await pumpToOnboarding(tester);
 
