@@ -102,8 +102,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return AuthLayout(
       title: 'Welcome back',
       subtitle: 'Sign in to open your private gallery',
-      footer: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      // Wrap instead of Row: on narrow widths or large text scales the
+      // 'Create one' action drops to its own line rather than overflowing
+      // the card, matching the 'Remember me' row treatment.
+      footer: Wrap(
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           const Text("Don't have an account?"),
           TextButton(
@@ -177,27 +181,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
-              Row(
+              // Wrap instead of Row: on narrow widths or large text scales
+              // the 'Forgot password?' action drops to its own line rather
+              // than overflowing the card. When it fits, spaceBetween keeps
+              // the two sides at the card edges.
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.xs,
                 children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Switch(
-                          value: _remember,
-                          onChanged: (v) => setState(() => _remember = v),
-                        ),
-                        const SizedBox(width: 4),
-                        // Flexible + ellipsis so the label never overflows
-                        // the card (was overflowing by ~2px and showing the
-                        // debug "OVERFLOWED BY 2.0 PIXELS" banner).
-                        const Flexible(
-                          child: Text(
-                            'Remember me',
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Switch(
+                        value: _remember,
+                        onChanged: (v) => setState(() => _remember = v),
+                      ),
+                      const SizedBox(width: 4),
+                      const Text('Remember me'),
+                    ],
                   ),
                   TextButton(
                     onPressed: () => context.push('/forgot'),

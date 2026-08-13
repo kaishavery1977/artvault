@@ -1,45 +1,22 @@
 // Widget tests for the branded boot sequence: full cinematic splash on first
 // launch, quick intro on repeat launches, and a static render when the system
-// requests reduced motion. The app is a Riverpod ConsumerWidget, so it must be
-// pumped inside a ProviderScope. The real providers that read local storage
-// (Hive) or Firebase are overridden so the test runs without a device or
-// emulator.
+// requests reduced motion.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:artvault/main.dart';
-import 'package:artvault/core/providers/providers.dart';
 
-/// Auth controller whose [bootstrap] never touches local/secure storage.
-class _FakeAuthController extends AuthController {
-  @override
-  Future<void> bootstrap() async {
-    // Defer past the build phase — modifying a provider inside initState is
-    // not allowed by Riverpod.
-    await Future<void>.delayed(Duration.zero);
-    state = const AuthState(status: AuthStatus.unauthenticated);
-  }
-}
-
-/// Shared provider overrides: storage-backed providers are pinned to fixed
-/// values so no Hive/Firebase access happens during the test.
-List<Override> _overrides({required bool introShown}) => [
-      themeModeProvider.overrideWith((ref) => ThemeMode.system),
-      localeProvider.overrideWith((ref) => 'en'),
-      onboardedProvider.overrideWith((ref) => false),
-      splashIntroShownProvider.overrideWith((ref) => introShown),
-      cloudReadyProvider.overrideWith((ref) => false),
-      authProvider.overrideWith((ref) => _FakeAuthController()),
-    ];
+import 'helpers.dart';
 
 void main() {
+  setUpAll(disableRuntimeFontFetching);
+
   testWidgets('App boots to the full splash on first launch',
       (WidgetTester tester) async {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: _overrides(introShown: false),
+        overrides: appOverrides(introShown: false),
         child: const ArtVaultApp(),
       ),
     );
@@ -67,7 +44,7 @@ void main() {
   testWidgets('Repeat launches get the quick intro', (WidgetTester tester) async {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: _overrides(introShown: true),
+        overrides: appOverrides(introShown: true),
         child: const ArtVaultApp(),
       ),
     );
@@ -77,11 +54,7 @@ void main() {
     // together — the cinematic extras (tagline, dot loader) are absent.
     expect(find.text('Your Private Gallery'), findsNothing);
 
-    // Quick intro (700ms) + short exit hold (280ms) + route transition
-    // (280ms), then drain the onboarding mount timers.
-    await tester.pump(const Duration(milliseconds: 750));
-    await tester.pump(const Duration(milliseconds: 1200));
-    await tester.pump(const Duration(milliseconds: 900));
+    await pumpToOnboarding(tester);
 
     expect(find.text('Curate Your Collection'), findsOneWidget);
   });
@@ -96,7 +69,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: _overrides(introShown: false),
+        overrides: appOverrides(introShown: false),
         child: const ArtVaultApp(),
       ),
     );
