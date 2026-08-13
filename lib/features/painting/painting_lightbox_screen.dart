@@ -59,37 +59,44 @@ class _PaintingLightboxScreenState extends State<PaintingLightboxScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Swipeable, pinch-zoomable artwork.
-          PageView.builder(
-            controller: _controller,
-            itemCount: widget.paintings.length,
-            onPageChanged: (i) {
-              HapticFeedback.selectionClick();
-              setState(() => _index = i);
-            },
-            itemBuilder: (context, i) {
-              final p = widget.paintings[i];
-              final imgs = p.images.isEmpty
-                  ? <String>[p.coverImagePath]
-                  : p.images;
-              final urlsP = p.imageUrls.isEmpty
-                  ? <String>[p.coverImageUrl]
-                  : p.imageUrls;
-              return GestureDetector(
-                onTap: () => setState(() => _showChrome = !_showChrome),
-                child: InteractiveViewer(
-                  maxScale: 5,
-                  minScale: 0.8,
-                  child: Center(
-                    child: ArtImage(
-                      path: imgs.first,
-                      url: urlsP.isNotEmpty ? urlsP.first : null,
-                      fit: BoxFit.contain,
+          // Swipeable, pinch-zoomable artwork. The Hero shares the detail
+          // screen's tag so the artwork flies into the viewer and back; the
+          // tag follows the current page, so popping after swiping to another
+          // piece simply falls back to the route fade instead of a wrong
+          // flight.
+          Hero(
+            tag: 'painting-${widget.paintings[_index].id}',
+            child: PageView.builder(
+              controller: _controller,
+              itemCount: widget.paintings.length,
+              onPageChanged: (i) {
+                HapticFeedback.selectionClick();
+                setState(() => _index = i);
+              },
+              itemBuilder: (context, i) {
+                final p = widget.paintings[i];
+                final imgs = p.images.isEmpty
+                    ? <String>[p.coverImagePath]
+                    : p.images;
+                final urlsP = p.imageUrls.isEmpty
+                    ? <String>[p.coverImageUrl]
+                    : p.imageUrls;
+                return GestureDetector(
+                  onTap: () => setState(() => _showChrome = !_showChrome),
+                  child: InteractiveViewer(
+                    maxScale: 5,
+                    minScale: 0.8,
+                    child: Center(
+                      child: ArtImage(
+                        path: imgs.first,
+                        url: urlsP.isNotEmpty ? urlsP.first : null,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
           // Museum vignette over the artwork.
           Positioned.fill(child: FilmVignette(strength: 0.38)),
