@@ -131,7 +131,12 @@ class TrashScreen extends ConsumerWidget {
                     ),
                   ),
                 );
-                return revealListItem(tile, index, context: context);
+                return revealListItem(
+                  tile,
+                  index,
+                  key: ValueKey(painting.id),
+                  context: context,
+                );
               },
             ),
     );

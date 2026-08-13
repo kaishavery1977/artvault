@@ -386,6 +386,10 @@ class ShakeOnError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (MediaQuery.disableAnimationsOf(context)) return child;
+    // A fresh mount with tick 0 (e.g. the lock screen opening) must not
+    // autoplay a shake — the effect only plays once the tick actually
+    // increments, i.e. after a real error.
+    if (tick <= 0) return child;
     return KeyedSubtree(
       // Changing the key remounts the subtree, replaying the shake effect.
       key: ValueKey('shake-$tick'),
@@ -568,13 +572,22 @@ class _RevealEntranceState extends State<RevealEntrance>
 
   @override
   Widget build(BuildContext context) {
-    final v = widget.reducedMotion ? 1.0 : _progress.value;
-    return Opacity(
-      opacity: v,
-      child: Transform.translate(
-        offset: Offset(0, widget.beginOffset * (1 - v)),
-        child: widget.child,
-      ),
+    // Listen to the animation (not just read its value) so every tick
+    // rebuilds the opacity/translate. Reading `_progress.value` directly
+    // here would render the child once at opacity 0 and never animate in
+    // until some unrelated rebuild — an invisible-content bug.
+    return AnimatedBuilder(
+      animation: _progress,
+      builder: (context, _) {
+        final v = widget.reducedMotion ? 1.0 : _progress.value;
+        return Opacity(
+          opacity: v,
+          child: Transform.translate(
+            offset: Offset(0, widget.beginOffset * (1 - v)),
+            child: widget.child,
+          ),
+        );
+      },
     );
   }
 }
@@ -614,10 +627,14 @@ List<Widget> staggerReveal(
 Widget revealListItem(
   Widget child,
   int index, {
+  Key? key,
   BuildContext? context,
 }) {
   final static = context != null && MediaQuery.disableAnimationsOf(context);
   return RevealEntrance(
+    // Pass a domain key through so list mutations keep each item's entrance
+    // state attached to its identity, not its position in the list.
+    key: key,
     delay: static
         ? Duration.zero
         : Duration(milliseconds: 32 * (index.clamp(0, 8))),

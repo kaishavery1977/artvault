@@ -56,6 +56,7 @@ class NotificationsScreen extends ConsumerWidget {
               return revealListItem(
                 _NotificationTile(notification: n),
                 index,
+                key: ValueKey(n.id),
                 context: context,
               );
             },

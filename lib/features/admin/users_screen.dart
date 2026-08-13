@@ -135,6 +135,7 @@ class UsersScreen extends ConsumerWidget {
                     onRoleChanged: (role) => _changeRole(context, ref, users[i], role),
                   ),
                   i,
+                  key: ValueKey(users[i].uid),
                   context: context,
                 ),
                 if (i < users.length - 1)

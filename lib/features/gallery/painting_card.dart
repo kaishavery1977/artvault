@@ -119,10 +119,16 @@ class PaintingGridCard extends ConsumerWidget {
     );
 
     // Cascade the entrance when the grid passes an index; respect the
-    // system reduced-motion preference like the rest of the app.
+    // system reduced-motion preference like the rest of the app. The delay
+    // is clamped so a long gallery never leaves deep items invisible for
+    // seconds — later cards settle in at a steady cadence instead.
     if (!MediaQuery.disableAnimationsOf(context)) {
       card = card
-          .animate(delay: Duration(milliseconds: (staggerIndex ?? 0) * 45))
+          .animate(
+            delay: Duration(
+              milliseconds: (staggerIndex ?? 0).clamp(0, 12) * 45,
+            ),
+          )
           .fadeIn(duration: 300.ms)
           .slideY(begin: 0.05, curve: Curves.easeOut);
     }

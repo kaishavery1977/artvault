@@ -82,7 +82,12 @@ class DocumentsScreen extends ConsumerWidget {
                             }
                           },
                         );
-                        return revealListItem(tile, i, context: context);
+                        return revealListItem(
+                          tile,
+                          i,
+                          key: ValueKey(doc.id),
+                          context: context,
+                        );
                       },
                       childCount: docs.length,
                     ),

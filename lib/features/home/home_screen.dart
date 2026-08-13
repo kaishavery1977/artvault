@@ -324,11 +324,14 @@ class _WelcomeHero extends StatelessWidget {
       ),
     )
         // A single soft light sweep across the hero once it has landed — a
-        // spotlight pass that makes the empty vault feel curated.
-        .animate(delay: 550.ms)
-        .shimmer(duration: 950.ms, angle: -0.5, size: 1.4)
-        .fadeIn(duration: 500.ms)
-        .slideY(begin: 0.08);
+        // spotlight pass that makes the empty vault feel curated. The fade
+        // + slide entrance completes first, then the shimmer sweeps the
+        // settled hero (`.then()` makes the sweep wait for the entrance).
+        .animate()
+        .fadeIn(duration: 500.ms, curve: Curves.easeOutCubic)
+        .slideY(begin: 0.08, duration: 500.ms, curve: Curves.easeOutCubic)
+        .then()
+        .shimmer(duration: 950.ms, angle: -0.5, size: 1.4);
   }
 }
 

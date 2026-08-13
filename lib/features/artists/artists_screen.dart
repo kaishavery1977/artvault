@@ -63,6 +63,7 @@ class ArtistsScreen extends ConsumerWidget {
                           paintingCount: countFor(artists[i].id),
                         ),
                         i,
+                        key: ValueKey(artists[i].id),
                         context: context,
                       ),
                       childCount: artists.length,

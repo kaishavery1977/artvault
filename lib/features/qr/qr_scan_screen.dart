@@ -37,9 +37,17 @@ class _QrScanScreenState extends State<QrScanScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // Keep the sweep in sync with the current motion preference and scan
+    // state rather than relying on _lineStarted alone: reduced motion (or a
+    // code already being handled) must never start the patrol line, and a
+    // late preference change stops it.
+    if (MediaQuery.disableAnimationsOf(context) || _handled) {
+      _line.stop();
+      return;
+    }
     if (_lineStarted) return;
     _lineStarted = true;
-    if (!MediaQuery.disableAnimationsOf(context)) _line.repeat();
+    _line.repeat();
   }
 
   @override
@@ -111,9 +119,12 @@ class _QrScanScreenState extends State<QrScanScreen>
       return;
     }
 
-    // Cancelled — resume scanning.
-    _handled = false;
-    _line.repeat();
+    // Cancelled — clear the stale success overlay and resume scanning.
+    setState(() {
+      _handled = false;
+      _successTick = 0;
+    });
+    if (!MediaQuery.disableAnimationsOf(context)) _line.repeat();
     await _controller.start();
   }
 
@@ -532,10 +543,15 @@ class _ScanSuccessPulseState extends State<_ScanSuccessPulse>
 
   @override
   Widget build(BuildContext context) {
+    final reduced = MediaQuery.disableAnimationsOf(context);
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {
-        final t = Curves.easeOutCubic.transform(_controller.value);
+        // Under reduced motion render the pulse's final, settled state
+        // (the check) immediately instead of animating it.
+        final t = Curves.easeOutCubic.transform(
+          reduced ? 1.0 : _controller.value,
+        );
         return Positioned.fill(
           child: IgnorePointer(
             child: Center(
