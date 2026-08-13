@@ -139,6 +139,14 @@ class PaintingRepository {
       await storage.deleteFile(image);
     }
     await _db.delete(AppConstants.boxPaintings, id);
+    // Tombstone the id (fire-and-forget cloud delete) so an offline purge
+    // can't be re-created by the next pull. Removed once the cloud delete
+    // is confirmed (see _removeRemote / _retryPurgedRemovals).
+    await _db.put(
+      AppConstants.boxSyncQueue,
+      id,
+      {'id': id, 'purgedAt': DateTime.now().toIso8601String()},
+    );
     unawaited(_removeRemote(painting));
     await NotificationService.instance.notify(
       'Painting deleted',
@@ -151,33 +159,35 @@ class PaintingRepository {
   Future<void> restore(String id) async {
     final painting = get(id);
     if (painting == null) return;
-    await _db.put(
-      AppConstants.boxPaintings,
-      id,
-      painting.copyWith(isDeleted: false, needsSync: true).toJson(),
-    );
+    final restored = painting.copyWith(isDeleted: false, needsSync: true);
+    await _db.put(AppConstants.boxPaintings, id, restored.toJson());
+    unawaited(_syncPainting(restored));
     BackupService.instance.scheduleAutoBackup();
   }
 
   /// Removes the cloud copy without touching the local record (used by purge).
+  /// On success, clears any purge tombstone; on failure (offline) the
+  /// tombstone persists so a later pull can't resurrect the purged item.
   Future<void> _removeRemote(Painting painting) async {
     final cloud = CloudBackend.instance;
     if (!cloud.isReady || cloud.currentUid.isEmpty) return;
     try {
       await cloud.remove(_collection, painting.id);
+      await _db.delete(AppConstants.boxSyncQueue, painting.id);
     } catch (_) {
-      // Network failure — the remote doc will be cleaned up on the next sync.
+      // Network failure — keep tombstone, retried on the next sync.
     }
   }
 
   Future<void> toggleFavorite(String id) async {
     final painting = get(id);
     if (painting == null) return;
-    await _db.put(
-      AppConstants.boxPaintings,
-      id,
-      painting.copyWith(isFavorite: !painting.isFavorite, needsSync: true).toJson(),
+    final toggled = painting.copyWith(
+      isFavorite: !painting.isFavorite,
+      needsSync: true,
     );
+    await _db.put(AppConstants.boxPaintings, id, toggled.toJson());
+    unawaited(_syncPainting(toggled));
     BackupService.instance.scheduleAutoBackup();
   }
 
@@ -198,8 +208,34 @@ class PaintingRepository {
     for (final painting in dirty) {
       await _syncPainting(painting);
     }
+    // Retry removals for paintings purged while offline (the tombstone
+    // queue keeps them from being re-created by _pullRemote below).
+    await _retryPurgedRemovals();
     await _pullRemote();
     return dirty.length;
+  }
+
+  /// Purged ids awaiting a confirmed cloud delete. Purge writes a tombstone
+  /// here (fire-and-forget), so an offline purge can't be resurrected by the
+  /// next pull. Cleared once the remote delete succeeds.
+  Set<String> _tombstones() {
+    final raw = _db.getAll(AppConstants.boxSyncQueue);
+    return raw
+        .map((e) => e['id'] as String?)
+        .whereType<String>()
+        .toSet();
+  }
+
+  Future<void> _retryPurgedRemovals() async {
+    final cloud = CloudBackend.instance;
+    for (final id in _tombstones()) {
+      try {
+        await cloud.remove(_collection, id);
+        await _db.delete(AppConstants.boxSyncQueue, id);
+      } catch (_) {
+        // Still offline — keep the tombstone, retry next sync.
+      }
+    }
   }
 
   Future<void> _syncPainting(Painting painting) async {
@@ -209,11 +245,23 @@ class PaintingRepository {
       if (uid.isEmpty) return;
       var working = painting.copyWith(ownerUid: uid);
 
+      // Soft-deleted: remove the remote copy and keep the local record in
+      // Trash (isDeleted stays true so it can be restored). Handle this
+      // BEFORE the image upload, since markSynced() must never resurrect a
+      // trashed painting.
+      if (working.isDeleted) {
+        await cloud.remove(_collection, working.id);
+        await _db.put(
+          AppConstants.boxPaintings,
+          working.id,
+          working.copyWith(needsSync: false, synced: true).toJson(),
+        );
+        return;
+      }
+
       // Ensure the remote doc exists (with ownership) before uploading files,
       // so the Storage rules can authorise uploads via the Firestore doc.
-      if (!working.isDeleted) {
-        await cloud.upsert(_collection, working.id, working.toJson());
-      }
+      await cloud.upsert(_collection, working.id, working.toJson());
 
       // Upload any local images not yet mirrored.
       final urls = [...working.imageUrls];
@@ -239,17 +287,6 @@ class PaintingRepository {
           coverImageUrl: urls.isNotEmpty ? urls.first : working.coverImageUrl,
         ).markSynced();
       }
-      if (working.isDeleted) {
-        await cloud.remove(_collection, working.id);
-        // Keep the local record in Trash (isDeleted) so it can be restored;
-        // the cloud copy stays removed until the item is purged.
-        await _db.put(
-          AppConstants.boxPaintings,
-          working.id,
-          working.copyWith(needsSync: false, synced: true).toJson(),
-        );
-        return;
-      }
       await cloud.upsert(_collection, working.id, working.toJson());
       await _db.put(AppConstants.boxPaintings, working.id, working.toJson());
     } catch (_) {
@@ -262,9 +299,12 @@ class PaintingRepository {
     try {
       final uid = cloud.currentUid;
       if (uid.isEmpty) return;
+      final tombstones = _tombstones();
       final remote = await cloud.fetchAll(_collection, owner: uid);
       for (final data in remote) {
         final painting = Painting.fromJson(data);
+        // Never resurrect a painting purged locally (offline purge).
+        if (tombstones.contains(painting.id)) continue;
         final local = get(painting.id);
         if (local == null || painting.updatedAt.isAfter(local.updatedAt)) {
           await _db.put(AppConstants.boxPaintings, painting.id, painting.toJson());
