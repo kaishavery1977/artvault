@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:artvault/main.dart';
+import 'package:artvault/data/repositories/settings_repository.dart';
 
 import 'helpers.dart';
 import 'hive_test_harness.dart';
@@ -19,6 +20,11 @@ void main() {
 
   testWidgets('Skip hands off into login and marks onboarding done',
       (WidgetTester tester) async {
+    // Real file I/O only completes in the real-async zone — running the
+    // clear here (rather than setUp) also drains any write left pending by
+    // a previous test's fire-and-forget save, so Hive's per-box write chain
+    // never blocks the next test.
+    await tester.runAsync(clearTestSettings);
     await tester.pumpWidget(
       ProviderScope(
         overrides: appOverrides(introShown: true),
@@ -36,6 +42,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1600));
 
     expect(find.text("Don't have an account?"), findsOneWidget);
+    // The finish persistence is fire-and-forget, but Hive's put updates the
+    // box cache synchronously — so the flag must already be visible here.
+    // This catches regressions that drop the unawaited save entirely.
+    expect(SettingsRepository.instance.onboarded, isTrue);
   });
 
   testWidgets('Next walks through all slides then Get Started finishes',
@@ -69,6 +79,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1600));
 
     expect(find.text("Don't have an account?"), findsOneWidget);
+    // Same persistence check as the Skip flow.
+    expect(SettingsRepository.instance.onboarded, isTrue);
   });
 
   testWidgets('Reduced motion renders onboarding statically',
