@@ -384,8 +384,8 @@ class KenBurns extends StatefulWidget {
   const KenBurns({
     super.key,
     required this.child,
-    this.begin = 1.08,
-    this.duration = const Duration(milliseconds: 2400),
+    this.begin = 1.06,
+    this.duration = const Duration(milliseconds: 2000),
   });
 
   @override
@@ -500,8 +500,8 @@ class RevealEntrance extends StatefulWidget {
     super.key,
     required this.child,
     this.delay = Duration.zero,
-    this.duration = const Duration(milliseconds: 650),
-    this.beginOffset = 0.08,
+    this.duration = const Duration(milliseconds: 480),
+    this.beginOffset = 0.06,
     this.reducedMotion = false,
   });
 
@@ -562,9 +562,9 @@ class _RevealEntranceState extends State<RevealEntrance>
 List<Widget> staggerReveal(
   List<Widget> children, {
   Duration initialDelay = Duration.zero,
-  Duration interval = const Duration(milliseconds: 140),
-  Duration duration = const Duration(milliseconds: 650),
-  double beginOffset = 0.08,
+  Duration interval = const Duration(milliseconds: 90),
+  Duration duration = const Duration(milliseconds: 480),
+  double beginOffset = 0.06,
   BuildContext? context,
 }) {
   final static = context != null && MediaQuery.disableAnimationsOf(context);
@@ -593,9 +593,9 @@ Widget revealListItem(
   return RevealEntrance(
     delay: static
         ? Duration.zero
-        : Duration(milliseconds: 45 * (index.clamp(0, 8))),
-    duration: const Duration(milliseconds: 450),
-    beginOffset: static ? 0 : 0.07,
+        : Duration(milliseconds: 32 * (index.clamp(0, 8))),
+    duration: const Duration(milliseconds: 380),
+    beginOffset: static ? 0 : 0.05,
     reducedMotion: static,
     child: child,
   );

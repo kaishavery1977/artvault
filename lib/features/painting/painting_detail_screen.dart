@@ -285,7 +285,7 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
                       // lens finding its focus before the metadata reads in.
                       child: KenBurns(
                         begin: 1.1,
-                        duration: const Duration(milliseconds: 2200),
+                        duration: const Duration(milliseconds: 2000),
                         child: PageView.builder(
                           itemCount: images.length,
                           onPageChanged: (i) =>

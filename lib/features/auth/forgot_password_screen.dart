@@ -136,7 +136,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   loading: auth.busy,
                   onPressed: _submit,
                 ),
-              ], initialDelay: const Duration(milliseconds: 200), context: context),
+              ], initialDelay: const Duration(milliseconds: 100), context: context),
             ),
           ),
         ],
