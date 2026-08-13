@@ -38,3 +38,11 @@ Future<void> initTestHive() async {
 Future<void> clearTestSettings() async {
   await LocalDatabase.instance.box(AppConstants.boxSettings).clear();
 }
+
+/// Wipes the vault boxes (paintings, sync queue, …) so a test starts from
+/// an empty vault.
+Future<void> clearTestVault() async {
+  final db = LocalDatabase.instance;
+  await db.clear(AppConstants.boxPaintings);
+  await db.clear(AppConstants.boxSyncQueue);
+}
