@@ -35,7 +35,6 @@ class GlassCard extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final surface = theme.colorScheme.surface;
-    final outline = theme.colorScheme.outlineVariant;
     final onSurface = theme.colorScheme.onSurface;
 
     final baseColor = tint ?? surface;
@@ -63,26 +62,20 @@ class GlassCard extends StatelessWidget {
       alpha: isDark ? 0.20 : 0.65,
     );
 
+    // A single uniform border: Border with per-side colors + borderRadius is
+    // illegal in Flutter and asserts at paint time (a real device crash). The
+    // brighter top edge effect is lost, but the glass look is carried by the
+    // gradient + shadow; use a slightly-lighter outline so the card still
+    // reads as framed glass.
     final card = Container(
       padding: padding,
       margin: margin,
       decoration: BoxDecoration(
         gradient: effectiveGradient,
         borderRadius: BorderRadius.circular(radius),
-        border: Border(
-          top: BorderSide(color: topEdge, width: 0.8),
-          left: BorderSide(
-            color: outline.withValues(alpha: isDark ? 0.28 : 0.5),
-            width: 0.5,
-          ),
-          right: BorderSide(
-            color: outline.withValues(alpha: isDark ? 0.28 : 0.5),
-            width: 0.5,
-          ),
-          bottom: BorderSide(
-            color: outline.withValues(alpha: isDark ? 0.35 : 0.55),
-            width: 0.5,
-          ),
+        border: Border.all(
+          color: topEdge.withValues(alpha: isDark ? 0.28 : 0.5),
+          width: 0.7,
         ),
         boxShadow: hasShadow
             ? (isDark

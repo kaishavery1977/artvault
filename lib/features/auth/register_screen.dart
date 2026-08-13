@@ -50,8 +50,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return AuthLayout(
       title: 'Create your vault',
       subtitle: 'Start building your private art collection',
-      footer: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      // Wrap (not Row) so the 'Sign in' action drops to its own line
+      // rather than overflowing the card on narrow widths.
+      footer: Wrap(
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           const Text('Already have an account?'),
           TextButton(
