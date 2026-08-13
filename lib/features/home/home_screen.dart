@@ -52,24 +52,31 @@ class HomeScreen extends ConsumerWidget {
             SliverPadding(
               padding: AppSpacing.screenPadding,
               sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  if (showLoading)
-                    const _HomeSkeleton()
-                  else if (paintings.isEmpty)
-                    _WelcomeHero(onUpload: () => context.push('/painting/new'))
-                  else ...[
-                    _StatsGrid(stats: stats, canEdit: canEdit),
-                    const SizedBox(height: AppSpacing.lg),
-                    _StorageCard(stats: stats),
-                    const SizedBox(height: AppSpacing.lg),
-                    _QuickActions(canEdit: canEdit),
-                    SectionHeader(
-                      title: 'Recent uploads',
-                      actionLabel: 'See all',
-                      onAction: () => context.go('/gallery'),
-                    ),
-                  ],
-                ]),
+                delegate: SliverChildListDelegate(
+                  staggerReveal(
+                    [
+                      if (showLoading)
+                        const _HomeSkeleton()
+                      else if (paintings.isEmpty)
+                        _WelcomeHero(onUpload: () => context.push('/painting/new'))
+                      else ...[
+                        _StatsGrid(stats: stats, canEdit: canEdit),
+                        const SizedBox(height: AppSpacing.lg),
+                        _StorageCard(stats: stats),
+                        const SizedBox(height: AppSpacing.lg),
+                        _QuickActions(canEdit: canEdit),
+                        SectionHeader(
+                          title: 'Recent uploads',
+                          actionLabel: 'See all',
+                          onAction: () => context.go('/gallery'),
+                        ),
+                      ],
+                    ],
+                    initialDelay: const Duration(milliseconds: 80),
+                    interval: const Duration(milliseconds: 90),
+                    context: context,
+                  ),
+                ),
               ),
             ),
             if (paintings.isNotEmpty)
@@ -185,11 +192,11 @@ class _Header extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  'Hello, $userName',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                GradientShimmerText(
+                  text: 'Hello, $userName',
                   style: AppTheme.display(context, size: 24),
+                  colors: [scheme.primary, scheme.secondary, scheme.tertiary],
+                  duration: const Duration(milliseconds: 1200),
                 ),
               ],
             ),
@@ -315,7 +322,13 @@ class _WelcomeHero extends StatelessWidget {
           ),
         ],
       ),
-    ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.08);
+    )
+        // A single soft light sweep across the hero once it has landed — a
+        // spotlight pass that makes the empty vault feel curated.
+        .animate(delay: 550.ms)
+        .shimmer(duration: 950.ms, angle: -0.5, size: 1.4)
+        .fadeIn(duration: 500.ms)
+        .slideY(begin: 0.08);
   }
 }
 
@@ -635,12 +648,11 @@ class _AiInsights extends StatelessWidget {
             icon: Icons.straighten,
             label: 'Average dimensions',
             value: '$avgW × $avgH cm',
-          ),
-          _InsightRow(
-            icon: Icons.auto_graph,
-            label: 'Upload trend',
-            value: _trend(paintings),
-          ),
+          ),                  _InsightRow(
+                    icon: Icons.auto_graph,
+                    label: 'Upload trend',
+                    value: _trend(paintings),
+                  ),
         ],
       ),
     );

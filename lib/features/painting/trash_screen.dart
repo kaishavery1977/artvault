@@ -5,6 +5,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/art_image.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../data/models/painting.dart';
@@ -77,7 +78,7 @@ class TrashScreen extends ConsumerWidget {
               separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
               itemBuilder: (context, index) {
                 final painting = trash[index];
-                return GlassCard(
+                final tile = GlassCard(
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.sm,
@@ -130,6 +131,7 @@ class TrashScreen extends ConsumerWidget {
                     ),
                   ),
                 );
+                return revealListItem(tile, index, context: context);
               },
             ),
     );

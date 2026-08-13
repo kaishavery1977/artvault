@@ -9,6 +9,7 @@ import 'package:speech_to_text/speech_to_text.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/ai_service.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
@@ -213,10 +214,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       ),
                     ),
                   ),
-                  for (final painting in results)
+                  // Results cascade in one after another, echoing the
+                  // gallery grid — each match settles into place.
+                  for (final (i, painting) in results.indexed)
                     Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: PaintingListTile(painting: painting),
+                      key: ValueKey('search-${painting.id}'),
+                      child: revealListItem(
+                        PaintingListTile(painting: painting),
+                        i,
+                        context: context,
+                      ),
                     ),
                 ],
               ),

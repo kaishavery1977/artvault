@@ -86,11 +86,17 @@ class _PaintingLightboxScreenState extends State<PaintingLightboxScreen> {
                   child: InteractiveViewer(
                     maxScale: 5,
                     minScale: 0.8,
-                    child: Center(
-                      child: ArtImage(
-                        path: imgs.first,
-                        url: urlsP.isNotEmpty ? urlsP.first : null,
-                        fit: BoxFit.contain,
+                    // Each artwork settles into place as it arrives — a
+                    // quiet museum-frame zoom instead of a hard cut.
+                    child: KenBurns(
+                      begin: 1.06,
+                      duration: const Duration(milliseconds: 1600),
+                      child: Center(
+                        child: ArtImage(
+                          path: imgs.first,
+                          url: urlsP.isNotEmpty ? urlsP.first : null,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
                   ),

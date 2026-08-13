@@ -49,7 +49,17 @@ const _shellDestinations = [
   ),
 ];
 
-class _AppShellState extends ConsumerState<AppShell> {
+class _AppShellState extends ConsumerState<AppShell>
+    with SingleTickerProviderStateMixin {
+  /// Drives a quick fade+drift whenever the active tab changes. The indexed
+  /// stack keeps every branch's state alive; this controller just re-runs a
+  /// subtle content settle so switching tabs feels considered, not instant.
+  late final AnimationController _tabIn = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 260),
+    value: 1,
+  );
+
   void _go(int index) {
     widget.navigationShell.goBranch(
       index,
@@ -58,12 +68,45 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 
   @override
+  void didUpdateWidget(covariant AppShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final changed =
+        oldWidget.navigationShell.currentIndex !=
+        widget.navigationShell.currentIndex;
+    // Respect reduced motion: keep the switch instant for those users.
+    if (changed &&
+        !MediaQuery.disableAnimationsOf(context)) {
+      _tabIn.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabIn.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final shell = widget.navigationShell;
     final isDesktop = AppBreakpoints.isDesktop(context);
     final canEdit = ref.watch(authProvider).canEdit;
 
-    final content = SafeArea(top: false, child: shell);
+    final content = SafeArea(
+      top: false,
+      child: FadeTransition(
+        opacity: _tabIn,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.008),
+            end: Offset.zero,
+          ).animate(
+            CurvedAnimation(parent: _tabIn, curve: Curves.easeOutCubic),
+          ),
+          child: shell,
+        ),
+      ),
+    );
 
     // Artists and Documents tabs have their own FABs; showing the shell's
     // quick-add here would overlap them at the bottom-right corner.
