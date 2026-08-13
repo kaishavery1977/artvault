@@ -8,6 +8,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/services/file_storage_service.dart';
 import '../../core/widgets/bits.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/app_user.dart';
@@ -106,6 +107,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         padding: AppSpacing.screenPadding,
         children: [
           const SizedBox(height: AppSpacing.sm),
+          ...staggerReveal([
           Center(
             child: Column(
               children: [
@@ -214,6 +216,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 : const Icon(Icons.save_outlined),
             label: const Text('Save profile'),
           ),
+          ], context: context),
         ],
       ),
     );

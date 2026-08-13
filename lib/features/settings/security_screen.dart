@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/services/biometric_service.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/widgets/surfaces.dart';
 import '../auth/face_scan_screen.dart';
 import '../../core/providers/providers.dart';
@@ -408,6 +409,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
         padding: AppSpacing.screenPadding,
         children: [
           const SizedBox(height: AppSpacing.sm),
+          ...staggerReveal([
           GlassCard(
             padding: AppSpacing.cardPadding,
             child: Column(
@@ -608,6 +610,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
               color: scheme.onSurface.withValues(alpha: 0.5),
             ),
           ),
+          ], context: context),
         ],
       ),
     );

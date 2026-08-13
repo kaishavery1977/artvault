@@ -10,6 +10,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/services/backup_service.dart';
 import '../../core/services/file_storage_service.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
 
@@ -195,6 +196,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
         padding: AppSpacing.screenPadding,
         children: [
           const SizedBox(height: AppSpacing.sm),
+          ...staggerReveal([
           GlassCard(
             padding: AppSpacing.cardPadding,
             child: Column(
@@ -341,6 +343,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
               ],
             ),
           ),
+          ], context: context),
           const SizedBox(height: AppSpacing.xxl),
         ],
       ),

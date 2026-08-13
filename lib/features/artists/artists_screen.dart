@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/bits.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
@@ -56,9 +57,13 @@ class ArtistsScreen extends ConsumerWidget {
                   padding: AppSpacing.screenPadding,
                   sliver: SliverGrid(
                     delegate: SliverChildBuilderDelegate(
-                      (context, i) => _ArtistCard(
-                        artist: artists[i],
-                        paintingCount: countFor(artists[i].id),
+                      (context, i) => revealListItem(
+                        _ArtistCard(
+                          artist: artists[i],
+                          paintingCount: countFor(artists[i].id),
+                        ),
+                        i,
+                        context: context,
                       ),
                       childCount: artists.length,
                     ),

@@ -9,6 +9,7 @@ import '../../core/services/export_service.dart';
 import '../../core/services/share_service.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/bits.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/painting.dart';
@@ -79,7 +80,7 @@ class ReportsScreen extends ConsumerWidget {
           SliverPadding(
             padding: AppSpacing.screenPadding,
             sliver: SliverList(
-              delegate: SliverChildListDelegate([
+              delegate: SliverChildListDelegate(staggerReveal([
                 _SummaryRow(
                   paintings: paintings,
                   artists: artists,
@@ -106,7 +107,7 @@ class ReportsScreen extends ConsumerWidget {
                   onExport: (kind) => _export(context, kind, paintings),
                 ),
                 const SizedBox(height: AppSpacing.xl),
-              ]),
+              ], context: context)),
             ),
           ),
         ],

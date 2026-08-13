@@ -7,6 +7,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/backup_service.dart';
 import '../../core/widgets/bits.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/app_user.dart';
@@ -24,6 +25,169 @@ class SettingsScreen extends ConsumerWidget {
     final notificationsOn = settings.notificationsEnabled;
     final autoBackup = settings.autoBackup;
 
+    // Header + each settings group cascade in one after another.
+    final sections = staggerReveal(
+      [
+        _UserCard(user: user, role: user?.role),
+        const SizedBox(height: AppSpacing.md),
+        _Group(
+          title: 'Appearance',
+          children: [
+            _SettingTile(
+              icon: Icons.dark_mode_outlined,
+              title: 'Dark mode',
+              trailing: _ThemeSelector(),
+            ),
+            _SettingTile(
+              icon: Icons.language,
+              title: 'Language',
+              subtitle: _languageName(SettingsRepository.instance.locale),
+              onTap: () => _showLanguageSheet(context, ref),
+            ),
+          ],
+        ),
+        _Group(
+          title: 'Preferences',
+          children: [
+            _SettingTile(
+              icon: Icons.currency_exchange,
+              title: 'Preferred currency',
+              subtitle: settings.preferredCurrency,
+              onTap: () => _showCurrencySheet(context, ref),
+            ),
+            _SettingTile(
+              icon: Icons.home_outlined,
+              title: 'Library location',
+              subtitle: settings.libraryLocation,
+              onTap: () => _editLibraryLocation(context),
+            ),
+          ],
+        ),
+        _Group(
+          title: 'Notifications & backup',
+          children: [
+            SwitchListTile(
+              secondary: const Icon(Icons.notifications_outlined),
+              title: const Text('Notifications'),
+              subtitle: const Text('Uploads, backups, duplicates'),
+              value: notificationsOn,
+              onChanged: (v) => settings.setNotificationsEnabled(v),
+            ),
+            SwitchListTile(
+              secondary: const Icon(Icons.cloud_upload_outlined),
+              title: const Text('Auto cloud backup'),
+              subtitle: const Text('Backup after each change'),
+              value: autoBackup,
+              onChanged: (v) => settings.setAutoBackup(v),
+            ),
+            ListTile(
+              leading: const Icon(Icons.backup_outlined),
+              title: const Text('Back up now'),
+              subtitle: const Text('Local file + cloud (if connected)'),
+              trailing: const Icon(Icons.arrow_forward, size: 18),
+              onTap: () async {
+                final result = await BackupService.instance.runBackup();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        result.cloud
+                            ? 'Backup completed — saved locally and to the cloud'
+                            : 'Backup completed — local file only (sign in for cloud)',
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+        _Group(
+          title: 'Security',
+          children: [
+            _SettingTile(
+              icon: Icons.shield_outlined,
+              title: 'Lock & security',
+              subtitle: 'App lock, passcode, face & fingerprint',
+              onTap: () => context.push('/security'),
+            ),
+          ],
+        ),
+        _Group(
+          title: 'Account',
+          children: [
+            _SettingTile(
+              icon: Icons.person_outline,
+              title: 'Profile',
+              onTap: () => context.push('/profile'),
+            ),
+            if (auth.canManageUsers)
+              _SettingTile(
+                icon: Icons.admin_panel_settings,
+                title: 'User & role management',
+                onTap: () => context.push('/users'),
+              ),
+            _SettingTile(
+              icon: Icons.backup_outlined,
+              title: 'Backup & restore',
+              onTap: () => context.push('/backup'),
+            ),
+            _SettingTile(
+              icon: Icons.delete_sweep_outlined,
+              title: 'Storage & data',
+              onTap: () => context.push('/storage'),
+            ),
+            _SettingTile(
+              icon: Icons.delete_outline,
+              title: 'Recently deleted',
+              subtitle: _trashSubtitle(ref),
+              onTap: () => context.push('/trash'),
+            ),
+            _SettingTile(
+              icon: Icons.info_outline,
+              title: 'About ArtVault',
+              onTap: () => context.push('/about'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.redAccent),
+              title: const Text(
+                'Sign out',
+                style: TextStyle(color: Colors.redAccent),
+              ),
+              onTap: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Sign out?'),
+                    content: const Text(
+                      'Your vault stays on this device and in the cloud.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Sign out'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed == true) {
+                  await ref.read(authProvider.notifier).signOut();
+                  if (context.mounted) context.go('/login');
+                }
+              },
+            ),
+          ],
+        ),
+      ],
+      initialDelay: const Duration(milliseconds: 60),
+      interval: const Duration(milliseconds: 60),
+      context: context,
+    );
+
     return Scaffold(
       body: ListView(
         padding: EdgeInsets.fromLTRB(
@@ -35,160 +199,7 @@ class SettingsScreen extends ConsumerWidget {
         children: [
           Text('Settings', style: AppTheme.display(context, size: 28)),
           const SizedBox(height: AppSpacing.md),
-          _UserCard(user: user, role: user?.role),
-          const SizedBox(height: AppSpacing.md),
-          _Group(
-            title: 'Appearance',
-            children: [
-              _SettingTile(
-                icon: Icons.dark_mode_outlined,
-                title: 'Dark mode',
-                trailing: _ThemeSelector(),
-              ),
-              _SettingTile(
-                icon: Icons.language,
-                title: 'Language',
-                subtitle: _languageName(SettingsRepository.instance.locale),
-                onTap: () => _showLanguageSheet(context, ref),
-              ),
-            ],
-          ),
-          _Group(
-            title: 'Preferences',
-            children: [
-              _SettingTile(
-                icon: Icons.currency_exchange,
-                title: 'Preferred currency',
-                subtitle: settings.preferredCurrency,
-                onTap: () => _showCurrencySheet(context, ref),
-              ),
-              _SettingTile(
-                icon: Icons.home_outlined,
-                title: 'Library location',
-                subtitle: settings.libraryLocation,
-                onTap: () => _editLibraryLocation(context),
-              ),
-            ],
-          ),
-          _Group(
-            title: 'Notifications & backup',
-            children: [
-              SwitchListTile(
-                secondary: const Icon(Icons.notifications_outlined),
-                title: const Text('Notifications'),
-                subtitle: const Text('Uploads, backups, duplicates'),
-                value: notificationsOn,
-                onChanged: (v) => settings.setNotificationsEnabled(v),
-              ),
-              SwitchListTile(
-                secondary: const Icon(Icons.cloud_upload_outlined),
-                title: const Text('Auto cloud backup'),
-                subtitle: const Text('Backup after each change'),
-                value: autoBackup,
-                onChanged: (v) => settings.setAutoBackup(v),
-              ),
-              ListTile(
-                leading: const Icon(Icons.backup_outlined),
-                title: const Text('Back up now'),
-                subtitle: const Text('Local file + cloud (if connected)'),
-                trailing: const Icon(Icons.arrow_forward, size: 18),
-                onTap: () async {
-                  final result = await BackupService.instance.runBackup();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          result.cloud
-                              ? 'Backup completed — saved locally and to the cloud'
-                              : 'Backup completed — local file only (sign in for cloud)',
-                        ),
-                      ),
-                    );
-                  }
-                },
-              ),
-            ],
-          ),
-          _Group(
-            title: 'Security',
-            children: [
-              _SettingTile(
-                icon: Icons.shield_outlined,
-                title: 'Lock & security',
-                subtitle: 'App lock, passcode, face & fingerprint',
-                onTap: () => context.push('/security'),
-              ),
-            ],
-          ),
-          _Group(
-            title: 'Account',
-            children: [
-              _SettingTile(
-                icon: Icons.person_outline,
-                title: 'Profile',
-                onTap: () => context.push('/profile'),
-              ),
-              if (auth.canManageUsers)
-                _SettingTile(
-                  icon: Icons.admin_panel_settings,
-                  title: 'User & role management',
-                  onTap: () => context.push('/users'),
-                ),
-              _SettingTile(
-                icon: Icons.backup_outlined,
-                title: 'Backup & restore',
-                onTap: () => context.push('/backup'),
-              ),
-              _SettingTile(
-                icon: Icons.delete_sweep_outlined,
-                title: 'Storage & data',
-                onTap: () => context.push('/storage'),
-              ),
-              _SettingTile(
-                icon: Icons.delete_outline,
-                title: 'Recently deleted',
-                subtitle: _trashSubtitle(ref),
-                onTap: () => context.push('/trash'),
-              ),
-              _SettingTile(
-                icon: Icons.info_outline,
-                title: 'About ArtVault',
-                onTap: () => context.push('/about'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.logout, color: Colors.redAccent),
-                title: const Text(
-                  'Sign out',
-                  style: TextStyle(color: Colors.redAccent),
-                ),
-                onTap: () async {
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Sign out?'),
-                      content: const Text(
-                        'Your vault stays on this device and in the cloud.',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancel'),
-                        ),
-                        FilledButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Sign out'),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (confirmed == true) {
-                    await ref.read(authProvider.notifier).signOut();
-                    if (context.mounted) context.go('/login');
-                  }
-                },
-              ),
-            ],
-          ),
+          ...sections,
           Center(
             child: Text(
               'ArtVault v1.0.0',
