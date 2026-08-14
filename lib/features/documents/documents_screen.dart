@@ -254,23 +254,11 @@ class _DocumentTile extends ConsumerWidget {
                   final repo = DocumentRepository.instance;
                   switch (action) {
                     case 'rename':
-                      final controller = TextEditingController(text: doc.name);
                       final name = await showDialog<String>(
                         context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Rename document'),
-                          content: TextField(controller: controller, autofocus: true),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('Cancel'),
-                            ),
-                            FilledButton(
-                              onPressed: () => Navigator.pop(context, controller.text.trim()),
-                              child: const Text('Save'),
-                            ),
-                          ],
-                        ),
+                        // The dialog owns its TextEditingController and
+                        // disposes it only when the route fully unmounts.
+                        builder: (_) => RenameDocumentDialog(initial: doc.name),
                       );
                       if (name != null && name.isNotEmpty) {
                         await repo.rename(doc.id, name);
@@ -300,4 +288,53 @@ class _DocumentTile extends ConsumerWidget {
         'Appraisal' => Icons.stacked_line_chart,
         _ => Icons.description_outlined,
       };
+}
+
+/// Rename-document dialog. Owns its [TextEditingController] and disposes it
+/// only when the route fully unmounts (after the exit transition) — disposing
+/// it at call site would crash the frame while the dialog is still animating
+/// out, exactly like the passcode dialogs did.
+/// Rename-in-place dialog for a vault document.
+///
+/// Owns its [TextEditingController] and disposes it only when the route fully
+/// unmounts (after the exit transition) — the early-dispose variant crashed
+/// the frame while the dialog was still animating out. Pops with the trimmed
+/// name on Save, `null` on Cancel.
+class RenameDocumentDialog extends StatefulWidget {
+  final String initial;
+
+  const RenameDocumentDialog({super.key, required this.initial});
+
+  @override
+  State<RenameDocumentDialog> createState() => _RenameDocumentDialogState();
+}
+
+class _RenameDocumentDialogState extends State<RenameDocumentDialog> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initial,
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Rename document'),
+      content: TextField(controller: _controller, autofocus: true),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _controller.text.trim()),
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
 }

@@ -307,30 +307,57 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   static void _editLibraryLocation(BuildContext context) {
-    final controller = TextEditingController(
-      text: SettingsRepository.instance.libraryLocation,
-    );
+    // The dialog owns its TextEditingController in a private StatefulWidget
+    // and disposes it only when the route fully unmounts (after the exit
+    // transition) — disposing it here would crash the frame while the
+    // dialog is still animating out, exactly like the passcode dialogs did.
     showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Library location'),
-        content: TextField(controller: controller, autofocus: true),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+      builder: (_) => const _LibraryLocationDialog(),
     ).then((value) {
       if (value != null && value.isNotEmpty) {
         SettingsRepository.instance.setLibraryLocation(value);
       }
     });
+  }
+}
+
+/// Edit-the-library-location dialog. Owns its [TextEditingController] and
+/// disposes it only when the route fully unmounts.
+class _LibraryLocationDialog extends StatefulWidget {
+  const _LibraryLocationDialog();
+
+  @override
+  State<_LibraryLocationDialog> createState() => _LibraryLocationDialogState();
+}
+
+class _LibraryLocationDialogState extends State<_LibraryLocationDialog> {
+  late final TextEditingController _controller = TextEditingController(
+    text: SettingsRepository.instance.libraryLocation,
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Library location'),
+      content: TextField(controller: _controller, autofocus: true),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _controller.text.trim()),
+          child: const Text('Save'),
+        ),
+      ],
+    );
   }
 }
 
