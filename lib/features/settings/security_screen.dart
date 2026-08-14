@@ -549,7 +549,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
     // out (the same bug the passcode dialogs had).
     final result = await showDialog<bool>(
       context: context,
-      builder: (_) => const _ChangePasswordDialog(),
+      builder: (_) => const ChangePasswordDialog(),
     );
     if (result == true && mounted) {
       ScaffoldMessenger.of(
@@ -563,7 +563,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
     // transition, which is exactly when the old dispose-after-await crashed.
     return showDialog<String>(
       context: context,
-      builder: (_) => _ResetPasswordDialog(initial: initial),
+      builder: (_) => ResetPasswordDialog(initial: initial),
     );
   }
 }
@@ -738,14 +738,18 @@ enum _FingerprintAction { test, remove }
 /// them only when the route fully unmounts (after the exit transition) — the
 /// old version disposed them in a `finally` the instant `showDialog`
 /// resolved, crashing the frame while the fields were still animating out.
-class _ChangePasswordDialog extends StatefulWidget {
-  const _ChangePasswordDialog();
+///
+/// Pops `true` on success, `false` on Cancel. Validation errors (empty
+/// fields, short password, mismatch) are shown inline and never reach
+/// Firebase; only a fully valid submission calls `AuthRepository`.
+class ChangePasswordDialog extends StatefulWidget {
+  const ChangePasswordDialog({super.key});
 
   @override
-  State<_ChangePasswordDialog> createState() => _ChangePasswordDialogState();
+  State<ChangePasswordDialog> createState() => _ChangePasswordDialogState();
 }
 
-class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
+class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
   final _current = TextEditingController();
   final _next = TextEditingController();
   final _confirm = TextEditingController();
@@ -847,17 +851,18 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
 }
 
 /// Reset-password email dialog. Owns its TextEditingController (same
-/// rationale as [_ChangePasswordDialog]).
-class _ResetPasswordDialog extends StatefulWidget {
-  const _ResetPasswordDialog({required this.initial});
+/// rationale as [ChangePasswordDialog]). Pops the trimmed email on Send,
+/// `null` on Cancel.
+class ResetPasswordDialog extends StatefulWidget {
+  const ResetPasswordDialog({super.key, required this.initial});
 
   final String initial;
 
   @override
-  State<_ResetPasswordDialog> createState() => _ResetPasswordDialogState();
+  State<ResetPasswordDialog> createState() => _ResetPasswordDialogState();
 }
 
-class _ResetPasswordDialogState extends State<_ResetPasswordDialog> {
+class _ResetPasswordDialogState extends State<ResetPasswordDialog> {
   late final TextEditingController _controller = TextEditingController(
     text: widget.initial,
   );
