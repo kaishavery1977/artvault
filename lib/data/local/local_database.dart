@@ -23,6 +23,7 @@ class LocalDatabase {
       AppConstants.boxPaintings,
       AppConstants.boxArtists,
       AppConstants.boxDocuments,
+      AppConstants.boxConditionReports,
       AppConstants.boxNotifications,
       AppConstants.boxSyncQueue,
       AppConstants.boxProfile,

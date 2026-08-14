@@ -16,6 +16,14 @@ service firebase.storage {
         && firestore.getData(/databases/(default)/documents/documents/$(id)).data.ownerUid == request.auth.uid;
     }
 
+    // Public gallery pages are readable by anyone with the link (the owner
+    // curates only title/artist/medium/year/location — never price), but
+    // writable only by the owner, whose uid is encoded in the path.
+    match /public_galleries/gallery-{uid}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
     // Deny access to everything else — no legacy or global paths.
     match /{allPaths=**} {
       allow read, write: if false;

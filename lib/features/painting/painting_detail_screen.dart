@@ -13,6 +13,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/export_service.dart';
+import '../../core/services/public_gallery_service.dart';
 import '../../core/services/qr_service.dart';
 import '../../core/services/share_service.dart';
 import '../../core/utils/formatters.dart';
@@ -26,9 +27,12 @@ import '../../core/providers/providers.dart';
 import '../../features/documents/documents_screen.dart' show RenameDocumentDialog;
 import 'painting_lightbox_screen.dart';
 import '../../data/models/art_document.dart';
+import '../../data/models/condition_report.dart';
 import '../../data/models/painting.dart';
+import '../../data/repositories/condition_report_repository.dart';
 import '../../data/repositories/document_repository.dart';
 import '../../data/repositories/painting_repository.dart';
+import 'condition_report_dialog.dart';
 import '../gallery/painting_card.dart';
 
 /// Full artwork view: swipable zoomable images, complete metadata,
@@ -161,16 +165,15 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final painting = ref.watch(paintingByIdProvider(widget.paintingId));
-    final related = (ref.watch(paintingsProvider).valueOrNull ?? const [])
-        .where(
-          (p) =>
-              p.id != widget.paintingId &&
-              !p.isDeleted &&
-              (p.artistName == painting?.artistName ||
-                  p.category == painting?.category),
-        )
-        .take(6)
-        .toList();
+    // Visual-similarity rail: the AI scorer blends the perceptual hash with
+    // palette, tags, category/medium/style and tonal character — so works
+    // that *look* alike surface, not just same-artist / same-category ones.
+    final related = painting == null
+        ? const <Painting>[]
+        : PaintingRepository.instance
+            .findSimilar(painting)
+            .map((m) => m.painting)
+            .toList();
 
     if (painting == null) {
       return Scaffold(
@@ -236,6 +239,8 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
                         _exportPdf(painting);
                       case _MoreAction.exportExcel:
                         _exportExcel([painting]);
+                      case _MoreAction.publicGallery:
+                        _publicGallery(painting);
                     }
                   },
                   itemBuilder: (context) => const [
@@ -258,6 +263,10 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
                     PopupMenuItem(
                       value: _MoreAction.exportExcel,
                       child: Text('Export to Excel'),
+                    ),
+                    PopupMenuItem(
+                      value: _MoreAction.publicGallery,
+                      child: Text('Public gallery'),
                     ),
                     PopupMenuItem(
                       value: _MoreAction.delete,
@@ -379,10 +388,15 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
                       onAdd: () => _addDocument(painting),
                       onOpen: _openDocument,
                     ),
+                    SectionHeader(title: 'Condition'),
+                    _ConditionSection(
+                      paintingId: painting.id,
+                      canEdit: canEdit,
+                    ),
                     SectionHeader(title: 'QR code'),
                     _QrCard(painting: painting),
                     if (related.isNotEmpty) ...[
-                      SectionHeader(title: 'Related paintings'),
+                      SectionHeader(title: 'Similar paintings'),
                       SizedBox(
                         height: 190,
                         child: ListView.separated(
@@ -426,11 +440,81 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
     if (!mounted) return;
     await ShareService.instance.shareFile(file.path, text: 'Excel export');
   }
+
+  /// Curates this artwork into the owner's public gallery and shares the
+  /// gallery page (published to a public Storage path, or as an HTML file
+  /// when the cloud isn't available).
+  Future<void> _publicGallery(Painting painting) async {
+    final result = await showDialog<_PublicGalleryResult>(
+      context: context,
+      builder: (context) => _PublicGalleryDialog(
+        included: painting.inPublicGallery,
+      ),
+    );
+    if (result == null || !mounted) return;
+
+    if (result.include != painting.inPublicGallery) {
+      await PaintingRepository.instance.save(
+        painting.copyWith(
+          inPublicGallery: result.include,
+          needsSync: true,
+          updatedAt: DateTime.now(),
+        ),
+      );
+      if (!mounted) return;
+    }
+    if (!result.share) return;
+
+    final uid = ref.read(authProvider).user?.uid ?? '';
+    final curated = PaintingRepository.instance
+        .readAll()
+        .where((p) => !p.isDeleted && p.inPublicGallery)
+        .toList();
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      SnackBar(content: Text('Preparing gallery page (${curated.length})…')),
+    );
+
+    try {
+      final url = await PublicGalleryService.instance.publish(
+        curated,
+        ownerUid: uid,
+      );
+      if (!mounted) return;
+      if (url != null && url.isNotEmpty) {
+        await ShareService.instance.shareText(
+          'My ArtVault gallery: $url',
+          subject: 'My ArtVault gallery',
+        );
+      } else {
+        final file = await PublicGalleryService.instance
+            .writeLocalHtml(curated);
+        if (!mounted) return;
+        await ShareService.instance.shareFile(
+          file.path,
+          text: 'My ArtVault gallery (offline page)',
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('Could not share the gallery: $e')),
+      );
+    }
+  }
 }
 
 enum _ShareAction { image, withDescription, watermark, qr, pdf }
 
-enum _MoreAction { edit, delete, download, print, exportPdf, exportExcel }
+enum _MoreAction {
+  edit,
+  delete,
+  download,
+  print,
+  exportPdf,
+  exportExcel,
+  publicGallery,
+}
 
 class _ShareSheet extends StatelessWidget {
   final Painting painting;
@@ -1255,6 +1339,371 @@ class _QrFullscreenDialog extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Condition history for a painting — latest report plus an add button.
+/// Shows the newest report's photo, condition, notes and a “last inspected”
+/// reminder that turns amber when the piece is overdue for re-inspection.
+class _ConditionSection extends ConsumerWidget {
+  final String paintingId;
+  final bool canEdit;
+
+  const _ConditionSection({
+    required this.paintingId,
+    required this.canEdit,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final reports = ref.watch(conditionReportsForPaintingProvider(paintingId));
+    final scheme = Theme.of(context).colorScheme;
+
+    if (reports.isEmpty) {
+      return Container(
+        padding: AppSpacing.cardPadding,
+        decoration: BoxDecoration(
+          color: scheme.primary.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          border: Border.all(color: scheme.primary.withValues(alpha: 0.12)),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.healing_outlined,
+              color: scheme.primary.withValues(alpha: 0.6),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            const Expanded(
+              child: Text(
+                'No condition reports yet. Record the physical state and last inspection.',
+              ),
+            ),
+            if (canEdit)
+              IconButton(
+                icon: const Icon(Icons.add),
+                color: scheme.primary,
+                onPressed: () => _openAddDialog(context),
+              ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final report in reports.take(3))
+          Container(
+            margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+              border: Border.all(
+                color: scheme.onSurface.withValues(alpha: 0.06),
+              ),
+            ),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xs,
+              ),
+              leading: _ReportThumb(report: report),
+              title: Row(
+                children: [
+                  _ConditionChip(condition: report.condition),
+                  const Spacer(),
+                  Text(
+                    _lastInspected(report.inspectedAt),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: _overdue(report.inspectedAt)
+                          ? const Color(0xFFE0A100)
+                          : scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+              subtitle: report.notes.isEmpty
+                  ? null
+                  : Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        report.notes,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12.5),
+                      ),
+                    ),
+              trailing: const Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: Colors.grey,
+              ),
+              onTap: () => _showReport(context, report),
+            ),
+          ),
+        if (canEdit)
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () => _openAddDialog(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Add report'),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _openAddDialog(BuildContext context) async {
+    final draft = await showDialog<ConditionReportDraft>(
+      context: context,
+      builder: (context) => ConditionReportDialog(paintingId: paintingId),
+    );
+    if (draft == null || !context.mounted) return;
+    try {
+      await ConditionReportRepository.instance.add(
+        paintingId: paintingId,
+        condition: draft.condition,
+        notes: draft.notes,
+        inspectedAt: draft.inspectedAt,
+        photo: draft.photo,
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Condition report saved')),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not save the condition report.')),
+      );
+    }
+  }
+
+  Future<void> _showReport(BuildContext context, ConditionReport report) {
+    return showDialog<void>(
+      context: context,
+      builder: (context) => _ConditionReportView(
+        report: report,
+        canDelete: canEdit,
+      ),
+    );
+  }
+
+  static String _lastInspected(DateTime at) {
+    final diff = DateTime.now().difference(at);
+    if (diff.inDays < 1) return 'Inspected today';
+    if (diff.inDays < 30) return 'Inspected ${diff.inDays} days ago';
+    final months = diff.inDays ~/ 30;
+    if (months < 12) return 'Inspected $months months ago';
+    final years = months ~/ 12;
+    return 'Inspected $years year${years == 1 ? '' : 's'} ago';
+  }
+
+  /// Re-inspection is due once a report is more than 18 months old.
+  static bool _overdue(DateTime at) =>
+      DateTime.now().difference(at).inDays ~/ 30 >= 18;
+}
+
+class _ReportThumb extends StatelessWidget {
+  final ConditionReport report;
+
+  const _ReportThumb({required this.report});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      child: SizedBox(
+        width: 56,
+        height: 56,
+        child: report.photoUrl.isNotEmpty || report.photoPath.isNotEmpty
+            ? ArtImage(
+                path: report.photoPath.isEmpty ? null : report.photoPath,
+                url: report.photoUrl.isEmpty ? null : report.photoUrl,
+                fit: BoxFit.cover,
+              )
+            : Container(
+                color: scheme.primary.withValues(alpha: 0.08),
+                child: Icon(
+                  Icons.healing_outlined,
+                  color: scheme.primary.withValues(alpha: 0.6),
+                ),
+              ),
+      ),
+    );
+  }
+}
+
+class _ConditionChip extends StatelessWidget {
+  final String condition;
+
+  const _ConditionChip({required this.condition});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _colorFor(condition);
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 3,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        condition,
+        style: TextStyle(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
+    );
+  }
+
+  static Color _colorFor(String condition) => switch (condition) {
+        'Excellent' => const Color(0xFF2E9E5B),
+        'Good' => const Color(0xFF3E8E41),
+        'Fair' => const Color(0xFFE0A100),
+        'Poor' => const Color(0xFFE67E22),
+        _ => const Color(0xFFD64550),
+      };
+}
+
+class _ConditionReportView extends StatelessWidget {
+  final ConditionReport report;
+  final bool canDelete;
+
+  const _ConditionReportView({required this.report, required this.canDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final hasPhoto = report.photoUrl.isNotEmpty || report.photoPath.isNotEmpty;
+    return AlertDialog(
+      title: Row(
+        children: [
+          _ConditionChip(condition: report.condition),
+          const Spacer(),
+          Text(
+            Formatters.date(report.inspectedAt),
+            style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+          ),
+        ],
+      ),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (hasPhoto)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                child: SizedBox(
+                  height: 220,
+                  width: double.infinity,
+                  child: ArtImage(
+                    path: report.photoPath.isEmpty ? null : report.photoPath,
+                    url: report.photoUrl.isEmpty ? null : report.photoUrl,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            if (hasPhoto) const SizedBox(height: AppSpacing.md),
+            if (report.notes.isNotEmpty)
+              Text(
+                report.notes,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        if (canDelete)
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () async {
+              await ConditionReportRepository.instance.delete(report.id);
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: const Text('Delete'),
+          ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
+    );
+  }
+}
+
+class _PublicGalleryResult {
+  final bool include;
+  final bool share;
+
+  const _PublicGalleryResult({required this.include, required this.share});
+}
+
+/// Curates one artwork into the public gallery. Stateless form: pops a
+/// [_PublicGalleryResult] (include + whether to share now).
+class _PublicGalleryDialog extends StatefulWidget {
+  final bool included;
+
+  const _PublicGalleryDialog({required this.included});
+
+  @override
+  State<_PublicGalleryDialog> createState() => _PublicGalleryDialogState();
+}
+
+class _PublicGalleryDialogState extends State<_PublicGalleryDialog> {
+  late bool _included = widget.included;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Public gallery'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Artworks included here appear on a shareable gallery page. '
+            'Title, artist, medium, year and location are shown — price is '
+            'never included.',
+            style: TextStyle(fontSize: 13.5),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _included,
+            title: const Text('Include in public gallery'),
+            subtitle: const Text('Curate this artwork into the page'),
+            onChanged: (v) => setState(() => _included = v),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton.icon(
+          onPressed: () => Navigator.pop(
+            context,
+            _PublicGalleryResult(include: _included, share: true),
+          ),
+          icon: const Icon(Icons.link, size: 18),
+          label: const Text('Share gallery link'),
+        ),
+      ],
     );
   }
 }

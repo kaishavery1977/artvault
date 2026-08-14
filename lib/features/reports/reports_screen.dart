@@ -41,6 +41,14 @@ class ReportsScreen extends ConsumerWidget {
         case _ExportKind.csv:
           final file = await ExportService.instance.exportCsv(paintings);
           await ShareService.instance.shareFile(file.path, text: 'CSV export');
+        case _ExportKind.insurance:
+          final pdf =
+              await ExportService.instance.buildInsuranceSchedulePdf(paintings);
+          await ShareService.instance.sharePdf(pdf, 'insurance_schedule.pdf');
+        case _ExportKind.qrLabels:
+          final pdf = await ExportService.instance
+              .buildQrLabelSheetPdf(paintings);
+          await ShareService.instance.sharePdf(pdf, 'qr_labels.pdf');
         case _ExportKind.print:
           await ExportService.instance.printCatalog(paintings);
       }
@@ -406,15 +414,14 @@ class _Row extends StatelessWidget {
       ),
     );
   }
-}
-
-enum _ExportKind { pdf, excel, csv, print }
-
+}enum _ExportKind { pdf, excel, csv, insurance, qrLabels, print }
 extension _ExportKindX on _ExportKind {
   String get label => switch (this) {
     _ExportKind.pdf => 'PDF catalogue',
     _ExportKind.excel => 'Excel (xlsx)',
     _ExportKind.csv => 'CSV',
+    _ExportKind.insurance => 'Insurance schedule (PDF)',
+    _ExportKind.qrLabels => 'QR inventory labels (PDF)',
     _ExportKind.print => 'Print',
   };
 
@@ -422,6 +429,8 @@ extension _ExportKindX on _ExportKind {
     _ExportKind.pdf => Icons.picture_as_pdf_outlined,
     _ExportKind.excel => Icons.table_chart_outlined,
     _ExportKind.csv => Icons.grid_on_outlined,
+    _ExportKind.insurance => Icons.verified_user_outlined,
+    _ExportKind.qrLabels => Icons.qr_code_2_outlined,
     _ExportKind.print => Icons.print_outlined,
   };
 }

@@ -1,1 +1,31 @@
-{"firestore":{"database":"(default)","location":"us-central1","rules":"firestore.rules","indexes":"firestore.indexes.json"},"flutter":{"platforms":{"android":{"default":{"projectId":"artvault-d69d0","appId":"1:629393260589:android:0f6b3fb7133e15ddfdb8a4","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"artvault-d69d0","configurations":{"android":"1:629393260589:android:0f6b3fb7133e15ddfdb8a4","web":"1:629393260589:web:c964a2dac4fad408fdb8a4"}}}}}}
+{
+  "firestore": {
+    "database": "(default)",
+    "location": "us-central1",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "artvault-d69d0",
+          "appId": "1:629393260589:android:0f6b3fb7133e15ddfdb8a4",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "artvault-d69d0",
+          "configurations": {
+            "android": "1:629393260589:android:0f6b3fb7133e15ddfdb8a4",
+            "web": "1:629393260589:web:c964a2dac4fad408fdb8a4"
+          }
+        }
+      }
+    }
+  }
+}

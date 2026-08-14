@@ -190,6 +190,17 @@ class ShareService {
   }
 
   /// Share a file (documents, exports).
+  /// Shares plain text (e.g. a public gallery link).
+  Future<void> shareText(String text, {String? subject}) async {
+    await SharePlus.instance.share(
+      ShareParams(
+        text: text,
+        subject: subject ?? AppConstants.appName,
+        title: AppConstants.appName,
+      ),
+    );
+  }
+
   Future<void> shareFile(String path, {String? text}) async {
     await _share(text: text ?? AppConstants.appName, files: [path]);
   }

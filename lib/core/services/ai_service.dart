@@ -93,6 +93,120 @@ class AiService {
     return result;
   }
 
+  /// Ranks the [collection] by visual similarity to [painting] (best first).
+  ///
+  /// Unlike duplicate detection — which is perceptual-hash only and needs a
+  /// very high match — this blends the perceptual hash with the dominant
+  /// colour palette, tags, category/medium/style and tonal character, so
+  /// *related* works surface even when one side has no hash yet. Returns
+  /// at most [limit] matches scoring >= [threshold].
+  List<DuplicateMatch> findSimilar(
+    Painting painting,
+    List<Painting> collection, {
+    int limit = 8,
+    double threshold = 0.18,
+  }) {
+    final result = <DuplicateMatch>[];
+    for (final other in collection) {
+      if (other.id == painting.id || other.isDeleted) continue;
+      final score = _similarityScore(painting, other);
+      if (score >= threshold) {
+        result.add(DuplicateMatch(other, score));
+      }
+    }
+    result.sort((a, b) => b.similarity.compareTo(a.similarity));
+    return result.take(limit).toList();
+  }
+
+  /// Blended 0..1 visual-similarity score between two artworks. Each signal
+  /// contributes a fixed weight; weights for signals that can't be computed
+  /// (e.g. a missing hash) are dropped and the rest renormalised, so a
+  /// hash-less painting still gets a meaningful score from the other signals.
+  static double _similarityScore(Painting a, Painting b) {
+    var score = 0.0;
+    var weight = 0.0;
+
+    // Perceptual hash — the strongest single signal when both exist.
+    if (a.aiHash.isNotEmpty && b.aiHash.isNotEmpty) {
+      final distance = ImageUtils.hammingDistance(a.aiHash, b.aiHash);
+      score += 0.45 * ImageUtils.similarityFromDistance(distance);
+      weight += 0.45;
+    }
+
+    // Dominant colour palette overlap (matched against the smaller palette).
+    // Only weighted when both artworks actually carry a palette.
+    if (a.dominantColors.isNotEmpty && b.dominantColors.isNotEmpty) {
+      final palette = _paletteOverlap(a.dominantColors, b.dominantColors);
+      score += 0.30 * palette;
+      weight += 0.30;
+    }
+
+    // Shared tags (AI-suggested + user tags), Jaccard over the lower-cased
+    // unions so exact duplicates of a tag count once. Only weighted when
+    // both sides have tags to compare.
+    if ((a.aiTags.isNotEmpty || a.tags.isNotEmpty) &&
+        (b.aiTags.isNotEmpty || b.tags.isNotEmpty)) {
+      final tags = _tagOverlap(a, b);
+      score += 0.15 * tags;
+      weight += 0.15;
+    }
+
+    // Same category / medium / style each add a hint of kinship. Only
+    // weighted when at least one trait actually matches (an empty-trait
+    // painting mustn't dilute the score with a dead 10%).
+    var kindred = 0.0;
+    if (a.category.isNotEmpty && a.category == b.category) kindred += 1.0;
+    if (a.medium.isNotEmpty && a.medium == b.medium) kindred += 0.5;
+    if (a.style.isNotEmpty && a.style == b.style) kindred += 0.5;
+    if (kindred > 0) {
+      score += 0.10 * (kindred / 2.0);
+      weight += 0.10;
+    }
+
+    // Tonal character: closeness of brightness + contrast.
+    final tonal = 1 -
+        ((a.brightness - b.brightness).abs() +
+                (a.contrast - b.contrast).abs()) /
+            2;
+    score += 0.10 * tonal;
+    weight += 0.10;
+
+    // Renormalised over the signals actually available; clamped so a
+    // near-identical twin can never score above a perfect 1.0.
+    return weight == 0 ? 0 : math.min(1.0, score / weight);
+  }
+
+  /// Fraction of the smaller palette whose colours have a close match in the
+  /// larger one (normalised RGB distance < 0.22).
+  static double _paletteOverlap(List<String> a, List<String> b) {
+    if (a.isEmpty || b.isEmpty) return 0;
+    final smaller = a.length <= b.length ? a : b;
+    final larger = a.length <= b.length ? b : a;
+    final largerColors = larger.map(ImageUtils.colorFromHex).toList();
+    var matched = 0;
+    for (final hex in smaller) {
+      final c = ImageUtils.colorFromHex(hex);
+      var closest = 1.0;
+      for (final other in largerColors) {
+        closest = math.min(closest, _colorDistance(c, other));
+      }
+      if (closest < 0.22) matched++;
+    }
+    return matched / smaller.length;
+  }
+
+  /// Jaccard similarity of the two artworks' tag sets (lower-cased).
+  static double _tagOverlap(Painting a, Painting b) {
+    final ta = {...a.aiTags, ...a.tags}
+        .map((t) => t.toLowerCase())
+        .toSet();
+    final tb = {...b.aiTags, ...b.tags}
+        .map((t) => t.toLowerCase())
+        .toSet();
+    if (ta.isEmpty || tb.isEmpty) return 0;
+    return ta.intersection(tb).length / ta.union(tb).length;
+  }
+
   /// Computes a perceptual hash for a new image file.
   Future<String> hashOfFile(File file) => ImageUtils.perceptualHash(file);
 

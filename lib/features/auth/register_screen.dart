@@ -23,7 +23,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _confirm = TextEditingController();
+  // Per-field obscurity so revealing one password never reveals the other,
+  // matching the login screen's suffix-eye-toggle pattern.
   bool _obscure = true;
+  bool _confirmObscure = true;
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -110,22 +113,34 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 icon: Icons.lock_outline,
                 obscureText: _obscure,
                 validator: Validators.password,
+                textInputAction: TextInputAction.next,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscure
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                    size: 20,
+                  ),
+                  onPressed: () => setState(() => _obscure = !_obscure),
+                ),
               ),
               const SizedBox(height: AppSpacing.md),
               AppTextField(
                 controller: _confirm,
                 label: 'Confirm password',
                 icon: Icons.lock_outline,
-                obscureText: _obscure,
+                obscureText: _confirmObscure,
                 validator: (v) => Validators.passwordConfirm(v, _password.text),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Row(
-                children: [
-                  Switch(value: _obscure, onChanged: (v) => setState(() => _obscure = v)),
-                  const SizedBox(width: AppSpacing.xs),
-                  const Text('Show password'),
-                ],
+                textInputAction: TextInputAction.done,
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _confirmObscure
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                    size: 20,
+                  ),
+                  onPressed: () => setState(() => _confirmObscure = !_confirmObscure),
+                ),
               ),
               const SizedBox(height: AppSpacing.md),
               AppButton(

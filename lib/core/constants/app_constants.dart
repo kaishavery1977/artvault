@@ -38,6 +38,7 @@ abstract final class AppConstants {
   static const String boxPaintings = 'av_paintings';
   static const String boxArtists = 'av_artists';
   static const String boxDocuments = 'av_documents';
+  static const String boxConditionReports = 'av_condition_reports';
   static const String boxNotifications = 'av_notifications';
   static const String boxSyncQueue = 'av_sync_queue';
   static const String boxProfile = 'av_profile';

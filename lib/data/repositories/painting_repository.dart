@@ -199,6 +199,12 @@ class PaintingRepository {
     return AiService.instance.findDuplicates(painting, others);
   }
 
+  /// Ranks the active collection by visual similarity to [painting]
+  /// (best first) — drives the detail screen's "Similar paintings" rail.
+  List<DuplicateMatch> findSimilar(Painting painting) {
+    return AiService.instance.findSimilar(painting, readActive());
+  }
+
   // -------------------------------------------------------------- Syncing --
 
   /// Pushes every dirty painting to the cloud, then pulls remote changes.

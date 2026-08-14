@@ -8,9 +8,11 @@ import '../../data/models/app_user.dart';
 import '../../data/models/art_document.dart';
 import '../../data/models/artist.dart';
 import '../../data/models/app_notification.dart';
+import '../../data/models/condition_report.dart';
 import '../../data/models/painting.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/artist_repository.dart';
+import '../../data/repositories/condition_report_repository.dart';
 import '../../data/repositories/document_repository.dart';
 import '../../data/repositories/notification_repository.dart';
 import '../../data/repositories/painting_repository.dart';
@@ -336,6 +338,22 @@ final documentsForPaintingProvider = Provider.family<List<ArtDocument>, String>(
     return docs.where((d) => d.paintingId == id && !d.isDeleted).toList();
   },
 );
+
+/// Condition reports for every painting.
+final conditionReportsProvider =
+    StreamProvider<List<ConditionReport>>((ref) {
+  return ConditionReportRepository.instance.watchReports();
+});
+
+/// Condition reports for one painting (newest first).
+final conditionReportsForPaintingProvider =
+    Provider.family<List<ConditionReport>, String>((ref, id) {
+  final reports = ref.watch(conditionReportsProvider).valueOrNull ?? const [];
+  final list =
+      reports.where((r) => r.paintingId == id && !r.isDeleted).toList()
+        ..sort((a, b) => b.inspectedAt.compareTo(a.inspectedAt));
+  return list;
+});
 
 /// Live computed stats for the dashboard.
 class VaultStats {

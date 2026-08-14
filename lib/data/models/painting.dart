@@ -48,6 +48,7 @@ class Painting {
   final String styleConfidence;
 
   final bool isFavorite;
+  final bool inPublicGallery;
   final bool isDeleted;
   final bool needsSync;
   final bool synced;
@@ -90,6 +91,7 @@ class Painting {
     this.complexity = 0.5,
     this.styleConfidence = 'Medium',
     this.isFavorite = false,
+    this.inPublicGallery = false,
     this.isDeleted = false,
     this.needsSync = true,
     this.synced = false,
@@ -131,6 +133,7 @@ class Painting {
     double? complexity,
     String? styleConfidence,
     bool? isFavorite,
+    bool? inPublicGallery,
     bool? isDeleted,
     bool? needsSync,
     bool? synced,
@@ -171,6 +174,7 @@ class Painting {
       complexity: complexity ?? this.complexity,
       styleConfidence: styleConfidence ?? this.styleConfidence,
       isFavorite: isFavorite ?? this.isFavorite,
+      inPublicGallery: inPublicGallery ?? this.inPublicGallery,
       isDeleted: isDeleted ?? this.isDeleted,
       needsSync: needsSync ?? this.needsSync,
       synced: synced ?? this.synced,
@@ -224,6 +228,7 @@ class Painting {
         'complexity': complexity,
         'styleConfidence': styleConfidence,
         'isFavorite': isFavorite,
+        'inPublicGallery': inPublicGallery,
         'isDeleted': isDeleted,
         'needsSync': needsSync,
         'synced': synced,
@@ -266,6 +271,7 @@ class Painting {
         complexity: _double(json['complexity']) ?? 0.5,
         styleConfidence: (json['styleConfidence'] as String?) ?? 'Medium',
         isFavorite: (json['isFavorite'] as bool?) ?? false,
+        inPublicGallery: (json['inPublicGallery'] as bool?) ?? false,
         isDeleted: (json['isDeleted'] as bool?) ?? false,
         needsSync: (json['needsSync'] as bool?) ?? true,
         synced: (json['synced'] as bool?) ?? false,

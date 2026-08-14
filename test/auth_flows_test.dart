@@ -173,6 +173,56 @@ void main() {
       expect(find.text('Password is required'), findsOneWidget);
       expect(find.text('Confirm your password'), findsOneWidget);
     });
+
+    testWidgets('eye toggles reveal each password field independently',
+        (tester) async {
+      await freshSettings(tester);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: appOverrides(introShown: true),
+          child: const MaterialApp(home: RegisterScreen()),
+        ),
+      );
+      await _drainAuthLayoutMotion(tester);
+
+      final password = find.byType(TextFormField).at(2);
+      final confirm = find.byType(TextFormField).at(3);
+
+      bool obscured(Finder field) => tester
+          .widget<EditableText>(
+            find.descendant(of: field, matching: find.byType(EditableText)),
+          )
+          .obscureText;
+
+      // Both start hidden; one eye per field, no switch row anymore.
+      expect(obscured(password), isTrue);
+      expect(obscured(confirm), isTrue);
+      expect(find.byIcon(Icons.visibility_outlined), findsNWidgets(2));
+      expect(find.byType(Switch), findsNothing);
+
+      // Reveal only the password field.
+      await tester.ensureVisible(password);
+      await tester.pump();
+      await tester.tap(find.byIcon(Icons.visibility_outlined).first);
+      await tester.pump();
+      expect(obscured(password), isFalse);
+      expect(obscured(confirm), isTrue);
+
+      // Reveal the confirm field too.
+      await tester.ensureVisible(confirm);
+      await tester.pump();
+      await tester.tap(find.byIcon(Icons.visibility_outlined).last);
+      await tester.pump();
+      expect(obscured(password), isFalse);
+      expect(obscured(confirm), isFalse);
+
+      // Toggling back re-obscures.
+      await tester.ensureVisible(password);
+      await tester.pump();
+      await tester.tap(find.byIcon(Icons.visibility_off_outlined).first);
+      await tester.pump();
+      expect(obscured(password), isTrue);
+    });
   });
 
   group('Forgot password', () {
