@@ -1875,12 +1875,42 @@ class _ManageGalleryLinkDialogState
       );
     }
 
-    final active = status.active && status.url != null;
+    final now = DateTime.now();
+    // A link whose expiry has passed is still `active` in its document, but
+    // the storage rules stop serving it — surface it as expired.
+    final expired = status.active &&
+        status.expiresAt != null &&
+        !status.expiresAt!.isAfter(now);
+    final active = status.active && !expired && status.url != null;
+    final expiringSoon = active &&
+        status.expiresAt != null &&
+        status.expiresAt!.difference(now) <= const Duration(days: 7);
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (!active) ...[
+        if (expired) ...[
+          Row(
+            children: [
+              Icon(Icons.timer_off, color: AppColors.warning, size: 20),
+              const SizedBox(width: 8),
+              const Text('Link expired', style: TextStyle(fontSize: 13.5)),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'This link expired on ${Formatters.date(status.expiresAt)} and '
+            'no longer resolves. Publish a new link to share the gallery '
+            'again.',
+            style: const TextStyle(fontSize: 13.5),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          FilledButton.icon(
+            onPressed: _busy ? null : _publishAndShare,
+            icon: const Icon(Icons.link, size: 18),
+            label: const Text('Publish new link'),
+          ),
+        ] else if (!active) ...[
           const Text(
             'This link was revoked and no longer resolves. Publish a new '
             'link to share the gallery again.',
@@ -1934,6 +1964,29 @@ class _ManageGalleryLinkDialogState
               ),
             ],
           ),
+          if (expiringSoon) ...[
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: [
+                Icon(
+                  Icons.hourglass_top,
+                  color: AppColors.warning,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Expires in ${_describeDuration(status.expiresAt!.difference(DateTime.now()))}',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: AppColors.warning,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: AppSpacing.md),
           Row(
             children: [
@@ -1961,8 +2014,11 @@ class _ManageGalleryLinkDialogState
             status.expiresAt == null
                 ? 'Current: never expires'
                 : 'Current: expires ${Formatters.date(status.expiresAt)}',
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: expiringSoon
+                  ? AppColors.warning
+                  : theme.colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           OutlinedButton.icon(

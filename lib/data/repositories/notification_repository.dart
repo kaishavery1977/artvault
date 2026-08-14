@@ -45,6 +45,8 @@ class NotificationRepository {
     }
   }
 
+  Future<void> remove(String id) => _db.delete(AppConstants.boxNotifications, id);
+
   Future<void> clearAll() => _db.clear(AppConstants.boxNotifications);
 
   int get unreadCount => all().where((n) => !n.read).length;

@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/services/gallery_link_reminder_service.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/providers/providers.dart';
@@ -83,6 +86,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (!mounted) return;
 
     final state = ref.read(authProvider);
+    if (state.status == AuthStatus.authenticated) {
+      // Best-effort: surface expiring/expired public gallery links in
+      // Notifications on launch. Fire-and-forget — a reminder hiccup must
+      // never gate the hand-off.
+      unawaited(
+        GalleryLinkReminderService.instance.check(
+          state.user?.uid ?? '',
+        ),
+      );
+    }
     String target;
     if (state.status == AuthStatus.authenticated) {
       // App Lock gate (cold-start biometric / face / passcode lock on launch).
