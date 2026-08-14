@@ -108,6 +108,28 @@ void main() {
     });
   });
 
+  group('Login header layout', () {
+    testWidgets('ArtVault wordmark is horizontally centered', (tester) async {
+      await freshSettings(tester);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: appOverrides(introShown: true),
+          child: const MaterialApp(home: LoginScreen()),
+        ),
+      );
+      await _drainLoginMotion(tester);
+
+      // Test surface is 800x600 — a centered wordmark must sit at dx 400.
+      // Without the Center wrap it renders left-aligned in the stretched
+      // column (~dx 310), so this discriminates the regression cleanly.
+      // GradientShimmerText stacks two Text widgets (base + shimmer sweep)
+      // at the same position — measure the first.
+      final wordmark = find.text('ArtVault').first;
+      expect(wordmark, findsOneWidget);
+      expect(tester.getCenter(wordmark).dx, closeTo(400, 1.0));
+    });
+  });
+
   group('Register validation', () {
     testWidgets('password mismatch is rejected', (tester) async {
       await freshSettings(tester);
@@ -242,6 +264,115 @@ void main() {
         find.textContaining('Apple sign-in needs an internet connection'),
         findsOneWidget,
       );
+    });
+  });
+
+  group('Security screen — passcode lock', () {
+    Future<BiometricAvailability> probe() async => const BiometricAvailability(
+      any: true,
+      fingerprint: true,
+      face: true,
+    );
+
+    // Persistent secure-storage mock: writes are stored so `passcodeSet`
+    // reads back what was saved (the shared stub always returns null).
+    void stubSecureStoragePersist() {
+      final store = <String, String>{};
+      const channel = MethodChannel(
+        'plugins.it_nomads.com/flutter_secure_storage',
+      );
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+        final args = call.arguments as Map;
+        switch (call.method) {
+          case 'read':
+            return store[args['key'] as String];
+          case 'write':
+            store[args['key'] as String] = args['value'] as String;
+            return null;
+          case 'delete':
+            store.remove(args['key'] as String);
+            return null;
+        }
+        return null;
+      });
+    }
+
+    Widget securityApp() => ProviderScope(
+          overrides: appOverrides(introShown: true),
+          child: MaterialApp(
+            home: SecurityScreen(availabilityProbe: probe),
+          ),
+        );
+
+    Finder passcodeSwitch() => find.descendant(
+          of: find.widgetWithText(ListTile, 'Passcode lock'),
+          matching: find.byType(Switch),
+        );
+
+    testWidgets('setting a passcode saves and flips the switch on', (tester) async {
+      await freshSettings(tester);
+      stubSecureStoragePersist();
+      await tester.pumpWidget(securityApp());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(passcodeSwitch(), findsOneWidget);
+      expect(tester.widget<Switch>(passcodeSwitch()).value, isFalse);
+
+      await tester.tap(passcodeSwitch());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // The set-passcode dialog opens.
+      expect(find.text('Set passcode'), findsOneWidget);
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Passcode'),
+        '1234',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Confirm passcode'),
+        '1234',
+      );
+      await tester.tap(find.text('Save'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Dialog closed, passcode persisted, switch flipped on.
+      expect(find.text('Set passcode'), findsNothing);
+      expect(await AuthRepository.instance.passcodeSet, isTrue);
+      expect(tester.widget<Switch>(passcodeSwitch()).value, isTrue);
+    });
+
+    testWidgets('mismatched passcodes stay in the dialog without saving', (tester) async {
+      await freshSettings(tester);
+      stubSecureStorage();
+      await tester.pumpWidget(securityApp());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      await tester.tap(passcodeSwitch());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Passcode'),
+        '1234',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Confirm passcode'),
+        '9999',
+      );
+      await tester.tap(find.text('Save'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Still in the dialog, nothing saved.
+      expect(find.text('Set passcode'), findsOneWidget);
+      expect(find.text('Passcodes must be 4 digits and match'), findsOneWidget);
+      expect(await AuthRepository.instance.passcodeSet, isFalse);
     });
   });
 
