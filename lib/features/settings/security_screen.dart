@@ -273,111 +273,29 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
     }
   }
 
-  Future<String?> _showSetPasscodeDialog() async {
-    final pin = TextEditingController();
-    final confirm = TextEditingController();
-    final result = await showDialog<String>(
+  Future<String?> _showSetPasscodeDialog() {
+    // The dialog owns its TextEditingControllers in a private StatefulWidget
+    // and disposes them only when the route fully unmounts (after the exit
+    // transition). Disposing them here, the moment showDialog's future
+    // resolves, used to crash the frame: the dialog is still animating out
+    // and its TextFields rebuild against disposed controllers, surfacing as
+    // "TextEditingController used after being disposed" (and, on-device, a
+    // framework `_dependents.isEmpty` assertion as the tree tears down).
+    return showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Set passcode'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Choose a ${AppConstants.kPasscodeLength}-digit passcode to unlock '
-              'ArtVault when biometrics are unavailable or fail.',
-            ),
-            const SizedBox(height: AppSpacing.md),
-            TextField(
-              controller: pin,
-              autofocus: true,
-              obscureText: true,
-              keyboardType: TextInputType.number,
-              maxLength: AppConstants.kPasscodeLength,
-              decoration: const InputDecoration(
-                labelText: 'Passcode',
-                counterText: '',
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            TextField(
-              controller: confirm,
-              obscureText: true,
-              keyboardType: TextInputType.number,
-              maxLength: AppConstants.kPasscodeLength,
-              decoration: const InputDecoration(
-                labelText: 'Confirm passcode',
-                counterText: '',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final digitsOnly = RegExp(r'^[0-9]+$');
-              if (pin.text.length != AppConstants.kPasscodeLength ||
-                  !digitsOnly.hasMatch(pin.text) ||
-                  pin.text != confirm.text) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Passcodes must be 4 digits and match'),
-                  ),
-                );
-                return;
-              }
-              Navigator.pop(context, pin.text);
-            },
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+      builder: (_) => const _SetPasscodeDialog(),
     );
-    pin.dispose();
-    confirm.dispose();
-    return result;
   }
 
   Future<bool> _showVerifyPasscodeDialog(String title) async {
-    final pin = TextEditingController();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: pin,
-          autofocus: true,
-          obscureText: true,
-          keyboardType: TextInputType.number,
-          maxLength: AppConstants.kPasscodeLength,
-          decoration: const InputDecoration(
-            labelText: 'Passcode',
-            counterText: '',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final valid = await AuthRepository.instance.verifyPasscode(
-                pin.text,
-              );
-              if (context.mounted) Navigator.pop(context, valid);
-            },
-            child: const Text('Verify'),
-          ),
-        ],
-      ),
-    );
-    pin.dispose();
-    return ok ?? false;
+    // Same ownership pattern as the set-passcode dialog: the controller lives
+    // in the dialog's own State so it is disposed only after the route
+    // unmounts, never mid-exit-transition.
+    return (await showDialog<bool>(
+          context: context,
+          builder: (_) => _VerifyPasscodeDialog(title: title),
+        )) ??
+        false;
   }
 
   Future<void> _toggleAppLock(bool value) async {
@@ -758,6 +676,140 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
     );
     controller.dispose();
     return email;
+  }
+}
+
+/// Set-passcode dialog. Owns its TextEditingControllers so they are disposed
+/// only when the dialog route fully unmounts (after the exit transition) —
+/// never while the fields are still animating out.
+class _SetPasscodeDialog extends StatefulWidget {
+  const _SetPasscodeDialog();
+
+  @override
+  State<_SetPasscodeDialog> createState() => _SetPasscodeDialogState();
+}
+
+class _SetPasscodeDialogState extends State<_SetPasscodeDialog> {
+  final _pin = TextEditingController();
+  final _confirm = TextEditingController();
+
+  @override
+  void dispose() {
+    _pin.dispose();
+    _confirm.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final digitsOnly = RegExp(r'^[0-9]+$');
+    if (_pin.text.length != AppConstants.kPasscodeLength ||
+        !digitsOnly.hasMatch(_pin.text) ||
+        _pin.text != _confirm.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Passcodes must be 4 digits and match'),
+        ),
+      );
+      return;
+    }
+    Navigator.pop(context, _pin.text);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Set passcode'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Choose a ${AppConstants.kPasscodeLength}-digit passcode to unlock '
+            'ArtVault when biometrics are unavailable or fail.',
+          ),
+          const SizedBox(height: AppSpacing.md),
+          TextField(
+            controller: _pin,
+            autofocus: true,
+            obscureText: true,
+            keyboardType: TextInputType.number,
+            maxLength: AppConstants.kPasscodeLength,
+            decoration: const InputDecoration(
+              labelText: 'Passcode',
+              counterText: '',
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          TextField(
+            controller: _confirm,
+            obscureText: true,
+            keyboardType: TextInputType.number,
+            maxLength: AppConstants.kPasscodeLength,
+            decoration: const InputDecoration(
+              labelText: 'Confirm passcode',
+              counterText: '',
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(onPressed: _save, child: const Text('Save')),
+      ],
+    );
+  }
+}
+
+/// Verify-current-passcode dialog; same controller-ownership pattern as
+/// [_SetPasscodeDialog].
+class _VerifyPasscodeDialog extends StatefulWidget {
+  final String title;
+
+  const _VerifyPasscodeDialog({required this.title});
+
+  @override
+  State<_VerifyPasscodeDialog> createState() => _VerifyPasscodeDialogState();
+}
+
+class _VerifyPasscodeDialogState extends State<_VerifyPasscodeDialog> {
+  final _pin = TextEditingController();
+
+  @override
+  void dispose() {
+    _pin.dispose();
+    super.dispose();
+  }
+
+  Future<void> _verify() async {
+    final valid = await AuthRepository.instance.verifyPasscode(_pin.text);
+    if (mounted) Navigator.pop(context, valid);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: TextField(
+        controller: _pin,
+        autofocus: true,
+        obscureText: true,
+        keyboardType: TextInputType.number,
+        maxLength: AppConstants.kPasscodeLength,
+        decoration: const InputDecoration(
+          labelText: 'Passcode',
+          counterText: '',
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(onPressed: _verify, child: const Text('Verify')),
+      ],
+    );
   }
 }
 
