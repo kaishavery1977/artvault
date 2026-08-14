@@ -23,6 +23,7 @@ import '../../core/widgets/motion.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
+import '../../features/documents/documents_screen.dart' show RenameDocumentDialog;
 import 'painting_lightbox_screen.dart';
 import '../../data/models/art_document.dart';
 import '../../data/models/painting.dart';
@@ -994,26 +995,14 @@ class _DocumentsSection extends ConsumerWidget {
   static Future<String?> _promptName(
     BuildContext context,
     String current,
-  ) async {
-    final controller = TextEditingController(text: current);
-    final name = await showDialog<String>(
+  ) {
+    // Reuses the shared RenameDocumentDialog, which owns and disposes its
+    // TextEditingController; the copy that lived here created a controller
+    // and never disposed it (a leak).
+    return showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Rename document'),
-        content: TextField(controller: controller, autofocus: true),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+      builder: (_) => RenameDocumentDialog(initial: current),
     );
-    return name;
   }
 }
 

@@ -544,138 +544,27 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
   /// no reset email required. Re-authenticates with Firebase first so the
   /// change can't be made by someone who borrowed the device.
   Future<void> _changePasswordInApp() async {
-    final current = TextEditingController();
-    final next = TextEditingController();
-    final confirm = TextEditingController();
-    String? errorText;
-    try {
-      final result = await showDialog<bool>(
-        context: context,
-        builder: (context) => StatefulBuilder(
-          builder: (context, setDialogState) => AlertDialog(
-            title: const Text('Change password'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Enter your current password, then choose a new one. '
-                  'No email is needed for signed-in users.',
-                  style: TextStyle(fontSize: 13),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                TextField(
-                  controller: current,
-                  autofocus: true,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: 'Current password',
-                    errorText: errorText,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                TextField(
-                  controller: next,
-                  obscureText: true,
-                  decoration: const InputDecoration(labelText: 'New password'),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                TextField(
-                  controller: confirm,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Confirm new password',
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () async {
-                  if (current.text.isEmpty ||
-                      next.text.isEmpty ||
-                      confirm.text.isEmpty) {
-                    setDialogState(() {
-                      errorText = 'Fill in all three fields';
-                    });
-                    return;
-                  }
-                  if (next.text.length < 6) {
-                    setDialogState(() {
-                      errorText = 'New password must be at least 6 characters';
-                    });
-                    return;
-                  }
-                  if (next.text != confirm.text) {
-                    setDialogState(() {
-                      errorText = 'New passwords do not match';
-                    });
-                    return;
-                  }
-                  setDialogState(() => errorText = null);
-                  try {
-                    await AuthRepository.instance.changePassword(
-                      currentPassword: current.text,
-                      newPassword: next.text,
-                    );
-                    if (context.mounted) {
-                      Navigator.pop(context, true);
-                    }
-                  } catch (e) {
-                    setDialogState(() {
-                      errorText = e
-                          .toString()
-                          .replaceFirst('Exception: ', '')
-                          .replaceFirst('firebase_auth/', '');
-                    });
-                  }
-                },
-                child: const Text('Update password'),
-              ),
-            ],
-          ),
-        ),
-      );
-      if (result == true && mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Password changed')));
-      }
-    } finally {
-      current.dispose();
-      next.dispose();
-      confirm.dispose();
+    // The dialog owns its TextEditingControllers; disposing them here the
+    // moment the route pops crashed the frame while it was still animating
+    // out (the same bug the passcode dialogs had).
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => const _ChangePasswordDialog(),
+    );
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Password changed')));
     }
   }
 
-  Future<String?> _showResetDialog([String initial = '']) async {
-    final controller = TextEditingController(text: initial);
-    final email = await showDialog<String>(
+  Future<String?> _showResetDialog([String initial = '']) {
+    // Same owning-dialog pattern — the controller must outlive the exit
+    // transition, which is exactly when the old dispose-after-await crashed.
+    return showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Reset password'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.emailAddress,
-          decoration: const InputDecoration(labelText: 'Email'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Send reset link'),
-          ),
-        ],
-      ),
+      builder: (_) => _ResetPasswordDialog(initial: initial),
     );
-    controller.dispose();
-    return email;
   }
 }
 
@@ -844,3 +733,160 @@ class _Row extends StatelessWidget {
 enum _FaceAction { rescan, remove }
 
 enum _FingerprintAction { test, remove }
+
+/// Change-password dialog. Owns its three TextEditingControllers and disposes
+/// them only when the route fully unmounts (after the exit transition) — the
+/// old version disposed them in a `finally` the instant `showDialog`
+/// resolved, crashing the frame while the fields were still animating out.
+class _ChangePasswordDialog extends StatefulWidget {
+  const _ChangePasswordDialog();
+
+  @override
+  State<_ChangePasswordDialog> createState() => _ChangePasswordDialogState();
+}
+
+class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
+  final _current = TextEditingController();
+  final _next = TextEditingController();
+  final _confirm = TextEditingController();
+  String? _error;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _current.dispose();
+    _next.dispose();
+    _confirm.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_current.text.isEmpty || _next.text.isEmpty || _confirm.text.isEmpty) {
+      setState(() => _error = 'Fill in all three fields');
+      return;
+    }
+    if (_next.text.length < 6) {
+      setState(() => _error = 'New password must be at least 6 characters');
+      return;
+    }
+    if (_next.text != _confirm.text) {
+      setState(() => _error = 'New passwords do not match');
+      return;
+    }
+    setState(() {
+      _error = null;
+      _saving = true;
+    });
+    try {
+      await AuthRepository.instance.changePassword(
+        currentPassword: _current.text,
+        newPassword: _next.text,
+      );
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      setState(() {
+        _saving = false;
+        _error = e
+            .toString()
+            .replaceFirst('Exception: ', '')
+            .replaceFirst('firebase_auth/', '');
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Change password'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Enter your current password, then choose a new one. '
+            'No email is needed for signed-in users.',
+            style: TextStyle(fontSize: 13),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          TextField(
+            controller: _current,
+            autofocus: true,
+            obscureText: true,
+            decoration: InputDecoration(
+              labelText: 'Current password',
+              errorText: _error,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          TextField(
+            controller: _next,
+            obscureText: true,
+            decoration: const InputDecoration(labelText: 'New password'),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          TextField(
+            controller: _confirm,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: 'Confirm new password',
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _saving ? null : _submit,
+          child: const Text('Update password'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Reset-password email dialog. Owns its TextEditingController (same
+/// rationale as [_ChangePasswordDialog]).
+class _ResetPasswordDialog extends StatefulWidget {
+  const _ResetPasswordDialog({required this.initial});
+
+  final String initial;
+
+  @override
+  State<_ResetPasswordDialog> createState() => _ResetPasswordDialogState();
+}
+
+class _ResetPasswordDialogState extends State<_ResetPasswordDialog> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initial,
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Reset password'),
+      content: TextField(
+        controller: _controller,
+        keyboardType: TextInputType.emailAddress,
+        decoration: const InputDecoration(labelText: 'Email'),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _controller.text.trim()),
+          child: const Text('Send reset link'),
+        ),
+      ],
+    );
+  }
+}
