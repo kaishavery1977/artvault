@@ -227,15 +227,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     .fadeIn(duration: 700.ms)
                     .then()
                     .fadeOut(delay: 600.ms, duration: 1400.ms),
-                // Expanding shockwave ring, like a stamp landing.
+                // Expanding shockwave ring, like a stamp landing. It pushes
+                // out at full strength first, then dissolves — fading it in
+                // parallel with the expansion made it vanish before it could
+                // grow (2px at 45% alpha on the warm ambient reads as nothing).
                 Container(
                   width: 132,
                   height: 132,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: AppColors.accent.withValues(alpha: 0.45),
-                      width: 2,
+                      color: AppColors.accent.withValues(alpha: 0.8),
+                      width: 3,
                     ),
                   ),
                 )
@@ -246,7 +249,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       duration: 1300.ms,
                       curve: Curves.easeOutCubic,
                     )
-                    .fadeOut(duration: 1300.ms),
+                    .then()
+                    .fadeOut(duration: 320.ms),
                 // The logo tile itself.
                 _LogoMark()
                     .animate(delay: 250.ms)

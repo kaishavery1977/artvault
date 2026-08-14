@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:disk_space_2/disk_space_2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -89,12 +91,22 @@ class AuthController extends StateNotifier<AuthState> {
 
   AuthRepository get _repo => AuthRepository.instance;
 
+  /// Pulls the cloud vault into the local cache after a session is restored
+  /// or a fresh sign-in succeeds — a new install or a cleared cache
+  /// repopulates on its own instead of showing an empty vault until a manual
+  /// sync. Fire-and-forget: never blocks the splash hand-off or the UI, and
+  /// no-ops when Firebase isn't ready yet.
+  void _syncVaultAfterAuth() {
+    unawaited(PaintingRepository.instance.syncNow());
+  }
+
   /// Called at startup — restores a remembered/secure session without UI.
   Future<void> bootstrap() async {
     if (await _repo.hasRememberedSession) {
       try {
         final user = await _repo.restoreSession();
         state = AuthState(status: AuthStatus.authenticated, user: user);
+        _syncVaultAfterAuth();
         return;
       } catch (_) {}
     }
@@ -114,6 +126,7 @@ class AuthController extends StateNotifier<AuthState> {
         remember: remember,
       );
       state = AuthState(status: AuthStatus.authenticated, user: user);
+      _syncVaultAfterAuth();
       return true;
     } catch (e) {
       state = state.copyWith(busy: false, error: _message(e));
@@ -126,6 +139,7 @@ class AuthController extends StateNotifier<AuthState> {
     try {
       final user = await _repo.register(name, email, password);
       state = AuthState(status: AuthStatus.authenticated, user: user);
+      _syncVaultAfterAuth();
       return true;
     } catch (e) {
       state = state.copyWith(busy: false, error: _message(e));
@@ -138,6 +152,7 @@ class AuthController extends StateNotifier<AuthState> {
     try {
       final user = await _repo.signInWithGoogle();
       state = AuthState(status: AuthStatus.authenticated, user: user);
+      _syncVaultAfterAuth();
       return true;
     } catch (e) {
       state = state.copyWith(busy: false, error: _message(e));
@@ -150,6 +165,7 @@ class AuthController extends StateNotifier<AuthState> {
     try {
       final user = await _repo.signInWithApple();
       state = AuthState(status: AuthStatus.authenticated, user: user);
+      _syncVaultAfterAuth();
       return true;
     } catch (e) {
       state = state.copyWith(busy: false, error: _message(e));
