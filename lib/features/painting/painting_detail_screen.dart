@@ -241,6 +241,8 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
                         _exportExcel([painting]);
                       case _MoreAction.publicGallery:
                         _publicGallery(painting);
+                      case _MoreAction.manageGalleryLink:
+                        _manageGalleryLink();
                     }
                   },
                   itemBuilder: (context) => const [
@@ -267,6 +269,10 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
                     PopupMenuItem(
                       value: _MoreAction.publicGallery,
                       child: Text('Public gallery'),
+                    ),
+                    PopupMenuItem(
+                      value: _MoreAction.manageGalleryLink,
+                      child: Text('Manage gallery link'),
                     ),
                     PopupMenuItem(
                       value: _MoreAction.delete,
@@ -502,6 +508,22 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
       );
     }
   }
+
+  /// Opens the link-management dialog: copy the current link, set an expiry,
+  /// or revoke it so the shared page stops resolving.
+  Future<void> _manageGalleryLink() async {
+    final uid = ref.read(authProvider).user?.uid ?? '';
+    if (uid.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to manage your gallery link.')),
+      );
+      return;
+    }
+    await showDialog<void>(
+      context: context,
+      builder: (context) => _ManageGalleryLinkDialog(ownerUid: uid),
+    );
+  }
 }
 
 enum _ShareAction { image, withDescription, watermark, qr, pdf }
@@ -514,6 +536,7 @@ enum _MoreAction {
   exportPdf,
   exportExcel,
   publicGallery,
+  manageGalleryLink,
 }
 
 class _ShareSheet extends StatelessWidget {
@@ -1640,6 +1663,317 @@ class _ConditionReportView extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
           child: const Text('Close'),
         ),
+      ],
+    );
+  }
+}
+
+/// Expiry presets offered when managing a gallery link.
+const _expiryPresets = <({String label, Duration? duration})>[
+  (label: 'Never expires', duration: null),
+  (label: '1 day', duration: Duration(days: 1)),
+  (label: '7 days', duration: Duration(days: 7)),
+  (label: '30 days', duration: Duration(days: 30)),
+  (label: '1 year', duration: Duration(days: 365)),
+];
+
+/// Lets the owner inspect their published gallery link, copy it, set an
+/// expiry, or revoke it so the shared page stops resolving for everyone
+/// holding the URL.
+class _ManageGalleryLinkDialog extends ConsumerStatefulWidget {
+  final String ownerUid;
+
+  const _ManageGalleryLinkDialog({required this.ownerUid});
+
+  @override
+  ConsumerState<_ManageGalleryLinkDialog> createState() =>
+      _ManageGalleryLinkDialogState();
+}
+
+class _ManageGalleryLinkDialogState
+    extends ConsumerState<_ManageGalleryLinkDialog> {
+  PublicGalleryStatus? _status;
+  bool _loading = true;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final status =
+        await PublicGalleryService.instance.status(widget.ownerUid);
+    if (!mounted) return;
+    setState(() {
+      _status = status;
+      _loading = false;
+    });
+  }
+
+  /// Publishes a fresh link (used when none exists or the old one was
+  /// revoked), then shares it.
+  Future<void> _publishAndShare() async {
+    final curated = PaintingRepository.instance
+        .readAll()
+        .where((p) => !p.isDeleted && p.inPublicGallery)
+        .toList();
+    setState(() => _busy = true);
+    String? url;
+    try {
+      url = await PublicGalleryService.instance
+          .publish(curated, ownerUid: widget.ownerUid);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+    if (!mounted) return;
+    if (url == null || url.isEmpty) {
+      final file = await PublicGalleryService.instance.writeLocalHtml(curated);
+      if (!mounted) return;
+      await ShareService.instance.shareFile(
+        file.path,
+        text: 'My ArtVault gallery (offline page)',
+      );
+      return;
+    }
+    await _load();
+    if (!mounted) return;
+    await ShareService.instance.shareText(
+      'My ArtVault gallery: $url',
+      subject: 'My ArtVault gallery',
+    );
+  }
+
+  Future<void> _copyLink(String url) async {
+    await Clipboard.setData(ClipboardData(text: url));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Gallery link copied')),
+    );
+  }
+
+  Future<void> _applyExpiry(Duration? choice) async {
+    setState(() => _busy = true);
+    final expiresAt = choice == null ? null : DateTime.now().add(choice);
+    await PublicGalleryService.instance.setExpiry(widget.ownerUid, expiresAt);
+    await _load();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          choice == null
+              ? 'Gallery link no longer expires'
+              : 'Gallery link will stop working in ${_describeDuration(choice)}',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _revoke() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Revoke gallery link?'),
+        content: const Text(
+          'The shared page will stop resolving immediately for anyone '
+          'holding the link, and the published page will be deleted.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Revoke link'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _busy = true);
+    await PublicGalleryService.instance.revoke(widget.ownerUid);
+    await _load();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Gallery link revoked')),
+    );
+  }
+
+  static String _describeDuration(Duration d) {
+    if (d.inDays >= 365) return '1 year';
+    if (d.inDays >= 30) return '${d.inDays ~/ 30} months';
+    if (d.inDays >= 7) return '${d.inDays ~/ 7} weeks';
+    return '${d.inDays} day${d.inDays == 1 ? '' : 's'}'
+        .replaceFirst('1 days', '1 day');
+  }
+
+  /// The preset matching the current expiry (nearest within 2h), so the
+  /// dropdown reflects the live link state.
+  Duration? get _selectedExpiry {
+    final exp = _status?.expiresAt;
+    if (exp == null) return null;
+    final remaining = exp.difference(DateTime.now());
+    Duration? best;
+    var bestDiff = const Duration(hours: 2);
+    for (final preset in _expiryPresets) {
+      final d = preset.duration;
+      if (d == null) continue;
+      final diff = (remaining - d).abs();
+      if (diff <= bestDiff) {
+        bestDiff = diff;
+        best = d;
+      }
+    }
+    return best;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AlertDialog(
+      title: const Text('Manage gallery link'),
+      content: SizedBox(
+        width: 420,
+        child: _loading
+            ? const Padding(
+                padding: EdgeInsets.symmetric(vertical: 32),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            : _buildContent(theme),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _busy ? null : () => Navigator.pop(context),
+          child: const Text('Done'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContent(ThemeData theme) {
+    final status = _status;
+    if (status == null) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'No gallery link published yet. Publish one to get a shareable '
+            'page you can expire or revoke at any time.',
+            style: TextStyle(fontSize: 13.5),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          FilledButton.icon(
+            onPressed: _busy ? null : _publishAndShare,
+            icon: const Icon(Icons.link, size: 18),
+            label: const Text('Publish & share'),
+          ),
+        ],
+      );
+    }
+
+    final active = status.active && status.url != null;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!active) ...[
+          const Text(
+            'This link was revoked and no longer resolves. Publish a new '
+            'link to share the gallery again.',
+            style: TextStyle(fontSize: 13.5),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          FilledButton.icon(
+            onPressed: _busy ? null : _publishAndShare,
+            icon: const Icon(Icons.link, size: 18),
+            label: const Text('Publish new link'),
+          ),
+        ] else ...[
+          Row(
+            children: [
+              Icon(Icons.check_circle, color: AppColors.success, size: 20),
+              const SizedBox(width: 8),
+              const Text('Link is active', style: TextStyle(fontSize: 13.5)),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: SelectableText(
+              status.url!,
+              style: const TextStyle(fontSize: 12.5),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: _busy ? null : () => _copyLink(status.url!),
+                icon: const Icon(Icons.copy, size: 16),
+                label: const Text('Copy'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _busy
+                    ? null
+                    : () => ShareService.instance.shareText(
+                          'My ArtVault gallery: ${status.url}',
+                          subject: 'My ArtVault gallery',
+                        ),
+                icon: const Icon(Icons.share_outlined, size: 16),
+                label: const Text('Share'),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Text(
+                'Expiry',
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              DropdownButton<Duration?>(
+                value: _selectedExpiry,
+                items: [
+                  for (final preset in _expiryPresets)
+                    DropdownMenuItem<Duration?>(
+                      value: preset.duration,
+                      child: Text(preset.label),
+                    ),
+                ],
+                onChanged: _busy ? null : (v) => _applyExpiry(v),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            status.expiresAt == null
+                ? 'Current: never expires'
+                : 'Current: expires ${Formatters.date(status.expiresAt)}',
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          OutlinedButton.icon(
+            onPressed: _busy ? null : _revoke,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.error,
+            ),
+            icon: const Icon(Icons.link_off, size: 18),
+            label: const Text('Revoke link'),
+          ),
+        ],
       ],
     );
   }

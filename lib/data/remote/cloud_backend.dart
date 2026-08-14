@@ -236,6 +236,41 @@ class CloudBackend {
     return ref.getDownloadURL();
   }
 
+  /// Uploads bytes and returns a **rules-gated** plain download URL (no
+  /// Firebase download token). Unlike [uploadBytes] — whose `getDownloadURL`
+  /// embeds a token that bypasses storage security rules — this URL is
+  /// evaluated against the rules on every request, so revoking or expiring
+  /// the object's access actually stops it resolving. The page is served
+  /// uncached so a revoked link can't linger in a browser/CDN cache.
+  Future<String?> uploadBytesPublic(
+    String path,
+    Uint8List bytes, {
+    String? contentType,
+  }) async {
+    if (!_ready) return null;
+    final ref = FirebaseStorage.instance.ref(path);
+    await ref.putData(
+      bytes,
+      SettableMetadata(
+        contentType: contentType ?? 'text/html; charset=utf-8',
+        cacheControl: 'private, no-store',
+      ),
+    );
+    return publicUrlFor(path);
+  }
+
+  /// The plain (untokenized) download URL for [path]; reads against it are
+  /// subject to storage security rules.
+  String? publicUrlFor(String path) {
+    if (!_ready) return null;
+    return rulesGatedUrl(FirebaseStorage.instance.bucket, path);
+  }
+
+  /// Pure builder for a rules-gated media URL (testable without Firebase).
+  static String rulesGatedUrl(String bucket, String path) =>
+      'https://firebasestorage.googleapis.com/v0/b/$bucket/o/'
+      '${Uri.encodeComponent(path)}?alt=media';
+
   Future<void> deleteFile(String path) async {
     if (!_ready) return;
     try {

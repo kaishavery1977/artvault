@@ -43,6 +43,17 @@ service cloud.firestore {
       allow read, write: if isSignedIn() && uid == request.auth.uid;
     }
 
+    // Public-gallery link documents (keyed by the owner's uid) hold the
+    // secret token, the active flag and the expiry time that the storage
+    // rules check on every page read. Owner-private: only the owner may
+    // read or change their own link's state.
+    match /public_galleries/{uid} {
+      allow read, delete: if isSignedIn() && uid == request.auth.uid;
+      allow create: if incomingOwnedByMe() && uid == request.auth.uid;
+      allow update: if isSignedIn() && uid == request.auth.uid
+        && request.resource.data.ownerUid == request.auth.uid;
+    }
+
     // User profiles: readable by every signed-in user (the admin panel lists
     // users, and profile lookups read this collection). Writes are
     // self-service for profile fields; nobody can self-promote to admin.

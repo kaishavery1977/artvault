@@ -1,6 +1,8 @@
 // Tests for the public gallery page: the generated HTML must contain the
 // curated artwork data (escaped), never prices, and embed local images so
-// the single file is the whole gallery.
+// the single file is the whole gallery. Also covers the revocable-link
+// mechanics: secret-token paths, plain rules-gated URLs (never the
+// tokenized download URL that would bypass rules).
 
 import 'dart:io';
 
@@ -8,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:artvault/core/services/public_gallery_service.dart';
 import 'package:artvault/data/models/painting.dart';
+import 'package:artvault/data/remote/cloud_backend.dart';
 
 Painting _paint(
   String id, {
@@ -98,6 +101,56 @@ void main() {
       final html = service.buildHtml(const []);
       expect(html, contains('Nothing here yet.'));
       expect(html, contains('0 artworks'));
+    });
+  });
+
+  group('PublicGalleryService revocable links', () {
+    test('storage path embeds owner uid and secret token', () {
+      final path =
+          PublicGalleryService.storagePathFor('user-1', 'secret-token');
+      expect(path, 'public_galleries/user-1/secret-token/page.html');
+      // The token sits between the owner segment and the file, so the
+      // storage rule can match it with a wildcard.
+      expect(path.split('/').length, 4);
+    });
+
+    test('newToken produces unique, URL-safe, unpadded secrets', () {
+      final tokens = {for (var i = 0; i < 50; i++) PublicGalleryService.newToken()};
+      expect(tokens.length, 50);
+      for (final token in tokens) {
+        expect(token, isNotEmpty);
+        expect(token.length >= 20, isTrue,
+            reason: 'token should be unguessable (>= ~120 bits)');
+        expect(token, matches(RegExp(r'^[A-Za-z0-9_-]+$')));
+        expect(token, isNot(contains('=')));
+      }
+    });
+
+    test('published page is served through a rules-gated plain URL', () {
+      // The whole revocation model depends on the shared URL being a plain
+      // media URL evaluated against storage rules — never a tokenized
+      // getDownloadURL, which would bypass rules forever.
+      final url = CloudBackend.rulesGatedUrl(
+        'artvault.appspot.com',
+        'public_galleries/u1/tok/page.html',
+      );
+      expect(url, contains('firebasestorage.googleapis.com/v0/b/'));
+      expect(url, contains('artvault.appspot.com'));
+      expect(url, contains(Uri.encodeComponent('public_galleries/u1/tok/page.html')));
+      expect(url, contains('alt=media'));
+      expect(url, isNot(contains('token=')),
+          reason: 'a plain URL is rules-gated and revocable');
+    });
+
+    test('different owners and tokens produce distinct paths', () {
+      expect(
+        PublicGalleryService.storagePathFor('user-a', 't1'),
+        isNot(PublicGalleryService.storagePathFor('user-b', 't1')),
+      );
+      expect(
+        PublicGalleryService.storagePathFor('user-a', 't1'),
+        isNot(PublicGalleryService.storagePathFor('user-a', 't2')),
+      );
     });
   });
 }

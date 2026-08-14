@@ -1,5 +1,19 @@
 rules_version = '2';
 service firebase.storage {
+  // The published gallery page only resolves while its Firestore link
+  // document says it's active, carries the matching secret token, and
+  // hasn't expired — so revoking or expiring a link kills the page for
+  // everyone holding the URL. (Cross-service reads run with the requesting
+  // user's auth and are not subject to the other product's rules, so the
+  // owner-private link document is still readable by the rule.)
+  function isPublicGalleryActive(uid, token) {
+    let doc = firestore.getData(/databases/(default)/documents/public_galleries/$(uid));
+    return doc != null
+      && doc.data.active == true
+      && doc.data.token == token
+      && (doc.data.expiresAt == null || doc.data.expiresAt > request.time);
+  }
+
   match /b/{bucket}/o {
     // Vault files live under <collection>/<id>/ and are authorised by looking
     // up the owning Firestore document (which is itself owner-scoped).
@@ -16,11 +30,11 @@ service firebase.storage {
         && firestore.getData(/databases/(default)/documents/documents/$(id)).data.ownerUid == request.auth.uid;
     }
 
-    // Public gallery pages are readable by anyone with the link (the owner
-    // curates only title/artist/medium/year/location — never price), but
-    // writable only by the owner, whose uid is encoded in the path.
-    match /public_galleries/gallery-{uid}/{fileName} {
-      allow read: if true;
+    // Public gallery pages are readable by anyone holding a live link (the
+    // owner curates only title/artist/medium/year/location — never price),
+    // but writable only by the owner, whose uid is encoded in the path.
+    match /public_galleries/{uid}/{token}/page.html {
+      allow read: if isPublicGalleryActive(uid, token);
       allow write: if request.auth != null && request.auth.uid == uid;
     }
 

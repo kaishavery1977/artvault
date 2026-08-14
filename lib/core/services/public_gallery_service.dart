@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:path/path.dart' as p;
 
 import '../../data/models/painting.dart';
@@ -9,10 +11,35 @@ import '../../data/remote/cloud_backend.dart';
 import '../utils/formatters.dart';
 import 'file_storage_service.dart';
 
+/// Current state of the owner's published gallery link.
+///
+/// [url] is the rules-gated page URL — it only resolves while [active] is
+/// true and [expiresAt] (when set) is still in the future.
+class PublicGalleryStatus {
+  final bool active;
+  final String token;
+  final DateTime? expiresAt;
+  final String? url;
+
+  const PublicGalleryStatus({
+    required this.active,
+    required this.token,
+    this.expiresAt,
+    this.url,
+  });
+}
+
 /// Builds a self-contained, shareable HTML gallery page from the owner's
 /// curated selection (paintings flagged "include in public gallery"), and
-/// publishes it to a **public** Storage path so the download URL works for
-/// anyone with the link.
+/// publishes it to a **revocable** Storage path so the link can be expired
+/// or killed at any time.
+///
+/// Revocation works because the page lives under a per-link secret token and
+/// is served through a **plain, rules-gated URL** (never the tokenized
+/// `getDownloadURL`, which would bypass rules forever). Every read is checked
+/// against a Firestore link document (`public_galleries/{uid}`) holding the
+/// token, an `active` flag and an optional `expiresAt` — revoke or expire
+/// the link and the page stops resolving.
 ///
 /// The page embeds every image as base64, so the HTML alone is the gallery —
 /// no backend is involved once it's opened. Publishing is best-effort: when
@@ -23,10 +50,21 @@ class PublicGalleryService {
 
   static final PublicGalleryService instance = PublicGalleryService._();
 
-  /// Stable storage path per owner — sharing the same link twice republishes
-  /// the page in place, so an old link keeps pointing at the fresh gallery.
-  static String storagePathFor(String ownerUid) =>
-      'public_galleries/gallery-$ownerUid/page.html';
+  static const String _collection = 'public_galleries';
+
+  /// Storage path for the owner's gallery page. [token] is a high-entropy
+  /// secret embedded in the path itself; reads are additionally gated on
+  /// the Firestore link document, so the page stops resolving the moment
+  /// the link is revoked or expires.
+  static String storagePathFor(String ownerUid, String token) =>
+      'public_galleries/$ownerUid/$token/page.html';
+
+  /// Fresh unguessable token for a new gallery link (URL-safe, no padding).
+  static String newToken() {
+    final rng = Random.secure();
+    final bytes = List<int>.generate(18, (_) => rng.nextInt(256));
+    return base64UrlEncode(bytes).replaceAll('=', '');
+  }
 
   /// One page per artwork: image, title, artist, year, medium and location.
   /// Only fields the owner opted into are shown — never price.
@@ -117,19 +155,93 @@ ${paintings.isEmpty ? '<p style="text-align:center;color:#8f8f9d">Nothing here y
     return '<img src="" alt="">';
   }
 
-  /// Publishes the page and returns its public download URL, or null when the
-  /// cloud isn't ready (caller then shares the HTML file instead).
+  /// Publishes the page under a fresh link token and returns its
+  /// rules-gated URL, or null when the cloud isn't ready (caller then
+  /// shares the HTML file instead). Re-publishing replaces the previous
+  /// link: the old page is deleted and the link document now points at the
+  /// new token.
   Future<String?> publish(
     List<Painting> paintings, {
     required String ownerUid,
   }) async {
     if (ownerUid.isEmpty || !CloudBackend.instance.isReady) return null;
+
+    // Best-effort cleanup of any previous link so re-publishing doesn't
+    // leave orphaned pages behind.
+    final previous = await status(ownerUid);
+    if (previous != null && previous.token.isNotEmpty) {
+      await CloudBackend.instance.deleteFile(
+        storagePathFor(ownerUid, previous.token),
+      );
+    }
+
     final html = buildHtml(paintings);
     final bytes = Uint8List.fromList(utf8.encode(html));
-    return CloudBackend.instance.uploadBytes(
-      storagePathFor(ownerUid),
+    final token = newToken();
+    final url = await CloudBackend.instance.uploadBytesPublic(
+      storagePathFor(ownerUid, token),
       bytes,
       contentType: 'text/html; charset=utf-8',
+    );
+    if (url == null) return null;
+
+    await CloudBackend.instance.upsert(_collection, ownerUid, {
+      'ownerUid': ownerUid,
+      'token': token,
+      'active': true,
+      'expiresAt': null,
+      'updatedAt': DateTime.now(),
+    });
+    return url;
+  }
+
+  /// Stops the shared page resolving: marks the link inactive and deletes
+  /// the published page (best effort) so nothing lingers in storage.
+  Future<void> revoke(String ownerUid) async {
+    if (ownerUid.isEmpty || !CloudBackend.instance.isReady) return;
+    final current = await status(ownerUid);
+    if (current != null && current.token.isNotEmpty) {
+      await CloudBackend.instance.deleteFile(
+        storagePathFor(ownerUid, current.token),
+      );
+    }
+    await CloudBackend.instance.upsert(_collection, ownerUid, {
+      'active': false,
+      'updatedAt': DateTime.now(),
+    });
+  }
+
+  /// Sets when the shared page stops resolving (null = never expires).
+  Future<void> setExpiry(String ownerUid, DateTime? expiresAt) async {
+    if (ownerUid.isEmpty || !CloudBackend.instance.isReady) return;
+    await CloudBackend.instance.upsert(_collection, ownerUid, {
+      'expiresAt': expiresAt,
+      'updatedAt': DateTime.now(),
+    });
+  }
+
+  /// Current link status, or null when the gallery was never published.
+  Future<PublicGalleryStatus?> status(String ownerUid) async {
+    if (ownerUid.isEmpty || !CloudBackend.instance.isReady) return null;
+    final doc = await CloudBackend.instance.fetchDoc(_collection, ownerUid);
+    if (doc == null) return null;
+    final token = doc['token'] as String? ?? '';
+    final rawExpiry = doc['expiresAt'];
+    DateTime? expiresAt;
+    if (rawExpiry is Timestamp) {
+      expiresAt = rawExpiry.toDate();
+    } else if (rawExpiry is DateTime) {
+      expiresAt = rawExpiry;
+    }
+    return PublicGalleryStatus(
+      active: doc['active'] == true,
+      token: token,
+      expiresAt: expiresAt,
+      url: token.isEmpty
+          ? null
+          : CloudBackend.instance.publicUrlFor(
+              storagePathFor(ownerUid, token),
+            ),
     );
   }
 
