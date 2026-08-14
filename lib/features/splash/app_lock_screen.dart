@@ -32,10 +32,21 @@ class _AppLockScreenState extends State<AppLockScreen>
   /// True while the success confirmation is playing before navigating home.
   bool _unlocked = false;
   String _unlockMessage = 'Unlocked!';
-  late final AnimationController _unlock = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 550),
-  );
+  late final AnimationController _unlock;
+
+  @override
+  void initState() {
+    super.initState();
+    // Created eagerly (not `late` at the field): a `late final` initializer
+    // would otherwise run on first access — which, when the user signs out
+    // without unlocking, happens inside dispose() and builds a Ticker on a
+    // deactivated element (crash). Eager creation keeps it in the live tree.
+    _unlock = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 550),
+    );
+    _setup();
+  }
 
   // Which unlock methods are switched on (settings) and actually available.
   bool _fingerprintOn = false;
@@ -48,17 +59,17 @@ class _AppLockScreenState extends State<AppLockScreen>
   String _pin = '';
   String _status = 'Checking security…';
 
+  /// True while the on-screen status is an error (rendered in the error
+  /// color rather than muted, and the PIN dots turn red).
+  bool _statusError = false;
+
   /// Increments on every wrong passcode so the pad shakes in place.
   int _shakeTick = 0;
 
   bool get _fingerprintMethod => _fingerprintOn && _fingerprintAvailable;
   bool get _faceMethod => _faceOn && _faceAvailable;
 
-  @override
-  void initState() {
-    super.initState();
-    _setup();
-  }
+
 
   Future<void> _setup() async {
     final fpOn = await AuthRepository.instance.biometricEnabled;
@@ -175,12 +186,21 @@ class _AppLockScreenState extends State<AppLockScreen>
       _pinMode = true;
       _pin = '';
       _status = '';
+      _statusError = false;
     });
   }
 
   void _onDigit(String digit) {
     if (_checking || _pin.length >= AppConstants.kPasscodeLength) return;
     HapticFeedback.selectionClick();
+    // A fresh digit after a wrong attempt clears the error state (message
+    // and red dots) so the user retypes against a clean pad.
+    if (_statusError) {
+      setState(() {
+        _statusError = false;
+        _status = '';
+      });
+    }
     final next = _pin + digit;
     setState(() => _pin = next);
     if (next.length == AppConstants.kPasscodeLength) _checkPin(next);
@@ -199,10 +219,12 @@ class _AppLockScreenState extends State<AppLockScreen>
       await _showUnlockSuccess(message: 'Passcode accepted — unlocking…');
       return;
     }
+    HapticFeedback.vibrate();
     setState(() {
       _checking = false;
       _pin = '';
       _status = 'Incorrect passcode. Try again.';
+      _statusError = true;
       _shakeTick++;
     });
   }
@@ -217,6 +239,7 @@ class _AppLockScreenState extends State<AppLockScreen>
       _checking = true;
       _unlocked = true;
       _unlockMessage = message;
+      _statusError = false;
     });
     _unlock.forward();
     await Future<void>.delayed(const Duration(milliseconds: 1150));
@@ -301,6 +324,7 @@ class _AppLockScreenState extends State<AppLockScreen>
                         child: _PinPad(
                           length: AppConstants.kPasscodeLength,
                           entered: _pin.length,
+                          error: _statusError,
                           enabled: !_checking,
                           onDigit: _onDigit,
                           onBackspace: _onBackspace,
@@ -335,7 +359,15 @@ class _AppLockScreenState extends State<AppLockScreen>
                       const SizedBox(height: AppSpacing.md),
                       Text(
                         _status,
-                        style: TextStyle(fontSize: 12.5, color: muted),
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: _statusError
+                              ? Theme.of(context).colorScheme.error
+                              : muted,
+                          fontWeight: _statusError
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                        ),
                       ),
                     ],
                     const SizedBox(height: AppSpacing.xl),
@@ -400,6 +432,10 @@ class _UnlockButton extends StatelessWidget {
 class _PinPad extends StatelessWidget {
   final int length;
   final int entered;
+
+  /// True after a wrong passcode: the filled dots render in the error color
+  /// so the pad visually signals the failed attempt alongside the shake.
+  final bool error;
   final bool enabled;
   final ValueChanged<String> onDigit;
   final VoidCallback onBackspace;
@@ -407,6 +443,7 @@ class _PinPad extends StatelessWidget {
   const _PinPad({
     required this.length,
     required this.entered,
+    required this.error,
     required this.enabled,
     required this.onDigit,
     required this.onBackspace,
@@ -415,6 +452,7 @@ class _PinPad extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final dotColor = error ? scheme.error : scheme.primary;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -428,10 +466,10 @@ class _PinPad extends StatelessWidget {
               margin: const EdgeInsets.symmetric(horizontal: 6),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: i < entered ? scheme.primary : Colors.transparent,
+                color: i < entered ? dotColor : Colors.transparent,
                 border: Border.all(
                   color: i < entered
-                      ? scheme.primary
+                      ? dotColor
                       : scheme.onSurface.withValues(alpha: 0.4),
                   width: 1.6,
                 ),

@@ -16,7 +16,15 @@ void disableRuntimeFontFetching() {
 }
 
 /// Auth controller whose [bootstrap] never touches local/secure storage.
+///
+/// An optional initial [state] can be passed for tests that pump a screen
+/// directly (nothing calls `bootstrap()` then, so a curated auth state must
+/// come in through the constructor).
 class FakeAuthController extends AuthController {
+  FakeAuthController([AuthState? initial]) {
+    if (initial != null) state = initial;
+  }
+
   @override
   Future<void> bootstrap() async {
     // Defer past the build phase — modifying a provider inside initState is
