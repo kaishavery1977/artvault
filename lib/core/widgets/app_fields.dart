@@ -21,6 +21,11 @@ class AppTextField extends StatelessWidget {
   final VoidCallback? onTap;
   final String? prefixText;
   final TextCapitalization capitalization;
+  /// When set, the leading [icon] becomes a tappable, highlighted button
+  /// (e.g. the date field's calendar) instead of a plain static icon.
+  final VoidCallback? onIconTap;
+  final Color? iconColor;
+  final double? iconSize;
 
   const AppTextField({
     super.key,
@@ -41,6 +46,9 @@ class AppTextField extends StatelessWidget {
     this.onTap,
     this.prefixText,
     this.capitalization = TextCapitalization.none,
+    this.onIconTap,
+    this.iconColor,
+    this.iconSize,
   });
 
   @override
@@ -63,9 +71,33 @@ class AppTextField extends StatelessWidget {
         hintText: hint,
         // prefixText and prefixIcon can't both be set (icon wins and the
         // text is dropped) — callers pick one.
-        prefixIcon: prefixText == null && icon != null ? Icon(icon, size: 20) : null,
+        prefixIcon: _buildPrefixIcon(context),
         prefixText: prefixText,
         suffixIcon: suffixIcon,
+      ),
+    );
+  }
+
+  /// The leading icon: a plain icon by default, or a tappable, highlighted
+  /// button when [onIconTap] is provided (so callers like the date field can
+  /// turn the icon itself into the action instead of bolting on a duplicate
+  /// suffix button).
+  Widget? _buildPrefixIcon(BuildContext context) {
+    if (prefixText != null || icon == null) return null;
+    final tap = onIconTap;
+    if (tap == null) {
+      return Icon(icon, size: iconSize ?? 20);
+    }
+    return InkWell(
+      onTap: tap,
+      borderRadius: BorderRadius.circular(24),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Icon(
+          icon,
+          size: iconSize ?? 22,
+          color: iconColor ?? Theme.of(context).colorScheme.primary,
+        ),
       ),
     );
   }

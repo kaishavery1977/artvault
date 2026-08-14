@@ -635,15 +635,14 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
             AppTextField(
               controller: _dateCreated,
               label: 'Date created',
-              icon: Icons.event_outlined,
+              icon: Icons.calendar_month,
               hint: 'Tap the calendar to pick a date',
               readOnly: true,
               onTap: _pickDate,
-              suffixIcon: IconButton(
-                tooltip: 'Pick date',
-                icon: const Icon(Icons.calendar_month_outlined),
-                onPressed: _pickDate,
-              ),
+              // Single highlighted leading calendar: tapping the icon (or the
+              // field) opens the picker — no duplicate suffix button.
+              onIconTap: _pickDate,
+              iconSize: 22,
             ),
             const SizedBox(height: AppSpacing.md),
             AppTextField(
