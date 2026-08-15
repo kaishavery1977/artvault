@@ -11,6 +11,7 @@ import '../../core/widgets/motion.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/app_user.dart';
+import 'about_screen.dart';
 import '../../data/models/painting.dart';
 import '../../data/repositories/settings_repository.dart';
 
@@ -213,7 +214,7 @@ class SettingsScreen extends ConsumerWidget {
           ...sections,
           Center(
             child: Text(
-              'ArtVault v1.0.0',
+              'ArtVault v${AboutScreen.appVersion} (${AboutScreen.appBuild})',
               style: TextStyle(
                 fontSize: 12,
                 color: Theme.of(
