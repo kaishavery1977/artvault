@@ -253,6 +253,39 @@ class AboutScreen extends ConsumerWidget {
         const SizedBox(height: AppSpacing.lg),
 
         // ------------------------------------------------------------------
+        // SUPPORT — contact & rate the app
+        // ------------------------------------------------------------------
+        GlassCard(
+          padding: AppSpacing.cardPadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _cardTitle(context, Icons.support_agent_outlined, 'Support'),
+              const SizedBox(height: AppSpacing.xs),
+              _link(
+                context,
+                'Send feedback',
+                subtitle: 'Questions, suggestions or issues — email the developer',
+                icon: Icons.mail_outline,
+                onTap: () => _launch(
+                  'mailto:kaishavery1977@gmail.com?subject=ArtVault%20Feedback',
+                ),
+              ),
+              _link(
+                context,
+                'Rate ArtVault',
+                subtitle: 'Enjoying the app? Leave a review on Google Play',
+                icon: Icons.star_border,
+                onTap: () => _launch(
+                  'https://play.google.com/store/apps/details?id=com.artvault.artvault',
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+
+        // ------------------------------------------------------------------
         // LEGAL
         // ------------------------------------------------------------------
         GlassCard(
@@ -265,17 +298,23 @@ class AboutScreen extends ConsumerWidget {
               _link(
                 context,
                 'Privacy policy',
-                () => _launch('https://artvault-d69d0.web.app/privacy.html'),
+                onTap: () => _launch(
+                  'https://artvault-d69d0.web.app/privacy.html',
+                ),
               ),
               _link(
                 context,
                 'Terms of service',
-                () => _launch('https://artvault-d69d0.web.app/terms.html'),
+                onTap: () => _launch(
+                  'https://artvault-d69d0.web.app/terms.html',
+                ),
               ),
               _link(
                 context,
                 'Licences',
-                () => _launch('https://artvault-d69d0.web.app/licenses.html'),
+                onTap: () => _launch(
+                  'https://artvault-d69d0.web.app/licenses.html',
+                ),
               ),
             ],
           ),
@@ -419,11 +458,23 @@ class AboutScreen extends ConsumerWidget {
     );
   }
 
-  static Widget _link(BuildContext context, String label, VoidCallback onTap) {
+  static Widget _link(
+    BuildContext context,
+    String label, {
+    String? subtitle,
+    IconData? icon,
+    required VoidCallback onTap,
+  }) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       dense: true,
+      leading: icon == null
+          ? null
+          : Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
       title: Text(label, style: const TextStyle(fontSize: 13)),
+      subtitle: subtitle == null
+          ? null
+          : Text(subtitle, style: const TextStyle(fontSize: 11.5)),
       trailing: const Icon(Icons.open_in_new, size: 16),
       onTap: onTap,
     );
