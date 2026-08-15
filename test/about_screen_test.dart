@@ -57,6 +57,7 @@ void main() {
     expect(find.text('Support'), findsOneWidget);
     expect(find.text('Send feedback'), findsOneWidget);
     expect(find.text('Rate ArtVault'), findsOneWidget);
+    expect(find.text('Share ArtVault'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Legal'), 200, scrollable: list);
     expect(find.text('Legal'), findsOneWidget);
     // The credit's footer line is a plain Text — scroll to it, then assert

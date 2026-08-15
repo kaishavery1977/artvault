@@ -7,6 +7,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/providers/providers.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/services/share_service.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/widgets/surfaces.dart';
@@ -278,6 +279,18 @@ class AboutScreen extends ConsumerWidget {
                 icon: Icons.star_border,
                 onTap: () => _launch(
                   'https://play.google.com/store/apps/details?id=com.artvault.artvault',
+                ),
+              ),
+              _link(
+                context,
+                'Share ArtVault',
+                subtitle: 'Tell a fellow collector about the app',
+                icon: Icons.ios_share,
+                onTap: () => ShareService.instance.shareText(
+                  'Discover ArtVault — your private digital gallery. Organise, '
+                  'analyse and protect your art collection, all on your device. '
+                  '${AppConstants.appName}',
+                  subject: 'ArtVault — your private gallery',
                 ),
               ),
             ],
