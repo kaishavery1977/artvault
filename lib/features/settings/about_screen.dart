@@ -38,9 +38,16 @@ class AboutScreen extends ConsumerWidget {
     final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final paintings = ref.watch(paintingsProvider).valueOrNull?.length ?? 0;
+    final allPaintings = ref.watch(paintingsProvider).valueOrNull ?? const [];
+    final active = allPaintings.where((p) => !p.isDeleted).toList();
+    final paintings = active.length;
     final artists = ref.watch(artistsProvider).valueOrNull?.length ?? 0;
     final documents = ref.watch(documentsProvider).valueOrNull?.length ?? 0;
+    final storedImages = active.fold<int>(
+      0,
+      (sum, p) => sum + p.images.length,
+    );
+    final vaultBytes = ref.watch(storageUsageProvider).valueOrNull?.total ?? 0;
     final plan = ref.watch(authProvider).user?.plan ?? AppPlan.free;
 
     final children = staggerReveal(
@@ -121,24 +128,50 @@ class AboutScreen extends ConsumerWidget {
         // ------------------------------------------------------------------
         GlassCard(
           padding: AppSpacing.cardPadding,
-          child: Row(
+          child: GridView.count(
+            crossAxisCount: 3,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: AppSpacing.md,
+            crossAxisSpacing: AppSpacing.xs,
+            // Fixed cell height so a 3×2 strip always fits the content.
+            mainAxisExtent: 84,
             children: [
               _StatTile(
                 icon: Icons.brush_outlined,
                 label: 'Paintings',
                 value: paintings,
+                format: (v) => v.round().toString(),
               ),
-              _divider(scheme),
               _StatTile(
                 icon: Icons.person_outline,
                 label: 'Artists',
                 value: artists,
+                format: (v) => v.round().toString(),
               ),
-              _divider(scheme),
               _StatTile(
                 icon: Icons.description_outlined,
                 label: 'Documents',
                 value: documents,
+                format: (v) => v.round().toString(),
+              ),
+              _StatTile(
+                icon: Icons.photo_library_outlined,
+                label: 'Stored images',
+                value: storedImages,
+                format: (v) => v.round().toString(),
+              ),
+              _StatTile(
+                icon: Icons.storage_outlined,
+                label: 'Vault size',
+                value: vaultBytes,
+                format: (v) => Formatters.bytes(v.round()),
+              ),
+              _StatTile(
+                icon: Icons.workspace_premium_outlined,
+                label: 'Plan',
+                value: plan.isPro ? 1 : 0,
+                format: (v) => plan.isPro ? 'Pro' : 'Free',
               ),
             ],
           ),
@@ -229,9 +262,21 @@ class AboutScreen extends ConsumerWidget {
             children: [
               _cardTitle(context, Icons.gavel_outlined, 'Legal'),
               const SizedBox(height: AppSpacing.xs),
-              _link(context, 'Privacy policy', () => _launch('https://example.com/privacy')),
-              _link(context, 'Terms of service', () => _launch('https://example.com/terms')),
-              _link(context, 'Licences', () => _launch('https://example.com/licenses')),
+              _link(
+                context,
+                'Privacy policy',
+                () => _launch('https://artvault-d69d0.web.app/privacy.html'),
+              ),
+              _link(
+                context,
+                'Terms of service',
+                () => _launch('https://artvault-d69d0.web.app/terms.html'),
+              ),
+              _link(
+                context,
+                'Licences',
+                () => _launch('https://artvault-d69d0.web.app/licenses.html'),
+              ),
             ],
           ),
         ),
@@ -290,9 +335,26 @@ class AboutScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('About ArtVault')),
-      body: ListView(
-        padding: AppSpacing.screenPadding,
-        children: children,
+      body: Stack(
+        children: [
+          // Ambient aurora glow behind the whole page — the same drifting
+          // colour wash the home screen and splash use, so About feels like
+          // part of the same cinematic world.
+          Positioned.fill(
+            child: const IgnorePointer(child: AuroraBackground()),
+          ),
+          ListView(
+            padding: AppSpacing.screenPadding,
+            children: children,
+          ),
+          // Museum-style vignette: softly darkens the edges and casts a warm
+          // gallery-light glow in the corners, like light falling on art.
+          Positioned.fill(
+            child: const IgnorePointer(
+              child: FilmVignette(strength: 0.14),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -330,14 +392,6 @@ class AboutScreen extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-
-  static Widget _divider(ColorScheme scheme) {
-    return Container(
-      width: 1,
-      height: 40,
-      color: scheme.onSurface.withValues(alpha: 0.08),
     );
   }
 
@@ -383,37 +437,46 @@ class AboutScreen extends ConsumerWidget {
   }
 }
 
-/// A single vault-stat tile in the hero strip: icon + animated count + label.
+/// A single vault-stat tile in the stats strip: icon + animated count +
+/// label. The [format] callback decides how the animated value renders
+/// (integers, bytes, or a plan name).
 class _StatTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final int value;
+  final String Function(double) format;
 
-  const _StatTile({required this.icon, required this.label, required this.value});
+  const _StatTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.format,
+  });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Expanded(
-      child: Column(
-        children: [
-          Icon(icon, size: 20, color: scheme.primary),
-          const SizedBox(height: 6),
-          AnimatedCountUp(
-            value: value.toDouble(),
-            format: (v) => Formatters.number(v),
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 20, color: scheme.primary),
+        const SizedBox(height: 6),
+        AnimatedCountUp(
+          value: value.toDouble(),
+          format: format,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 11,
+            color: scheme.onSurface.withValues(alpha: 0.5),
           ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: scheme.onSurface.withValues(alpha: 0.5),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
