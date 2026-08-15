@@ -508,7 +508,7 @@ class _StorageRing extends StatefulWidget {
 }
 
 class _StorageRingState extends State<_StorageRing>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1100),

@@ -65,6 +65,28 @@ class SettingsRepository {
   Future<void> setLibraryLocation(String value) =>
       _db.setSetting(AppConstants.kLibraryLocation, value);
 
+  /// Whether [id] has been celebrated recently (within the cooldown). The
+  /// same celebration (e.g. the Pro unlock) is shown once, so relaunching or
+  /// re-tapping the same moment doesn't replay the confetti every time.
+  bool wasCelebratedRecently(String id, {Duration within = const Duration(hours: 24)}) {
+    final stored = _db.getString(AppConstants.kLastCelebrationId);
+    final at = _db.getInt(AppConstants.kLastCelebrationAt);
+    // `getInt` defaults to 0 when unset — treat that as never celebrated.
+    if (stored != id || at == 0) return false;
+    return DateTime.now().difference(
+          DateTime.fromMillisecondsSinceEpoch(at),
+        ) <
+        within;
+  }
+
+  Future<void> markCelebrated(String id) async {
+    await _db.setSetting(AppConstants.kLastCelebrationId, id);
+    await _db.setSetting(
+      AppConstants.kLastCelebrationAt,
+      DateTime.now().millisecondsSinceEpoch,
+    );
+  }
+
   /// Role hint used to seed brand-new users. Managed through AuthRepository.
   Stream<void> watchSettings() => _db.watch(AppConstants.boxSettings);
 }

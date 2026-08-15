@@ -9,6 +9,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/widgets/surfaces.dart';
+import '../../data/repositories/settings_repository.dart';
 
 /// Brand confetti palette shared across celebrations.
 const List<Color> kCelebrationColors = [
@@ -21,35 +22,55 @@ const List<Color> kCelebrationColors = [
 
 /// Reusable full-screen celebration: a burst of brand-colored confetti
 /// behind a glass card that springs in, plus a haptic thump so the moment
-/// feels physical. Ticker-only (no timers), so tests that end mid-flight
-/// stay clean; reduced motion renders the card statically without confetti.
+/// feels physical. Each celebration is keyed by [id] and only replays once
+/// per cooldown window (persisted), so relaunching or re-tapping the same
+/// moment never dumps confetti every time. Ticker-only (no timers), so
+/// tests that end mid-flight stay clean; reduced motion renders the card
+/// statically without confetti.
 Future<void> showConfettiCelebration(
   BuildContext context, {
+  required String id,
   required String title,
   required String message,
   IconData icon = Icons.workspace_premium,
   String? iconLabel,
   List<Color> colors = kCelebrationColors,
 }) async {
-  // Resolve the reduced-motion flag up front (no async gap), and kick the
-  // haptic off without awaiting so the dialog shows instantly.
+  // Capture everything we need from the context before any async gap, so
+  // no BuildContext is touched across the persistence/haptic boundary.
   final reduced = MediaQuery.disableAnimationsOf(context);
+  final navigator = Navigator.of(context, rootNavigator: true);
+
+  // Already celebrated recently? Skip the whole moment silently — the
+  // user has seen it and doesn't need it replayed.
+  if (SettingsRepository.instance.wasCelebratedRecently(id)) return;
+  await SettingsRepository.instance.markCelebrated(id);
+
   if (!reduced) {
     // Haptics are best-effort — fire-and-forget, never block the dialog.
     unawaited(HapticFeedback.mediumImpact().catchError((_) {}));
   }
-  await showGeneralDialog<void>(
-    context: context,
-    barrierDismissible: true,
-    barrierLabel: title,
-    barrierColor: Colors.black.withValues(alpha: 0.6),
-    transitionDuration: const Duration(milliseconds: 300),
-    pageBuilder: (context, _, _) => _CelebrationDialog(
-      title: title,
-      message: message,
-      icon: icon,
-      iconLabel: iconLabel,
-      colors: colors,
+  // Push through the captured NavigatorState — no BuildContext touched
+  // across the async boundary.
+  await navigator.push<void>(
+    PageRouteBuilder<void>(
+      barrierDismissible: true,
+      barrierLabel: title,
+      opaque: false,
+      barrierColor: Colors.black.withValues(alpha: 0.6),
+      transitionDuration: const Duration(milliseconds: 300),
+      reverseTransitionDuration: const Duration(milliseconds: 220),
+      pageBuilder: (context, _, _) => _CelebrationDialog(
+        title: title,
+        message: message,
+        icon: icon,
+        iconLabel: iconLabel,
+        colors: colors,
+      ),
+      transitionsBuilder: (context, animation, _, child) => FadeTransition(
+        opacity: animation,
+        child: child,
+      ),
     ),
   );
 }
@@ -58,6 +79,7 @@ Future<void> showConfettiCelebration(
 Future<void> showProCelebration(BuildContext context) {
   return showConfettiCelebration(
     context,
+    id: 'pro-unlock',
     title: 'Welcome to Pro!',
     message: 'Unlimited capacity, gallery analytics and watermarking '
         'are now unlocked.',

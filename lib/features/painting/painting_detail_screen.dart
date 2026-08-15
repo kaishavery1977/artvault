@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -500,6 +501,7 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
         if (mounted) {
           await showConfettiCelebration(
             context,
+            id: 'gallery-published',
             title: 'Gallery published!',
             message: 'Your curated page is live. Anyone with the link can '
                 'view it until you revoke or expire it.',
@@ -1769,6 +1771,7 @@ class _ManageGalleryLinkDialogState
     if (mounted) {
       await showConfettiCelebration(
         context,
+        id: 'gallery-published',
         title: 'Gallery published!',
         message: 'Your curated page is live. Anyone with the link can '
             'view it until you revoke or expire it.',
@@ -1781,8 +1784,17 @@ class _ManageGalleryLinkDialogState
   Future<void> _copyLink(String url) async {
     await Clipboard.setData(ClipboardData(text: url));
     if (!mounted) return;
+    // A soft success haptic + green flash so the copy lands physically.
+    unawaited(HapticFeedback.lightImpact().catchError((_) {}));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Gallery link copied')),
+      SnackBar(
+        content: const Text('Gallery link copied'),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
     );
   }
 
