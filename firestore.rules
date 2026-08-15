@@ -52,6 +52,21 @@ service cloud.firestore {
       allow create: if incomingOwnedByMe() && uid == request.auth.uid;
       allow update: if isSignedIn() && uid == request.auth.uid
         && request.resource.data.ownerUid == request.auth.uid;
+
+      // Per-link view analytics. The counter doc is written by the
+      // anonymous page viewer (the gallery page is public), so writes are
+      // intentionally unauthenticated — but only the views counter can
+      // move, and only upward. The owner reads it through the signed-in
+      // path above.
+      match /stats/{stat} {
+        allow read: if isSignedIn() && uid == request.auth.uid;
+        allow create: if request.auth == null
+          && request.resource.data.views is int
+          && request.resource.data.views == 1;
+        allow update: if request.auth == null
+          && request.resource.data.views is int
+          && request.resource.data.views == resource.data.views + 1;
+      }
     }
 
     // User profiles: readable by every signed-in user (the admin panel lists
@@ -62,11 +77,13 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && uid == request.auth.uid
-        && request.resource.data.role == 'curator';
+        && request.resource.data.role == 'curator'
+        && request.resource.data.plan == 'free';
       allow update: if (isSignedIn() && uid == request.auth.uid
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['uid'])
         && (request.resource.data.role == resource.data.role
-            || request.resource.data.role != 'admin'))
+            || request.resource.data.role != 'admin')
+        && (request.resource.data.plan == resource.data.plan || isAdmin()))
         || (isAdmin() && uid != request.auth.uid);
       allow delete: if isAdmin() && uid != request.auth.uid;
     }

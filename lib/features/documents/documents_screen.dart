@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../core/constants/pro_limits.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/share_service.dart';
@@ -14,6 +15,7 @@ import '../../core/widgets/motion.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
+import '../../features/pro/upgrade_prompt.dart';
 import '../../data/models/art_document.dart';
 import '../../data/models/painting.dart';
 import '../../data/repositories/document_repository.dart';
@@ -115,6 +117,21 @@ class DocumentsScreen extends ConsumerWidget {
     WidgetRef ref,
     List<Painting> paintings,
   ) async {
+    // Free-tier capacity gate for new documents.
+    if (!ref.read(authProvider).isPro) {
+      final active = DocumentRepository.instance
+          .readAll()
+          .where((d) => !d.isDeleted)
+          .length;
+      if (active >= ProLimits.freeDocuments) {
+        await showUpgradePrompt(
+          context,
+          feature: 'Adding more than ${ProLimits.freeDocuments} documents',
+        );
+        return;
+      }
+    }
+
     final painting = await _pickPainting(context, paintings);
     if (painting == null) return;
     if (!context.mounted) return;
@@ -129,6 +146,22 @@ class DocumentsScreen extends ConsumerWidget {
     final file = picked.files.single;
     final path = file.path;
     if (path == null) return;
+
+    // Free-tier storage gate: document files beyond 100 MB need Pro.
+    if (!ref.read(authProvider).isPro) {
+      final usage = ref.read(storageUsageProvider).valueOrNull;
+      final current = usage?.documents ?? 0;
+      if (current + File(path).lengthSync() > ProLimits.freeStorageBytes) {
+        if (context.mounted) {
+          await showUpgradePrompt(
+            context,
+            feature: 'Storing more than ${ProLimits.freeStorageBytes ~/ (1024 * 1024)} MB '
+                'of documents',
+          );
+        }
+        return;
+      }
+    }
 
     await DocumentRepository.instance.add(
       paintingId: painting.id,

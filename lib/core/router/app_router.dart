@@ -32,6 +32,7 @@ import '../../features/qr/qr_scan_screen.dart';
 import '../../features/notifications/notifications_screen.dart';
 import '../../features/admin/users_screen.dart';
 import '../../features/admin/backup_screen.dart';
+import '../../features/pro/upgrade_screen.dart';
 
 /// Routes that require edit permission (curator/admin).
 const List<String> _editRoutes = [
@@ -277,6 +278,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/backup',
         pageBuilder: (_, _) => _page(const BackupScreen()),
+      ),
+      GoRoute(
+        path: '/upgrade',
+        pageBuilder: (_, _) => _page(const UpgradeScreen()),
       ),
     ],
   );

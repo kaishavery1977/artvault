@@ -28,7 +28,7 @@ class SettingsScreen extends ConsumerWidget {
     // Header + each settings group cascade in one after another.
     final sections = staggerReveal(
       [
-        _UserCard(user: user, role: user?.role),
+        _UserCard(user: user, role: user?.role, plan: user?.plan ?? AppPlan.free),
         const SizedBox(height: AppSpacing.md),
         _Group(
           title: 'Appearance',
@@ -127,6 +127,20 @@ class SettingsScreen extends ConsumerWidget {
                 title: 'User & role management',
                 onTap: () => context.push('/users'),
               ),
+            _SettingTile(
+              icon: Icons.workspace_premium,
+              title: 'ArtVault Pro',
+              subtitle: user?.plan.isPro == true
+                  ? 'Active — unlimited capacity & premium gallery features'
+                  : 'Free plan — unlock unlimited capacity, analytics & watermarking',
+              trailing: TagChip(
+                label: user?.plan.isPro == true ? 'Pro' : 'Free',
+                color: user?.plan.isPro == true
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurface,
+              ),
+              onTap: () => context.push('/upgrade'),
+            ),
             _SettingTile(
               icon: Icons.backup_outlined,
               title: 'Backup & restore',
@@ -364,8 +378,9 @@ class _LibraryLocationDialogState extends State<_LibraryLocationDialog> {
 class _UserCard extends StatelessWidget {
   final AppUser? user;
   final AppRole? role;
+  final AppPlan? plan;
 
-  const _UserCard({required this.user, required this.role});
+  const _UserCard({required this.user, required this.role, this.plan});
 
   @override
   Widget build(BuildContext context) {
@@ -407,13 +422,24 @@ class _UserCard extends StatelessWidget {
               ],
             ),
           ),
-          TagChip(
-            label: role?.label ?? 'Viewer',
-            color: switch (role) {
-              AppRole.admin => scheme.primary,
-              AppRole.curator => const Color(0xFFF59E0B),
-              _ => scheme.onSurface,
-            },
+          Wrap(
+            spacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              TagChip(
+                label: role?.label ?? 'Viewer',
+                color: switch (role) {
+                  AppRole.admin => scheme.primary,
+                  AppRole.curator => const Color(0xFFF59E0B),
+                  _ => scheme.onSurface,
+                },
+              ),
+              if (plan?.isPro == true)
+                TagChip(
+                  label: 'Pro',
+                  color: scheme.tertiary,
+                ),
+            ],
           ),
         ],
       ),

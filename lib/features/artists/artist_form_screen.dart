@@ -5,8 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../core/constants/pro_limits.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/validators.dart';
+import '../../core/providers/providers.dart';
+import '../../features/pro/upgrade_prompt.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_fields.dart';
 import '../../core/widgets/bits.dart';
@@ -85,6 +88,26 @@ class _ArtistFormScreenState extends ConsumerState<ArtistFormScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Free-tier capacity gate for new artists.
+    final isNew = _existing == null;
+    if (isNew && !ref.read(authProvider).isPro) {
+      final active =
+          ref
+                  .read(artistsProvider)
+                  .valueOrNull
+                  ?.where((a) => !a.isDeleted)
+                  .length ??
+              ArtistRepository.instance.readAll().where((a) => !a.isDeleted).length;
+      if (active >= ProLimits.freeArtists) {
+        await showUpgradePrompt(
+          context,
+          feature: 'Adding more than ${ProLimits.freeArtists} artists',
+        );
+        return;
+      }
+    }
+
     setState(() => _saving = true);
 
     final artist = Artist(

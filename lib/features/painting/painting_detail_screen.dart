@@ -10,6 +10,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/constants/pro_limits.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/export_service.dart';
@@ -482,9 +483,12 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
     );
 
     try {
+      final isPro = ref.read(authProvider).isPro;
       final url = await PublicGalleryService.instance.publish(
         curated,
         ownerUid: uid,
+        // Pro only: stamp the owner's name + arm view analytics.
+        watermark: isPro ? (ref.read(authProvider).user?.displayName ?? '') : '',
       );
       if (!mounted) return;
       if (url != null && url.isNotEmpty) {
@@ -1695,10 +1699,12 @@ class _ManageGalleryLinkDialogState
   PublicGalleryStatus? _status;
   bool _loading = true;
   bool _busy = false;
+  late bool _watermark;
 
   @override
   void initState() {
     super.initState();
+    _watermark = ref.read(authProvider).isPro;
     _load();
   }
 
@@ -1708,6 +1714,7 @@ class _ManageGalleryLinkDialogState
     if (!mounted) return;
     setState(() {
       _status = status;
+      if (status != null && status.watermark.isNotEmpty) _watermark = true;
       _loading = false;
     });
   }
@@ -1719,11 +1726,16 @@ class _ManageGalleryLinkDialogState
         .readAll()
         .where((p) => !p.isDeleted && p.inPublicGallery)
         .toList();
+    final isPro = ref.read(authProvider).isPro;
     setState(() => _busy = true);
     String? url;
     try {
-      url = await PublicGalleryService.instance
-          .publish(curated, ownerUid: widget.ownerUid);
+      url = await PublicGalleryService.instance.publish(
+        curated,
+        ownerUid: widget.ownerUid,
+        // Pro only: stamp the owner's name + arm view analytics.
+        watermark: isPro && _watermark ? (ref.read(authProvider).user?.displayName ?? '') : '',
+      );
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -1875,6 +1887,7 @@ class _ManageGalleryLinkDialogState
       );
     }
 
+    final isPro = ref.read(authProvider).isPro;
     final now = DateTime.now();
     // A link whose expiry has passed is still `active` in its document, but
     // the storage rules stop serving it — surface it as expired.
@@ -1988,6 +2001,21 @@ class _ManageGalleryLinkDialogState
             ),
           ],
           const SizedBox(height: AppSpacing.md),
+          if (!isPro) ...[
+            Row(
+              children: [
+                Icon(Icons.lock_outline, color: AppColors.warning, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Free plan: links expire within 30 days. Pro links can live up to a year.',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
           Row(
             children: [
               Text(
@@ -2000,10 +2028,14 @@ class _ManageGalleryLinkDialogState
                 value: _selectedExpiry,
                 items: [
                   for (final preset in _expiryPresets)
-                    DropdownMenuItem<Duration?>(
-                      value: preset.duration,
-                      child: Text(preset.label),
-                    ),
+                    if (isPro ||
+                        preset.duration == null ||
+                        (preset.duration != null &&
+                            preset.duration! <= ProLimits.freeMaxExpiry))
+                      DropdownMenuItem<Duration?>(
+                        value: preset.duration,
+                        child: Text(preset.label),
+                      ),
                 ],
                 onChanged: _busy ? null : (v) => _applyExpiry(v),
               ),
@@ -2020,6 +2052,45 @@ class _ManageGalleryLinkDialogState
                   : theme.colorScheme.onSurfaceVariant,
             ),
           ),
+          if (isPro) ...[
+            const SizedBox(height: AppSpacing.sm),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _watermark,
+              onChanged: _busy ? null : (v) => setState(() => _watermark = v),
+              title: const Text('Watermark images'),
+              subtitle: const Text(
+                'Stamp your name across the page and track views',
+                style: TextStyle(fontSize: 12),
+              ),
+            ),
+            if (_watermark)
+              OutlinedButton.icon(
+                onPressed: _busy ? null : _publishAndShare,
+                icon: const Icon(Icons.refresh, size: 16),
+                label: const Text('Republish with watermark'),
+              ),
+          ],
+          if (status.views != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                Icon(
+                  Icons.visibility_outlined,
+                  size: 18,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${status.views} view${status.views == 1 ? '' : 's'} of this link',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: AppSpacing.md),
           OutlinedButton.icon(
             onPressed: _busy ? null : _revoke,

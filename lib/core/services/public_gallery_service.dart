@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 
 import '../../data/models/painting.dart';
 import '../../data/remote/cloud_backend.dart';
+import '../../firebase_options.dart';
 import '../utils/formatters.dart';
 import 'file_storage_service.dart';
 
@@ -21,11 +22,20 @@ class PublicGalleryStatus {
   final DateTime? expiresAt;
   final String? url;
 
+  /// Number of page views recorded for this link (Pro analytics). Null
+  /// when the link was published before view tracking existed.
+  final int? views;
+
+  /// Watermark text stamped across the shared page (Pro). Empty = none.
+  final String watermark;
+
   const PublicGalleryStatus({
     required this.active,
     required this.token,
     this.expiresAt,
     this.url,
+    this.views,
+    this.watermark = '',
   });
 }
 
@@ -67,9 +77,27 @@ class PublicGalleryService {
   }
 
   /// One page per artwork: image, title, artist, year, medium and location.
-  /// Only fields the owner opted into are shown — never price.
-  String buildHtml(List<Painting> paintings) {
-    final cards = paintings.map(_cardHtml).join('\n');
+  /// Only fields the owner opted into are shown — never price. When
+  /// [watermark] is non-empty the page carries a subtle diagonal watermark
+  /// on every artwork image (Pro feature) and the stats beacon that bumps
+  /// the per-link view counter.
+  String buildHtml(
+    List<Painting> paintings, {
+    String watermark = '',
+    String? ownerUid,
+  }) {
+    final cards = paintings.map((p) => _cardHtml(p, watermark: watermark)).join('\n');
+    final wmCss = watermark.isEmpty
+        ? ''
+        : '''
+  .imgwrap { position:relative; }
+  .wm { position:absolute; inset:0; display:flex; align-items:center;
+    justify-content:center; pointer-events:none; }
+  .wm::after { content:attr(data-mark); transform:rotate(-18deg);
+    font-size:22px; font-weight:700; letter-spacing:2px; color:rgba(255,255,255,.28);
+    border:1px solid rgba(255,255,255,.22); padding:6px 22px; border-radius:6px;
+    white-space:nowrap; text-shadow:0 1px 3px rgba(0,0,0,.5); }''';
+    final beacon = _viewBeacon(ownerUid, watermark);
     return '''
 <!DOCTYPE html>
 <html lang="en">
@@ -89,7 +117,7 @@ class PublicGalleryService {
   .card { background:#1b1b22; border:1px solid #2a2a33; border-radius:14px;
     overflow:hidden; }
   .card img { width:100%; height:240px; object-fit:cover; display:block;
-    background:#000; }
+    background:#000; }$wmCss
   .card .meta { padding:14px 16px 16px; }
   .card h2 { margin:0; font-size:17px; }
   .card .artist { color:#c8c8d4; font-size:13px; margin-top:2px; }
@@ -109,13 +137,20 @@ class PublicGalleryService {
 ${paintings.isEmpty ? '<p style="text-align:center;color:#8f8f9d">Nothing here yet.</p>' : '<div class="grid">$cards</div>'}
 </main>
 <footer>Shared from ArtVault</footer>
+$beacon
 </body>
 </html>
 ''';
   }
 
-  String _cardHtml(Painting painting) {
+  /// The optional Pro view-tracking beacon. Resolves the Firebase project
+
+
+  String _cardHtml(Painting painting, {String watermark = ''}) {
     final image = _imageTag(painting);
+    final wm = watermark.isEmpty
+        ? ''
+        : '<div class="wm" data-mark="${_escape(watermark)}"></div>';
     final year = painting.dateCreated;
     final detailParts = <String>[
       if (painting.medium.isNotEmpty) painting.medium,
@@ -129,7 +164,7 @@ ${paintings.isEmpty ? '<p style="text-align:center;color:#8f8f9d">Nothing here y
         : '<div class="location">${_escape(painting.location.toUpperCase())}</div>';
     return '''
     <div class="card">
-      $image
+      <div class="imgwrap">$image$wm</div>
       <div class="meta">
         <h2>${_escape(painting.title)}</h2>
         ${painting.artistName.isEmpty ? '' : '<div class="artist">${_escape(painting.artistName)}</div>'}
@@ -159,10 +194,12 @@ ${paintings.isEmpty ? '<p style="text-align:center;color:#8f8f9d">Nothing here y
   /// rules-gated URL, or null when the cloud isn't ready (caller then
   /// shares the HTML file instead). Re-publishing replaces the previous
   /// link: the old page is deleted and the link document now points at the
-  /// new token.
+  /// new token. A non-empty [watermark] stamps the owner's name across
+  /// every artwork image (Pro) and arms the per-link view beacon.
   Future<String?> publish(
     List<Painting> paintings, {
     required String ownerUid,
+    String watermark = '',
   }) async {
     if (ownerUid.isEmpty || !CloudBackend.instance.isReady) return null;
 
@@ -175,7 +212,11 @@ ${paintings.isEmpty ? '<p style="text-align:center;color:#8f8f9d">Nothing here y
       );
     }
 
-    final html = buildHtml(paintings);
+    final html = buildHtml(
+      paintings,
+      watermark: watermark,
+      ownerUid: ownerUid,
+    );
     final bytes = Uint8List.fromList(utf8.encode(html));
     final token = newToken();
     final url = await CloudBackend.instance.uploadBytesPublic(
@@ -190,6 +231,7 @@ ${paintings.isEmpty ? '<p style="text-align:center;color:#8f8f9d">Nothing here y
       'token': token,
       'active': true,
       'expiresAt': null,
+      'watermark': watermark,
       'updatedAt': DateTime.now(),
     });
     return url;
@@ -233,10 +275,23 @@ ${paintings.isEmpty ? '<p style="text-align:center;color:#8f8f9d">Nothing here y
     } else if (rawExpiry is DateTime) {
       expiresAt = rawExpiry;
     }
+    int? views;
+    try {
+      final stats = await CloudBackend.instance.fetchDoc(
+        _collection,
+        '$ownerUid/stats/views',
+      );
+      final raw = stats?['views'];
+      if (raw is num) views = raw.toInt();
+    } catch (_) {
+      views = null; // stats subcollection may not exist yet
+    }
     return PublicGalleryStatus(
       active: doc['active'] == true,
       token: token,
       expiresAt: expiresAt,
+      watermark: (doc['watermark'] as String?) ?? '',
+      views: views,
       url: token.isEmpty
           ? null
           : CloudBackend.instance.publicUrlFor(
@@ -258,6 +313,44 @@ ${paintings.isEmpty ? '<p style="text-align:center;color:#8f8f9d">Nothing here y
     await file.writeAsString(html);
     return file;
   }
+
+  /// The optional Pro view-tracking beacon embedded in the page. Resolves
+  /// the Firebase project once so an unknown platform (tests, desktop)
+  /// simply skips the beacon instead of breaking the page.
+  static String _viewBeacon(String? ownerUid, String watermark) {
+    if (ownerUid == null || watermark.isEmpty) return '';
+    String projectId;
+    String apiKey;
+    try {
+      projectId = DefaultFirebaseOptions.currentPlatform.projectId;
+      apiKey = DefaultFirebaseOptions.currentPlatform.apiKey;
+    } catch (_) {
+      return '';
+    }
+    final url =
+        'https://firestore.googleapis.com/v1/projects/$projectId/'
+        'databases/(default)/documents/public_galleries/$ownerUid/'
+        'stats/views?key=$apiKey';
+    return '''
+<script>
+(function () {
+  // Pro analytics: bump this link's view counter (best-effort, fire-and-forget).
+  var url = ${_jsStr(url)};
+  fetch(url).then(function (r) { return r.json(); }).then(function (doc) {
+    var views = doc && doc.fields && doc.fields.views
+      ? parseInt(doc.fields.views.integerValue || '0', 10) : 0;
+    return fetch(url + '&updateMask.fieldPaths=views', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fields: { views: { integerValue: String(views + 1) } } })
+    });
+  }).catch(function () {});
+})();
+</script>''';
+  }
+
+  static String _jsStr(String value) =>
+      "'${value.replaceAll('\\', '\\\\').replaceAll("'", "\\'")}'";
 
   static String _escape(String value) => value
       .replaceAll('&', '&amp;')

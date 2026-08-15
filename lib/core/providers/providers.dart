@@ -72,6 +72,9 @@ class AuthState {
   bool get canManageBackups => user?.role.canManageBackups ?? false;
   bool get canSeeAnalytics => user?.role.canSeeAnalytics ?? false;
 
+  /// True when the signed-in user has the Pro subscription tier.
+  bool get isPro => user?.plan.isPro ?? false;
+
   AuthState copyWith({
     AuthStatus? status,
     AppUser? user,
@@ -205,6 +208,14 @@ class AuthController extends StateNotifier<AuthState> {
     if (user == null) return;
     await _repo.updateRole(user.uid, role);
     state = state.copyWith(user: user.copyWith(role: role));
+  }
+
+  Future<void> updatePlan(AppPlan plan) async {
+    final user = state.user;
+    if (user == null) return;
+    await _repo.updatePlan(user.uid, plan);
+    state = state.copyWith(user: user.copyWith(plan: plan));
+    await refreshProfile();
   }
 
   /// Reloads the signed-in profile from local storage so edits (avatar,

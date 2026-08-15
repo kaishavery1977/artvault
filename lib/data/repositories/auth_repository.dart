@@ -87,15 +87,15 @@ class AuthRepository {
       final user = await cloud.createAccount(email, password);
       if (user != null) {
         await user.updateDisplayName(name);
-        final profile = AppUser(
-          uid: user.uid,
-          email: email,
-          displayName: name,
-          role: AppRole.curator, // first user of an organisation = curator
-          createdAt: DateTime.now(),
-          lastLogin: DateTime.now(),
-        );
-        await cloud.upsert('users', user.uid, profile.toJson());
+    final profile = AppUser(
+      uid: user.uid,
+      email: email,
+      displayName: name,
+      role: AppRole.curator, // first user of an organisation = curator
+      createdAt: DateTime.now(),
+      lastLogin: DateTime.now(),
+    );
+    await cloud.upsert('users', user.uid, profile.toJson());
         await _persistUser(profile);
         return profile;
       }
@@ -252,6 +252,26 @@ class AuthRepository {
         AppConstants.boxProfile,
         'me',
         cachedUser.copyWith(role: role).toJson(),
+      );
+    }
+  }
+
+  /// Sets the subscription tier. Plan changes are admin-only in the rules,
+  /// so a non-admin upgrade persists locally and the cloud write is
+  /// best-effort (succeeds for admins; silently skipped otherwise). The
+  /// local flag is what drives the UI, so upgrades work offline-first.
+  Future<void> updatePlan(String uid, AppPlan plan) async {
+    try {
+      await CloudBackend.instance.upsert('users', uid, {'plan': plan.wire});
+    } catch (_) {
+      // Non-admin / offline: the cloud write is denied or skipped — keep
+      // the local entitlement so the UI still reflects the upgrade.
+    }
+    if (uid == cachedUser.uid) {
+      await LocalDatabase.instance.put(
+        AppConstants.boxProfile,
+        'me',
+        cachedUser.copyWith(plan: plan).toJson(),
       );
     }
   }

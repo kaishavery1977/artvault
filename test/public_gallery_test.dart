@@ -102,6 +102,24 @@ void main() {
       expect(html, contains('Nothing here yet.'));
       expect(html, contains('0 artworks'));
     });
+
+    test('no watermark by default', () {
+      final html = service.buildHtml([_paint('p1', title: 'Plain')]);
+      expect(html, isNot(contains('class="wm"')));
+      expect(html, isNot(contains('updateMask.fieldPaths=views')));
+    });
+
+    test('watermark overlays every image and arms the view beacon', () {
+      final html = service.buildHtml(
+        [_paint('p1', title: 'Owned Piece')],
+        watermark: 'Kais Havery',
+        ownerUid: 'owner-1',
+      );
+      expect(html, contains('class="wm"'));
+      expect(html, contains('data-mark="Kais Havery"'));
+      expect(html, contains('updateMask.fieldPaths=views'));
+      expect(html, contains('public_galleries/owner-1/stats/views'));
+    });
   });
 
   group('PublicGalleryService revocable links', () {

@@ -39,6 +39,26 @@ extension AppRoleX on AppRole {
       };
 }
 
+/// The user's subscription tier. `free` is the default; `pro` unlocks
+/// premium features (unlimited capacity, gallery analytics & watermarking).
+enum AppPlan { free, pro }
+
+extension AppPlanX on AppPlan {
+  String get label => switch (this) {
+        AppPlan.free => 'Free',
+        AppPlan.pro => 'Pro',
+      };
+
+  String get wire => name;
+
+  bool get isPro => this == AppPlan.pro;
+
+  static AppPlan fromWire(String? value) => AppPlan.values.firstWhere(
+        (p) => p.name == value,
+        orElse: () => AppPlan.free,
+      );
+}
+
 /// A user profile stored locally + in Firestore (`users/{uid}`).
 class AppUser {
   final String uid;
@@ -48,6 +68,7 @@ class AppUser {
   final String photoUrl; // remote avatar URL
   final String bio;
   final AppRole role;
+  final AppPlan plan;
   final DateTime createdAt;
   final DateTime lastLogin;
 
@@ -59,6 +80,7 @@ class AppUser {
     this.photoUrl = '',
     this.bio = '',
     this.role = AppRole.viewer,
+    this.plan = AppPlan.free,
     required this.createdAt,
     required this.lastLogin,
   });
@@ -70,6 +92,7 @@ class AppUser {
     String? photoUrl,
     String? bio,
     AppRole? role,
+    AppPlan? plan,
     DateTime? lastLogin,
   }) {
     return AppUser(
@@ -80,6 +103,7 @@ class AppUser {
       photoUrl: photoUrl ?? this.photoUrl,
       bio: bio ?? this.bio,
       role: role ?? this.role,
+      plan: plan ?? this.plan,
       createdAt: createdAt,
       lastLogin: lastLogin ?? this.lastLogin,
     );
@@ -93,6 +117,7 @@ class AppUser {
         'photoUrl': photoUrl,
         'bio': bio,
         'role': role.wire,
+        'plan': plan.wire,
         'createdAt': createdAt.toIso8601String(),
         'lastLogin': lastLogin.toIso8601String(),
       };
@@ -105,6 +130,7 @@ class AppUser {
         photoUrl: (json['photoUrl'] as String?) ?? '',
         bio: (json['bio'] as String?) ?? '',
         role: AppRoleX.fromWire(json['role'] as String?),
+        plan: AppPlanX.fromWire(json['plan'] as String?),
         createdAt: DateTime.tryParse((json['createdAt'] as String?) ?? '') ??
             DateTime.now(),
         lastLogin: DateTime.tryParse((json['lastLogin'] as String?) ?? '') ??

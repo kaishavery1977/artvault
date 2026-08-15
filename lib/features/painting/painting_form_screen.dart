@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../core/constants/pro_limits.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/services/ai_service.dart';
 import '../../core/services/file_storage_service.dart';
@@ -19,6 +20,7 @@ import '../../core/widgets/app_fields.dart';
 import '../../core/widgets/art_image.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
+import '../../features/pro/upgrade_prompt.dart';
 import '../../data/models/artist.dart';
 import '../../data/models/painting.dart';
 import '../../data/repositories/artist_repository.dart';
@@ -190,6 +192,19 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
   }
 
   Future<void> _onImagePicked(File file) async {
+    // Free-tier storage gate: originals beyond 100 MB need Pro.
+    if (!ref.read(authProvider).isPro) {
+      final usage = ref.read(storageUsageProvider).valueOrNull;
+      final current = usage?.images ?? 0;
+      if (current + file.lengthSync() > ProLimits.freeStorageBytes) {
+        await showUpgradePrompt(
+          context,
+          feature: 'Storing more than ${ProLimits.freeStorageBytes ~/ (1024 * 1024)} MB '
+              'of original artwork files',
+        );
+        return;
+      }
+    }
     setState(() {
       _newImages.add(file);
       _analyzing = _newImages.length == 1;
@@ -268,6 +283,26 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Free-tier capacity gate: block new paintings past the cap and point
+    // the user at the upgrade flow.
+    final isNew = _existing == null;
+    if (isNew && !ref.read(authProvider).isPro) {
+      final active =
+          ref
+                  .read(paintingsProvider)
+                  .valueOrNull
+                  ?.where((p) => !p.isDeleted)
+                  .length ??
+              PaintingRepository.instance.readAll().where((p) => !p.isDeleted).length;
+      if (active >= ProLimits.freePaintings) {
+        await showUpgradePrompt(
+          context,
+          feature: 'Adding more than ${ProLimits.freePaintings} artworks',
+        );
+        return;
+      }
+    }
 
     // Resolve or create the artist.
     var artistId = _existing?.artistId ?? '';
