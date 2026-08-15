@@ -133,12 +133,9 @@ class SettingsScreen extends ConsumerWidget {
               subtitle: user?.plan.isPro == true
                   ? 'Active — unlimited capacity & premium gallery features'
                   : 'Free plan — unlock unlimited capacity, analytics & watermarking',
-              trailing: TagChip(
-                label: user?.plan.isPro == true ? 'Pro' : 'Free',
-                color: user?.plan.isPro == true
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurface,
-              ),
+              trailing: user?.plan.isPro == true
+                  ? _ProBadge(key: ValueKey('pro-tile-${user!.plan.isPro}'))
+                  : TagChip(label: 'Free', color: Theme.of(context).colorScheme.onSurface),
               onTap: () => context.push('/upgrade'),
             ),
             _SettingTile(
@@ -435,10 +432,8 @@ class _UserCard extends StatelessWidget {
                 },
               ),
               if (plan?.isPro == true)
-                TagChip(
-                  label: 'Pro',
-                  color: scheme.tertiary,
-                ),
+                _ProBadge(key: ValueKey('pro-badge-${plan!.isPro}')),
+
             ],
           ),
         ],
@@ -527,6 +522,53 @@ class _SettingTile extends StatelessWidget {
           trailing ??
           (onTap == null ? null : const Icon(Icons.chevron_right, size: 20)),
       onTap: onTap,
+    );
+  }
+}
+
+/// Shimmering "Pro" badge shown in the user card and the Account group.
+/// Keyed by plan so flipping to Pro re-mounts it and replays the shimmer
+/// sweep — the upgrade becomes visible everywhere the moment it happens.
+class _ProBadge extends StatelessWidget {
+  const _ProBadge({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [
+                  scheme.primary.withValues(alpha: 0.28),
+                  scheme.tertiary.withValues(alpha: 0.22),
+                ]
+              : [
+                  scheme.primary.withValues(alpha: 0.14),
+                  scheme.tertiary.withValues(alpha: 0.10),
+                ],
+        ),
+        border: Border.all(
+          color: scheme.primary.withValues(alpha: 0.35),
+          width: 0.8,
+        ),
+      ),
+      child: GradientShimmerText(
+        text: 'Pro',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.2,
+          color: scheme.primary,
+        ),
+        colors: [scheme.primary, scheme.secondary, scheme.tertiary],
+        duration: const Duration(milliseconds: 1200),
+      ),
     );
   }
 }

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -452,13 +454,13 @@ class _StorageCard extends ConsumerWidget {
                 ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
               ),
               const Spacer(),
-              Text(
-                freeLabel ?? usedLabel,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: scheme.primary,
-                ),
+              // Free-tier usage ring: fills toward the cap and pulses once
+              // the vault nears the free storage limit.
+              _StorageRing(
+                freeBytes: usage != null
+                    ? usage.images + usage.documents
+                    : stats.storageBytes.toInt(),
+                capBytes: ProLimits.freeStorageBytes,
               ),
             ],
           ),
@@ -491,6 +493,180 @@ class _StorageCard extends ConsumerWidget {
 /// Free-plan usage meter: how much of each free-tier cap is used, with a
 /// one-tap upgrade entry. Hidden entirely for Pro users — unlimited needs
 /// no meter.
+/// Animated circular ring showing free-tier storage usage (vault bytes vs
+/// the free cap). Fills in on load, and pulses a warning glow once the vault
+/// is at 85%+ of the free tier. Ticker-only — reduced motion renders it
+/// statically.
+class _StorageRing extends StatefulWidget {
+  final int freeBytes;
+  final int capBytes;
+
+  const _StorageRing({required this.freeBytes, required this.capBytes});
+
+  @override
+  State<_StorageRing> createState() => _StorageRingState();
+}
+
+class _StorageRingState extends State<_StorageRing>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  )..forward();
+
+  late final Animation<double> _fill = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeOutCubic,
+  );
+
+  // Separate loop for the near-limit pulse (only drives the glow, not the
+  // arc), so normal builds hold still.
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1200),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _syncPulse();
+  }
+
+  @override
+  void didUpdateWidget(covariant _StorageRing oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.freeBytes != widget.freeBytes ||
+        oldWidget.capBytes != widget.capBytes) {
+      _controller.forward(from: 0);
+      _syncPulse();
+    }
+  }
+
+  void _syncPulse() {
+    final near = _fraction >= 0.85;
+    if (near && !MediaQuery.disableAnimationsOf(context)) {
+      if (!_pulse.isAnimating) _pulse.repeat(reverse: true);
+    } else {
+      _pulse.stop();
+      _pulse.value = 0;
+    }
+  }
+
+  double get _fraction => widget.capBytes > 0
+      ? (widget.freeBytes / widget.capBytes).clamp(0.0, 1.0)
+      : 0.0;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final near = _fraction >= 0.85;
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    final pct = (_fraction * 100).round();
+
+    return AnimatedBuilder(
+      animation: Listenable.merge([_fill, _pulse]),
+      builder: (context, _) {
+        final v = reduced ? _fraction : _fraction * _fill.value;
+        final glow = near ? 0.35 + 0.3 * _pulse.value : 0.0;
+        final color = near ? AppColors.warning : scheme.primary;
+        return SizedBox(
+          width: 52,
+          height: 52,
+          child: CustomPaint(
+            painter: _RingPainter(
+              fraction: v,
+              color: color,
+              trackColor: scheme.primary.withValues(alpha: 0.12),
+              glow: glow,
+            ),
+            child: Center(
+              child: Text(
+                '$pct%',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: near ? AppColors.warning : scheme.primary,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _RingPainter extends CustomPainter {
+  final double fraction;
+  final Color color;
+  final Color trackColor;
+  final double glow;
+
+  _RingPainter({
+    required this.fraction,
+    required this.color,
+    required this.trackColor,
+    required this.glow,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = 5.0;
+    final rect = Offset.zero & size;
+    final center = rect.center;
+    final radius = (size.shortestSide - stroke) / 2;
+
+    // Soft pulsing halo behind the ring when near the limit.
+    if (glow > 0) {
+      canvas.drawCircle(
+        center,
+        radius + 5 + 3 * glow,
+        Paint()
+          ..color = color.withValues(alpha: 0.22 * glow)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+      );
+    }
+
+    // Track.
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke
+        ..color = trackColor,
+    );
+
+    // Fill arc (clockwise from top).
+    final sweep = math.pi * 2 * fraction;
+    final arc = Rect.fromCircle(center: center, radius: radius);
+    canvas.drawArc(
+      arc,
+      -math.pi / 2,
+      sweep,
+      false,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = stroke
+        ..strokeCap = StrokeCap.round
+        ..color = color,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _RingPainter oldDelegate) =>
+      oldDelegate.fraction != fraction ||
+      oldDelegate.color != color ||
+      oldDelegate.glow != glow;
+}
+
 class _PlanUsageCard extends ConsumerWidget {
   const _PlanUsageCard();
 

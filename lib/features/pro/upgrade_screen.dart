@@ -6,6 +6,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import '../../core/constants/pro_limits.dart';
 import '../../core/services/pro_billing_service.dart';
 import '../../core/theme/app_spacing.dart';
+import 'pro_celebration.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/widgets/surfaces.dart';
@@ -63,13 +64,9 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
         case ProPurchaseResult.purchased:
           await ref.read(authProvider.notifier).updatePlan(AppPlan.pro);
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Welcome to ArtVault Pro — unlimited capacity unlocked.',
-              ),
-            ),
-          );
+          // Celebratory moment before returning to the app.
+          await showProCelebration(context);
+          if (!mounted) return;
           context.pop();
         case ProPurchaseResult.pending:
           ScaffoldMessenger.of(context).showSnackBar(
@@ -112,13 +109,9 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
   Future<void> _previewUnlock() async {
     await ref.read(authProvider.notifier).updatePlan(AppPlan.pro);
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Welcome to ArtVault Pro — unlimited capacity unlocked.',
-        ),
-      ),
-    );
+    // Same celebration as a real purchase — the entitlement is now live.
+    await showProCelebration(context);
+    if (!mounted) return;
     context.pop();
   }
 
