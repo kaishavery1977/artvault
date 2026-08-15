@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
 
 import '../../core/constants/pro_limits.dart';
+import '../../core/services/pro_billing_service.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/motion.dart';
@@ -10,15 +12,118 @@ import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/app_user.dart' show AppPlan;
 
-/// In-app upgrade screen. Flipping to Pro is a soft unlock for now — the
-/// plan flag is written to Firestore (admin-gated by the rules) and cached
-/// locally, so the entitlement works offline-first exactly like roles. A
-/// real payment flow (IAP / Stripe) can be bolted on behind the same flag.
-class UpgradeScreen extends ConsumerWidget {
+/// In-app upgrade screen. The primary path is a real purchase through the
+/// device store ([ProBillingService]); the plan flag is written to Firestore
+/// (admin-gated by the rules) and cached locally so the entitlement works
+/// offline-first exactly like roles. When the store isn't configured yet
+/// (debug builds, sideloaded APKs), it falls back to the preview unlock so
+/// the flow is never a dead end.
+class UpgradeScreen extends ConsumerStatefulWidget {
   const UpgradeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<UpgradeScreen> createState() => _UpgradeScreenState();
+}
+
+class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
+  bool _busy = false;
+  bool _restoring = false;
+  ProductDetails? _product;
+  bool _storeUnavailable = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProduct();
+  }
+
+  Future<void> _loadProduct() async {
+    final available = await ProBillingService.instance.isAvailable;
+    if (!mounted) return;
+    if (!available) {
+      setState(() => _storeUnavailable = true);
+      return;
+    }
+    final product = await ProBillingService.instance.getProProduct();
+    if (!mounted) return;
+    setState(() {
+      _product = product;
+      _storeUnavailable = product == null;
+    });
+  }
+
+  Future<void> _buy() async {
+    final product = _product;
+    if (product == null || _busy) return;
+    setState(() => _busy = true);
+    try {
+      final result = await ProBillingService.instance.buy(product);
+      if (!mounted) return;
+      switch (result) {
+        case ProPurchaseResult.purchased:
+          await ref.read(authProvider.notifier).updatePlan(AppPlan.pro);
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Welcome to ArtVault Pro — unlimited capacity unlocked.',
+              ),
+            ),
+          );
+          context.pop();
+        case ProPurchaseResult.pending:
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Waiting for payment confirmation…')),
+          );
+        case ProPurchaseResult.error:
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Purchase failed. Please try again.'),
+            ),
+          );
+        case ProPurchaseResult.unavailable:
+        case null:
+          // Cancelled by the user, or store not configured — silent.
+          break;
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _restore() async {
+    if (_restoring) return;
+    setState(() => _restoring = true);
+    final ok = await ProBillingService.instance.restore();
+    if (!mounted) return;
+    setState(() => _restoring = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? 'Restore started — if you have a purchase it will appear here.'
+              : 'Could not reach the store to restore purchases.',
+        ),
+      ),
+    );
+  }
+
+  /// Preview unlock used when the store isn't configured on this build.
+  Future<void> _previewUnlock() async {
+    await ref.read(authProvider.notifier).updatePlan(AppPlan.pro);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Welcome to ArtVault Pro — unlimited capacity unlocked.',
+        ),
+      ),
+    );
+    context.pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isPro = ref.watch(authProvider.select((a) => a.isPro));
 
@@ -114,7 +219,9 @@ class UpgradeScreen extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                '₹199 / month · cancel anytime',
+                _product != null
+                    ? '${_product!.price} / month · cancel anytime'
+                    : 'Monthly subscription · cancel anytime',
                 style: TextStyle(
                   fontSize: 13,
                   color: scheme.onSurface.withValues(alpha: 0.6),
@@ -127,36 +234,47 @@ class UpgradeScreen extends ConsumerWidget {
                   icon: const Icon(Icons.check_circle, size: 18),
                   label: const Text('You are Pro'),
                 )
+              else if (_busy)
+                FilledButton.icon(
+                  onPressed: null,
+                  icon: const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  label: const Text('Processing…'),
+                )
               else ...[
                 FilledButton.icon(
-                  onPressed: () async {
-                    await ref
-                        .read(authProvider.notifier)
-                        .updatePlan(AppPlan.pro);
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Welcome to ArtVault Pro — unlimited capacity unlocked.',
-                          ),
-                        ),
-                      );
-                      context.pop();
-                    }
-                  },
+                  onPressed:
+                      _storeUnavailable ? _previewUnlock : (_busy ? null : _buy),
                   icon: const Icon(Icons.workspace_premium, size: 18),
-                  label: const Text('Unlock Pro'),
+                  label: Text(
+                    _storeUnavailable ? 'Unlock Pro' : 'Subscribe — ${_product?.price ?? ''}'.trim(),
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
-                  'Your plan is stored on this device and synced to the cloud. '
-                  'A real payment flow is coming soon — this is the preview unlock.',
+                  _storeUnavailable
+                      ? 'The in-app store isn\'t configured on this build yet, so '
+                          'this is a preview unlock. Once the app is published, '
+                          'upgrading here processes a real payment.'
+                      : 'Payment is processed securely by your device\'s app store. '
+                          'Your plan syncs to the cloud and unlocks on every device.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 11.5,
                     color: scheme.onSurface.withValues(alpha: 0.45),
                   ),
                 ),
+                if (!_storeUnavailable) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  TextButton.icon(
+                    onPressed: _restoring ? null : _restore,
+                    icon: const Icon(Icons.settings_backup_restore, size: 16),
+                    label: const Text('Restore purchases'),
+                  ),
+                ],
               ],
             ],
           ),

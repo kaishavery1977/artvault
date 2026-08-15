@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/pro_limits.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
@@ -63,6 +64,8 @@ class HomeScreen extends ConsumerWidget {
                         _StatsGrid(stats: stats, canEdit: canEdit),
                         const SizedBox(height: AppSpacing.lg),
                         _StorageCard(stats: stats),
+                        const SizedBox(height: AppSpacing.lg),
+                        const _PlanUsageCard(),
                         const SizedBox(height: AppSpacing.lg),
                         _QuickActions(canEdit: canEdit),
                         SectionHeader(
@@ -481,6 +484,138 @@ class _StorageCard extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Free-plan usage meter: how much of each free-tier cap is used, with a
+/// one-tap upgrade entry. Hidden entirely for Pro users — unlimited needs
+/// no meter.
+class _PlanUsageCard extends ConsumerWidget {
+  const _PlanUsageCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final isPro = ref.watch(authProvider.select((a) => a.isPro));
+    if (isPro) return const SizedBox.shrink();
+
+    final stats = ref.watch(vaultStatsProvider);
+    final usage = ref.watch(storageUsageProvider).valueOrNull;
+
+    final rows = <(String, int, int)>[
+      ('Paintings', stats.paintings, ProLimits.freePaintings),
+      ('Artists', stats.artists, ProLimits.freeArtists),
+      ('Documents', stats.documents, ProLimits.freeDocuments),
+      (
+        'Storage',
+        (usage?.images ?? 0) + (usage?.documents ?? 0),
+        ProLimits.freeStorageBytes,
+      ),
+    ];
+
+    return GlassCard(
+      onTap: () => context.push('/upgrade'),
+      padding: AppSpacing.cardPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.workspace_premium, size: 20, color: scheme.primary),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: Text(
+                  'Free plan usage',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'Upgrade',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: scheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          for (final (label, used, cap) in rows) ...[
+            _UsageRow(label: label, used: used, cap: cap),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+          Text(
+            'Tap to upgrade and unlock unlimited capacity.',
+            style: TextStyle(
+              fontSize: 11.5,
+              color: scheme.onSurface.withValues(alpha: 0.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UsageRow extends StatelessWidget {
+  final String label;
+  final int used;
+  final int cap;
+
+  const _UsageRow({required this.label, required this.used, required this.cap});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final fraction = cap > 0 ? (used / cap).clamp(0.0, 1.0).toDouble() : 0.0;
+    final nearLimit = fraction >= 0.85;
+    final usedLabel = label == 'Storage'
+        ? Formatters.bytes(used)
+        : '$used / $cap';
+
+    return Row(
+      children: [
+        SizedBox(
+          width: 86,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: scheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+        ),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: fraction,
+              minHeight: 5,
+              backgroundColor: scheme.onSurface.withValues(alpha: 0.08),
+              color: nearLimit
+                  ? AppColors.warning
+                  : scheme.primary.withValues(alpha: 0.75),
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        SizedBox(
+          width: 72,
+          child: Text(
+            usedLabel,
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: nearLimit ? AppColors.warning : scheme.onSurface,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

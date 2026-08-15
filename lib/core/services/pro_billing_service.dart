@@ -1,0 +1,126 @@
+import 'dart:async';
+
+import 'package:in_app_purchase/in_app_purchase.dart';
+
+/// Real in-app purchase for ArtVault Pro using the official
+/// `in_app_purchase` plugin (Google Play Billing on Android, StoreKit on
+/// iOS). Wraps the whole flow so callers only see a simple result enum.
+///
+/// Product ID: `artvault_pro_monthly` (a non-consumable subscription-style
+/// unlock). The store must be configured in Play Console / App Store
+/// Connect before purchases can actually complete; until then every call
+/// degrades to [ProPurchaseResult.unavailable] and the app keeps working
+/// with the preview unlock behind the same `isPro` flag.
+class ProBillingService {
+  ProBillingService._();
+
+  static final ProBillingService instance = ProBillingService._();
+
+  /// Play Console / App Store Connect product identifier for the Pro unlock.
+  static const String proProductId = 'artvault_pro_monthly';
+
+  final InAppPurchase _iap = InAppPurchase.instance;
+
+  /// True when the store is reachable on this device (Play Billing /
+  /// StoreKit available and the app is installed via the store).
+  Future<bool> get isAvailable async {
+    try {
+      return await _iap.isAvailable();
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Looks up the Pro product's store listing. Returns null when the store
+  /// is unavailable or the product isn't configured yet (common on debug
+  /// builds and sideloaded APKs).
+  Future<ProductDetails?> getProProduct() async {
+    try {
+      final response = await _iap.queryProductDetails({proProductId});
+      for (final product in response.productDetails) {
+        if (product.id == proProductId) return product;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Starts a purchase for the given product and waits for the outcome.
+  /// Returns null when the user cancelled; [ProPurchaseResult.error] on any
+  /// failure; [ProPurchaseResult.purchased] on success.
+  Future<ProPurchaseResult?> buy(ProductDetails product) async {
+    final completer = Completer<ProPurchaseResult?>();
+    late final StreamSubscription<List<PurchaseDetails>> sub;
+    var settled = false;
+
+    void settle(ProPurchaseResult? result) {
+      if (settled) return;
+      settled = true;
+      sub.cancel();
+      if (!completer.isCompleted) completer.complete(result);
+    }
+
+    sub = _iap.purchaseStream.listen((details) {
+      for (final purchase in details) {
+        if (purchase.productID != proProductId) continue;
+        switch (purchase.status) {
+          case PurchaseStatus.purchased:
+          case PurchaseStatus.restored:
+            _iap.completePurchase(purchase);
+            settle(ProPurchaseResult.purchased);
+          case PurchaseStatus.pending:
+            settle(ProPurchaseResult.pending);
+          case PurchaseStatus.error:
+            settle(ProPurchaseResult.error);
+          case PurchaseStatus.canceled:
+            settle(null);
+        }
+      }
+    }, onError: (_) => settle(ProPurchaseResult.error));
+
+    try {
+      final param = PurchaseParam(
+        productDetails: product,
+        applicationUserName: null,
+      );
+      await _iap.buyNonConsumable(purchaseParam: param);
+    } catch (_) {
+      settle(ProPurchaseResult.error);
+    }
+
+    // Timeout guard: if the store dialog never emits an event, don't hang
+    // the UI forever.
+    final result = await completer.future.timeout(
+      const Duration(minutes: 3),
+      onTimeout: () => ProPurchaseResult.error,
+    );
+    return result;
+  }
+
+  /// Restores previous purchases (new device / reinstall).
+  Future<bool> restore() async {
+    try {
+      await _iap.restorePurchases();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+}
+
+/// Outcome of a purchase attempt.
+enum ProPurchaseResult {
+  /// Payment completed — the caller should flip the Pro flag.
+  purchased,
+
+  /// The store is mid-flow (e.g. awaiting payment confirmation).
+  pending,
+
+  /// The store rejected the purchase or something failed.
+  error,
+
+  /// The store / product isn't set up on this build yet. Keep using the
+  /// preview unlock.
+  unavailable,
+}
