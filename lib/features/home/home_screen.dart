@@ -771,6 +771,34 @@ class _UsageRowState extends State<_UsageRow>
     curve: Curves.easeOutCubic,
   );
 
+  /// Bumped whenever the used amount crosses the cap, replaying the shake.
+  int _shakeTick = 0;
+  bool _wasAtCap = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize the cap-tracking baseline so a later crossing shakes even
+    // if the row first appears already at (or over) the limit.
+    _wasAtCap = widget.cap > 0 && widget.used >= widget.cap;
+  }
+
+  @override
+  void didUpdateWidget(covariant _UsageRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.used != widget.used || oldWidget.cap != widget.cap) {
+      _syncCap();
+    }
+  }
+
+  void _syncCap() {
+    final atCap = widget.cap > 0 && widget.used >= widget.cap;
+    if (atCap && !_wasAtCap) {
+      _shakeTick++; // exactly 100% (or over) — shake once
+    }
+    _wasAtCap = atCap;
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -784,57 +812,59 @@ class _UsageRowState extends State<_UsageRow>
     final cap = widget.cap;
     final used = widget.used;
     final target = cap > 0 ? (used / cap).clamp(0.0, 1.0).toDouble() : 0.0;
-    final nearLimit = target >= 0.85;
+    final atCap = target >= 1.0;
+    final color = atCap ? AppColors.error : (target >= 0.85 ? AppColors.warning : null);
 
-    return AnimatedBuilder(
-      animation: _fraction,
-      builder: (context, _) {
-        final v = reduced ? target : target * _fraction.value;
-        final shown = (used * (reduced ? 1.0 : _fraction.value)).round();
-        final usedLabel = widget.label == 'Storage'
-            ? Formatters.bytes(shown)
-            : '$shown / $cap';
-        return Row(
-          children: [
-            SizedBox(
-              width: 86,
-              child: Text(
-                widget.label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: scheme.onSurface.withValues(alpha: 0.6),
+    return ShakeOnError(
+      tick: _shakeTick,
+      child: AnimatedBuilder(
+        animation: _fraction,
+        builder: (context, _) {
+          final v = reduced ? target : target * _fraction.value;
+          final shown = (used * (reduced ? 1.0 : _fraction.value)).round();
+          final usedLabel = widget.label == 'Storage'
+              ? Formatters.bytes(shown)
+              : '$shown / $cap';
+          return Row(
+            children: [
+              SizedBox(
+                width: 86,
+                child: Text(
+                  widget.label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurface.withValues(alpha: 0.6),
+                  ),
                 ),
               ),
-            ),
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(999),
-                child: LinearProgressIndicator(
-                  value: v,
-                  minHeight: 5,
-                  backgroundColor: scheme.onSurface.withValues(alpha: 0.08),
-                  color: nearLimit
-                      ? AppColors.warning
-                      : scheme.primary.withValues(alpha: 0.75),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    value: v,
+                    minHeight: 5,
+                    backgroundColor: scheme.onSurface.withValues(alpha: 0.08),
+                    color: color ?? scheme.primary.withValues(alpha: 0.75),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            SizedBox(
-              width: 72,
-              child: Text(
-                usedLabel,
-                textAlign: TextAlign.end,
-                style: TextStyle(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w700,
-                  color: nearLimit ? AppColors.warning : scheme.onSurface,
+              const SizedBox(width: AppSpacing.sm),
+              SizedBox(
+                width: 72,
+                child: Text(
+                  usedLabel,
+                  textAlign: TextAlign.end,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: color ?? scheme.onSurface,
+                  ),
                 ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 }

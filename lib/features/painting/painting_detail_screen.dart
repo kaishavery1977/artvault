@@ -17,6 +17,7 @@ import '../../core/services/export_service.dart';
 import '../../core/services/public_gallery_service.dart';
 import '../../core/services/qr_service.dart';
 import '../../core/services/share_service.dart';
+import '../../features/pro/pro_celebration.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/image_utils.dart';
 import '../../core/widgets/art_image.dart';
@@ -496,6 +497,16 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
           'My ArtVault gallery: $url',
           subject: 'My ArtVault gallery',
         );
+        if (mounted) {
+          await showConfettiCelebration(
+            context,
+            title: 'Gallery published!',
+            message: 'Your curated page is live. Anyone with the link can '
+                'view it until you revoke or expire it.',
+            icon: Icons.public,
+            iconLabel: 'Link shared',
+          );
+        }
       } else {
         final file = await PublicGalleryService.instance
             .writeLocalHtml(curated);
@@ -1755,6 +1766,16 @@ class _ManageGalleryLinkDialogState
       'My ArtVault gallery: $url',
       subject: 'My ArtVault gallery',
     );
+    if (mounted) {
+      await showConfettiCelebration(
+        context,
+        title: 'Gallery published!',
+        message: 'Your curated page is live. Anyone with the link can '
+            'view it until you revoke or expire it.',
+        icon: Icons.public,
+        iconLabel: 'Link shared',
+      );
+    }
   }
 
   Future<void> _copyLink(String url) async {
