@@ -389,10 +389,16 @@ class AboutScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('About ArtVault')),
       body: Stack(
         children: [
-          // Ambient aurora glow behind the whole page — the same drifting
-          // colour wash the home screen and splash use, so About feels like
-          // part of the same cinematic world.
-          Positioned.fill(
+          // Ambient aurora glow hugging the hero zone at the top of the page
+          // (logo, wordmark, tagline, version pill) — same treatment the home
+          // screen gives its greeting header. Below it the ambient gradient
+          // shows through the glass cards, so the drift follows the hero
+          // instead of washing the whole page.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 340,
             child: const IgnorePointer(child: AuroraBackground()),
           ),
           ListView(
