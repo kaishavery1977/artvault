@@ -213,9 +213,12 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
           padding: AppSpacing.cardPadding,
           child: Column(
             children: [
-              Text(
-                'ArtVault Pro',
+              GradientShimmerText(
+                text: 'ArtVault Pro',
                 style: AppTheme.display(context, size: 22),
+                colors: [scheme.primary, scheme.secondary, scheme.tertiary],
+                duration: const Duration(milliseconds: 1400),
+                loop: true,
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
@@ -245,12 +248,18 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                   label: const Text('Processing…'),
                 )
               else ...[
-                FilledButton.icon(
-                  onPressed:
-                      _storeUnavailable ? _previewUnlock : (_busy ? null : _buy),
-                  icon: const Icon(Icons.workspace_premium, size: 18),
-                  label: Text(
-                    _storeUnavailable ? 'Unlock Pro' : 'Subscribe — ${_product?.price ?? ''}'.trim(),
+                // The CTA breathes gently so the paid moment feels alive.
+                _GlowPulse(
+                  color: scheme.primary,
+                  child: FilledButton.icon(
+                    onPressed:
+                        _storeUnavailable ? _previewUnlock : (_busy ? null : _buy),
+                    icon: const Icon(Icons.workspace_premium, size: 18),
+                    label: Text(
+                      _storeUnavailable
+                          ? 'Unlock Pro'
+                          : 'Subscribe — ${_product?.price ?? ''}'.trim(),
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
@@ -302,4 +311,56 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
   static String _mb(int? bytes) => bytes == null
       ? 'unlimited'
       : '${(bytes ~/ (1024 * 1024))} MB';
+}
+
+/// Soft breathing glow behind a primary action. Ticker-only (no timers), so
+/// tests that end mid-flight stay clean, and reduced motion renders it
+/// statically — same convention as the rest of the app's motion widgets.
+class _GlowPulse extends StatefulWidget {
+  final Color color;
+  final Widget child;
+
+  const _GlowPulse({required this.color, required this.child});
+
+  @override
+  State<_GlowPulse> createState() => _GlowPulseState();
+}
+
+class _GlowPulseState extends State<_GlowPulse>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1600),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.disableAnimationsOf(context)) return widget.child;
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final pulse = 0.35 + 0.3 * _controller.value;
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withValues(alpha: 0.25 * pulse),
+                blurRadius: 18 + 10 * pulse,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: child,
+        );
+      },
+      child: widget.child,
+    );
+  }
 }

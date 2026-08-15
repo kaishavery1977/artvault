@@ -544,8 +544,13 @@ class _PlanUsageCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          for (final (label, used, cap) in rows) ...[
-            _UsageRow(label: label, used: used, cap: cap),
+          for (var i = 0; i < rows.length; i++) ...[
+            _UsageRow(
+              label: rows[i].$1,
+              used: rows[i].$2,
+              cap: rows[i].$3,
+              index: i,
+            ),
             const SizedBox(height: AppSpacing.sm),
           ],
           Text(
@@ -561,61 +566,99 @@ class _PlanUsageCard extends ConsumerWidget {
   }
 }
 
-class _UsageRow extends StatelessWidget {
+class _UsageRow extends StatefulWidget {
   final String label;
   final int used;
   final int cap;
+  final int index;
 
-  const _UsageRow({required this.label, required this.used, required this.cap});
+  const _UsageRow({
+    required this.label,
+    required this.used,
+    required this.cap,
+    required this.index,
+  });
+
+  @override
+  State<_UsageRow> createState() => _UsageRowState();
+}
+
+class _UsageRowState extends State<_UsageRow>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..forward();
+
+  late final Animation<double> _fraction = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeOutCubic,
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final fraction = cap > 0 ? (used / cap).clamp(0.0, 1.0).toDouble() : 0.0;
-    final nearLimit = fraction >= 0.85;
-    final usedLabel = label == 'Storage'
-        ? Formatters.bytes(used)
-        : '$used / $cap';
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    final cap = widget.cap;
+    final used = widget.used;
+    final target = cap > 0 ? (used / cap).clamp(0.0, 1.0).toDouble() : 0.0;
+    final nearLimit = target >= 0.85;
 
-    return Row(
-      children: [
-        SizedBox(
-          width: 86,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: scheme.onSurface.withValues(alpha: 0.6),
+    return AnimatedBuilder(
+      animation: _fraction,
+      builder: (context, _) {
+        final v = reduced ? target : target * _fraction.value;
+        final shown = (used * (reduced ? 1.0 : _fraction.value)).round();
+        final usedLabel = widget.label == 'Storage'
+            ? Formatters.bytes(shown)
+            : '$shown / $cap';
+        return Row(
+          children: [
+            SizedBox(
+              width: 86,
+              child: Text(
+                widget.label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: scheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
             ),
-          ),
-        ),
-        Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: fraction,
-              minHeight: 5,
-              backgroundColor: scheme.onSurface.withValues(alpha: 0.08),
-              color: nearLimit
-                  ? AppColors.warning
-                  : scheme.primary.withValues(alpha: 0.75),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  value: v,
+                  minHeight: 5,
+                  backgroundColor: scheme.onSurface.withValues(alpha: 0.08),
+                  color: nearLimit
+                      ? AppColors.warning
+                      : scheme.primary.withValues(alpha: 0.75),
+                ),
+              ),
             ),
-          ),
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        SizedBox(
-          width: 72,
-          child: Text(
-            usedLabel,
-            textAlign: TextAlign.end,
-            style: TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w700,
-              color: nearLimit ? AppColors.warning : scheme.onSurface,
+            const SizedBox(width: AppSpacing.sm),
+            SizedBox(
+              width: 72,
+              child: Text(
+                usedLabel,
+                textAlign: TextAlign.end,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w700,
+                  color: nearLimit ? AppColors.warning : scheme.onSurface,
+                ),
+              ),
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 }
