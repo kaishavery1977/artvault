@@ -30,12 +30,9 @@ abstract final class AppConstants {
   static const String kNotificationsEnabled = 'notifications_enabled';
   static const String kAutoBackup = 'auto_backup_enabled';
 
-  /// Id of the last confetti celebration shown (e.g. 'pro-unlock'), so the
-  /// same celebration isn't replayed on every launch/tap.
-  static const String kLastCelebrationId = 'last_celebration_id';
-
-  /// Epoch-ms timestamp of when that celebration was last shown.
-  static const String kLastCelebrationAt = 'last_celebration_at';
+  /// JSON list of celebration history entries (`{id, at}`), newest first —
+  /// used both for the 24h cooldown and the About-screen transparency list.
+  static const String kCelebrationHistory = 'celebration_history';
   static const String kRole = 'user_role';
   static const String kCurrency = 'preferred_currency';
   static const String kLibraryLocation = 'library_location';

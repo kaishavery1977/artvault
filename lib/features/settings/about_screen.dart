@@ -4,8 +4,10 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/formatters.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/widgets/surfaces.dart';
+import '../../data/repositories/settings_repository.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -90,6 +92,8 @@ class AboutScreen extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(height: AppSpacing.lg),
+        _CelebrationsCard(),
         const SizedBox(height: AppSpacing.lg),
         GlassCard(
           padding: AppSpacing.cardPadding,
@@ -196,5 +200,110 @@ class AboutScreen extends StatelessWidget {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
+  }
+}
+
+/// Transparency list of every celebration that has fired (Pro unlock,
+/// gallery published) with the date it happened. Reads the persisted history
+/// so users can see which moments were celebrated and when.
+class _CelebrationsCard extends StatelessWidget {
+  const _CelebrationsCard();
+
+  static const _labels = <String, String>{
+    'pro-unlock': 'Pro unlocked',
+    'gallery-published': 'Gallery published',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final history = SettingsRepository.instance.celebrationHistory;
+
+    return GlassCard(
+      padding: AppSpacing.cardPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Celebrations',
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          if (history.isEmpty)
+            Text(
+              'Nothing celebrated yet — moments like unlocking Pro or '
+              'publishing a gallery will appear here.',
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.5,
+                color: scheme.onSurface.withValues(alpha: 0.6),
+              ),
+            )
+          else
+            for (final entry in history) ...[
+              _CelebrationRow(entry: entry),
+              const Divider(
+                height: 1,
+                indent: 16,
+                color: Color(0x0D000000),
+              ),
+            ],
+        ],
+      ),
+    );
+  }
+}
+
+class _CelebrationRow extends StatelessWidget {
+  final Map<String, dynamic> entry;
+
+  const _CelebrationRow({required this.entry});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final id = (entry['id'] as String?) ?? 'unknown';
+    final at = (entry['at'] as num?)?.toInt() ?? 0;
+    final label = _CelebrationsCard._labels[id] ?? id;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [scheme.primary, scheme.secondary],
+              ),
+            ),
+            child: const Icon(
+              Icons.celebration_outlined,
+              color: Colors.white,
+              size: 16,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+          ),
+          Text(
+            Formatters.dateTime(
+              at == 0 ? null : DateTime.fromMillisecondsSinceEpoch(at),
+            ),
+            style: TextStyle(
+              fontSize: 12,
+              color: scheme.onSurface.withValues(alpha: 0.55),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

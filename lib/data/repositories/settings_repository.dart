@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_constants.dart';
@@ -65,25 +67,58 @@ class SettingsRepository {
   Future<void> setLibraryLocation(String value) =>
       _db.setSetting(AppConstants.kLibraryLocation, value);
 
+  /// Celebration history: newest first, each entry a `{id, at}` record with
+  /// `at` in epoch milliseconds. Kept in a JSON string inside the settings
+  /// box so the About screen can show when each moment fired.
+  List<Map<String, dynamic>> get celebrationHistory {
+    final raw = _db.getString(AppConstants.kCelebrationHistory);
+    if (raw == null || raw.isEmpty) return const [];
+    try {
+      final list = (jsonDecode(raw) as List<dynamic>)
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+      // Newest first.
+      list.sort((a, b) {
+        final atA = (a['at'] as num?)?.toInt() ?? 0;
+        final atB = (b['at'] as num?)?.toInt() ?? 0;
+        return atB.compareTo(atA);
+      });
+      return list;
+    } catch (_) {
+      return const [];
+    }
+  }
+
   /// Whether [id] has been celebrated recently (within the cooldown). The
   /// same celebration (e.g. the Pro unlock) is shown once, so relaunching or
   /// re-tapping the same moment doesn't replay the confetti every time.
   bool wasCelebratedRecently(String id, {Duration within = const Duration(hours: 24)}) {
-    final stored = _db.getString(AppConstants.kLastCelebrationId);
-    final at = _db.getInt(AppConstants.kLastCelebrationAt);
-    // `getInt` defaults to 0 when unset — treat that as never celebrated.
-    if (stored != id || at == 0) return false;
-    return DateTime.now().difference(
-          DateTime.fromMillisecondsSinceEpoch(at),
-        ) <
-        within;
+    for (final entry in celebrationHistory) {
+      if (entry['id'] != id) continue;
+      final at = (entry['at'] as num?)?.toInt() ?? 0;
+      if (at == 0) return false;
+      return DateTime.now().difference(
+            DateTime.fromMillisecondsSinceEpoch(at),
+          ) <
+          within;
+    }
+    return false;
   }
 
   Future<void> markCelebrated(String id) async {
-    await _db.setSetting(AppConstants.kLastCelebrationId, id);
+    // Copy to a mutable list: one entry per celebration id, newest first.
+    final history = List<Map<String, dynamic>>.from(
+      celebrationHistory,
+    )..removeWhere((e) => e['id'] == id);
+    history.insert(
+      0,
+      {'id': id, 'at': DateTime.now().millisecondsSinceEpoch},
+    );
+    // Cap the list so it can't grow forever.
+    final trimmed = history.take(20).toList();
     await _db.setSetting(
-      AppConstants.kLastCelebrationAt,
-      DateTime.now().millisecondsSinceEpoch,
+      AppConstants.kCelebrationHistory,
+      jsonEncode(trimmed),
     );
   }
 
