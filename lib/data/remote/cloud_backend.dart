@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode, kIsWeb;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -32,10 +34,31 @@ class CloudBackend {
         options: DefaultFirebaseOptions.currentPlatform,
       );
       _ready = true;
+      await _activateAppCheck();
     } catch (_) {
       _ready = false;
     }
     return _ready;
+  }
+
+  /// Attests Android Firebase calls with App Check so requests carry a real
+  /// token instead of a placeholder: debug builds use the debug provider
+  /// (token auto-generated and printed to logcat — register it under
+  /// Console → App Check → Manage debug tokens once enforcement is on),
+  /// release builds use Play Integrity. Activation failures degrade to "no
+  /// App Check" rather than taking the whole cloud offline; the web/desktop
+  /// targets keep their defaults until a provider is configured for them.
+  Future<void> _activateAppCheck() async {
+    if (kIsWeb || !Platform.isAndroid) return;
+    try {
+      await FirebaseAppCheck.instance.activate(
+        providerAndroid: kDebugMode
+            ? const AndroidDebugProvider()
+            : const AndroidPlayIntegrityProvider(),
+      );
+    } catch (e) {
+      debugPrint('ArtVault: App Check activation failed (continuing): $e');
+    }
   }
 
   // ------------------------------------------------------------------ Auth --
