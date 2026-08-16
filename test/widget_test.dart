@@ -66,6 +66,53 @@ void main() {
     expect(find.text('Curate Your Collection'), findsOneWidget);
   });
 
+  testWidgets('Returning from background replays the full intro',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: appOverrides(introShown: true),
+        child: const ArtVaultApp(),
+      ),
+    );
+    await pumpToOnboarding(tester);
+    expect(find.text('Curate Your Collection'), findsOneWidget);
+
+    // Background the app (like switching apps), then bring it back.
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+
+    // The splash re-mounted with the punchy resume cut: the logo is back,
+    // but the full cold-start choreography (wordmark letters, tagline) is
+    // NOT replayed — so frequent app switches stay quick.
+    expect(find.byIcon(Icons.palette), findsOneWidget);
+    expect(find.text('Your Private Gallery'), findsNothing);
+    expect(find.text('A'), findsNothing);
+
+    // It hands off back to onboarding (where the app was when backgrounded).
+    await pumpToOnboarding(tester);
+    expect(find.text('Curate Your Collection'), findsOneWidget);
+  });
+
+  testWidgets('Transient overlays (inactive) do not replay the intro',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: appOverrides(introShown: true),
+        child: const ArtVaultApp(),
+      ),
+    );
+    await pumpToOnboarding(tester);
+
+    // A notification shade pull only moves through inactive — no replay.
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+
+    expect(find.text('Your Private Gallery'), findsNothing);
+    expect(find.text('Curate Your Collection'), findsOneWidget);
+  });
+
   testWidgets('Reduced motion shows a static splash and skips the exit',
       (WidgetTester tester) async {
     tester.binding.platformDispatcher.accessibilityFeaturesTestValue =

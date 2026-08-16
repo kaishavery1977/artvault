@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/services/gallery_link_reminder_service.dart';
+import '../../core/services/resume_intro.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/providers/providers.dart';
@@ -15,13 +16,15 @@ import '../../data/repositories/settings_repository.dart';
 
 /// Cinematic branded launch screen.
 ///
-/// Plays the full staged "video" intro on every launch — a spotlight blooms
+/// Cold starts play the full staged "video" intro — a spotlight blooms
 /// behind the logo, an expanding shockwave ring lands, the mark drops in
 /// with a rotation settle, the wordmark reveals letter-by-letter with a
 /// gold shimmer sweep, then a pulsing dot loader hands off to the next
-/// screen with a camera-push exit. Everything is transform/opacity only
-/// (no blur), so it stays smooth on budget phones. Reduced motion renders
-/// the mark statically and hands off immediately.
+/// screen with a camera-push exit. Returning from the background replays a
+/// shorter, punchier cut (ring + logo only, no wordmark) so frequent app
+/// switches feel fast but still premium. Everything is transform/opacity
+/// only (no blur), so it stays smooth on budget phones. Reduced motion
+/// renders the mark statically and hands off immediately.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -38,18 +41,27 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final Animation<double> _exitOpacity;
 
   /// Total intro runtime before the hand-off starts: the full choreography
-  /// on every launch (so the ring + logo entrance always plays), and a
-  /// near-static render when the system asks for reduced motion.
+  /// on cold start, a shorter ring+logo cut on background-resume replays,
+  /// and a near-static render when the system asks for reduced motion.
   static const Duration _introFull = Duration(milliseconds: 3400);
+  static const Duration _introResume = Duration(milliseconds: 1100);
   static const Duration _introReduced = Duration(milliseconds: 350);
 
   /// Hold time after the camera-push exit starts (the exit animation runs in
   /// parallel; the hold only paces the router hand-off).
   static const Duration _exitHoldFull = Duration(milliseconds: 560);
 
+  /// Whether this mount is a background-resume replay (short cut) rather
+  /// than a cold start (full cut). Captured once in `initState` — the
+  /// observer stashes the resume target *before* routing here, so it's
+  /// already set; it must not be re-read from `build` because [ResumeIntro]
+  /// consumes the stash at hand-off.
+  late final bool _resumeReplay;
+
   @override
   void initState() {
     super.initState();
+    _resumeReplay = ResumeIntro.isResumeReplay;
     _exit = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 520),
@@ -67,10 +79,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (!mounted) return;
 
     // Pick the presentation before the intro timer starts so the delay is
-    // exact. The full choreography plays on every launch — reduced motion
-    // is the only case that skips it (for a near-static hold).
+    // exact. Cold starts play the full choreography; resume replays use the
+    // short ring+logo cut; reduced motion is the only case that skips it
+    // entirely (for a near-static hold).
     final reducedMotion = MediaQuery.disableAnimationsOf(context);
-    final present = reducedMotion ? _introReduced : _introFull;
+    final present = reducedMotion
+        ? _introReduced
+        : (_resumeReplay ? _introResume : _introFull);
 
     // Restore session / check remember-me while the intro plays, so the
     // animation is never gated on the network.
@@ -92,17 +107,22 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
         ),
       );
     }
+    // A resume-replay hands off back to where the user was (when it's a
+    // safe, restorable location); cold starts fall through to the defaults.
+    final resume = ResumeIntro.consume();
+
     String target;
     if (state.status == AuthStatus.authenticated) {
-      // App Lock gate (cold-start biometric / face / passcode lock on launch).
+      // App Lock gate (cold-start biometric / face / passcode lock on
+      // launch). Security wins over polish on a resume replay too.
       final appLock =
           SettingsRepository.instance.appLockEnabled ||
           await AuthRepository.instance.biometricEnabled ||
           await AuthRepository.instance.faceLockEnabled ||
           await AuthRepository.instance.passcodeSet;
-      target = appLock ? '/lock' : '/home';
+      target = appLock ? '/lock' : (resume ?? '/home');
     } else {
-      target = '/onboarding';
+      target = resume ?? '/onboarding';
     }
     if (!mounted) return;
 
@@ -148,8 +168,70 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           ),
         ],
       );
+    } else if (_resumeReplay) {
+      // Resume replay: the punchy ring + logo cut — spotlight bloom,
+      // shockwave ring, logo settle. No wordmark or tagline, so frequent
+      // app switches feel quick but still land with the branded mark.
+      content = SizedBox(
+        width: 200,
+        height: 200,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Soft gold spotlight blooming open behind the mark.
+            _Spotlight()
+                .animate()
+                .scaleXY(
+                  begin: 0.25,
+                  end: 1,
+                  duration: 600.ms,
+                  curve: Curves.easeOutCubic,
+                )
+                .fadeIn(duration: 450.ms)
+                .then()
+                .fadeOut(delay: 200.ms, duration: 600.ms),
+            // Expanding shockwave ring, like a stamp landing.
+            Container(
+              width: 132,
+              height: 132,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.accent.withValues(alpha: 0.8),
+                  width: 3,
+                ),
+              ),
+            )
+                .animate(delay: 150.ms)
+                .scaleXY(
+                  begin: 0.45,
+                  end: 1.65,
+                  duration: 700.ms,
+                  curve: Curves.easeOutCubic,
+                )
+                .then()
+                .fadeOut(duration: 220.ms),
+            // The logo tile drops in with a rotation settle.
+            _LogoMark()
+                .animate(delay: 100.ms)
+                .scaleXY(
+                  begin: 0.4,
+                  end: 1,
+                  duration: 500.ms,
+                  curve: Curves.easeOutBack,
+                )
+                .rotate(
+                  begin: -0.12,
+                  end: 0,
+                  duration: 500.ms,
+                  curve: Curves.easeOutCubic,
+                )
+                .fadeIn(duration: 400.ms),
+          ],
+        ),
+      );
     } else {
-      // Every launch: the full choreography — spotlight, shockwave ring,
+      // Cold start: the full choreography — spotlight, shockwave ring,
       // logo settle, letter-by-letter wordmark with the gold shimmer,
       // tagline, and the pulsing dot loader.
       content = Column(

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/constants/app_constants.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/ambient_background.dart';
+import 'core/widgets/resume_intro_observer.dart';
 import 'core/providers/providers.dart';
 import 'core/router/app_router.dart';
 import 'core/services/file_storage_service.dart';
@@ -67,9 +68,12 @@ class ArtVaultApp extends ConsumerWidget {
       themeMode: themeMode,
       routerConfig: router,
       // Paint the ambient gradient behind every route so translucent
-      // surfaces (GlassCard, nav bar, dialogs) read as glass.
-      builder: (context, child) =>
-          AmbientBackground(child: child ?? const SizedBox.shrink()),
+      // surfaces (GlassCard, nav bar, dialogs) read as glass, and watch the
+      // app lifecycle so returning from the background replays the splash
+      // intro instead of just cold starts.
+      builder: (context, child) => AppResumeIntroObserver(
+        child: AmbientBackground(child: child ?? const SizedBox.shrink()),
+      ),
       locale: locale == 'en' ? null : Locale(locale),
       supportedLocales: const [
         Locale('en'),
