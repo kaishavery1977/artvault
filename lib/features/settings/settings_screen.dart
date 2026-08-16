@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -149,6 +151,12 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => context.push('/storage'),
             ),
             _SettingTile(
+              icon: Icons.healing_outlined,
+              title: 'Repair images',
+              subtitle: _repairSubtitle(ref),
+              onTap: () => context.push('/repair-images'),
+            ),
+            _SettingTile(
               icon: Icons.delete_outline,
               title: 'Recently deleted',
               subtitle: _trashSubtitle(ref),
@@ -247,6 +255,28 @@ class SettingsScreen extends ConsumerWidget {
       0 => 'Nothing in trash',
       1 => '1 artwork — restore or remove',
       _ => '$count artworks — restore or remove',
+    };
+  }
+
+  static String _repairSubtitle(WidgetRef ref) {
+    final paintings =
+        ref.watch(paintingsProvider).valueOrNull ?? const <Painting>[];
+    final missing = paintings
+        .where((p) => !p.isDeleted)
+        .where(
+          (p) =>
+              p.coverImageUrl.isEmpty &&
+              p.imageUrls.isEmpty &&
+              (p.images.isEmpty ||
+                  p.images.every(
+                    (path) => path.isNotEmpty && !File(path).existsSync(),
+                  )),
+        )
+        .length;
+    return switch (missing) {
+      0 => 'All images present',
+      1 => '1 artwork needs an image',
+      _ => '$missing artworks need images',
     };
   }
 

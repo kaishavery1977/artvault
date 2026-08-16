@@ -28,6 +28,7 @@ import '../../features/settings/profile_screen.dart';
 import '../../features/settings/security_screen.dart';
 import '../../features/settings/storage_screen.dart';
 import '../../features/settings/about_screen.dart';
+import '../../features/settings/repair_images_screen.dart';
 import '../../features/qr/qr_scan_screen.dart';
 import '../../features/notifications/notifications_screen.dart';
 import '../../features/admin/users_screen.dart';
@@ -295,6 +296,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/backup',
         pageBuilder: (_, _) => _page(const BackupScreen()),
+      ),
+      GoRoute(
+        path: '/repair-images',
+        pageBuilder: (_, _) => _page(const RepairImagesScreen()),
       ),
       GoRoute(
         path: '/upgrade',
