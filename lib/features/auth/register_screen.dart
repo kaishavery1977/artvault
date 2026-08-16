@@ -28,6 +28,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   // matching the login screen's suffix-eye-toggle pattern.
   bool _obscure = true;
   bool _confirmObscure = true;
+  bool _adminCodeObscure = true;
   bool _showAdminCode = false;
 
   Future<void> _submit() async {
@@ -51,6 +52,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     _email.dispose();
     _password.dispose();
     _confirm.dispose();
+    _adminCode.dispose();
     super.dispose();
   }
 
@@ -174,7 +176,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   controller: _adminCode,
                   label: 'Admin setup code',
                   icon: Icons.key_outlined,
+                  obscureText: _adminCodeObscure,
                   textInputAction: TextInputAction.done,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _adminCodeObscure
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      size: 20,
+                    ),
+                    onPressed: () => setState(
+                      () => _adminCodeObscure = !_adminCodeObscure,
+                    ),
+                  ),
                 ),
               ],
               const SizedBox(height: AppSpacing.md),

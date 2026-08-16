@@ -195,7 +195,7 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
     // Free-tier storage gate: originals beyond 100 MB need Pro.
     if (!ref.read(authProvider).isPro) {
       final usage = ref.read(storageUsageProvider).valueOrNull;
-      final current = usage?.images ?? 0;
+      final current = usage?.countedBytes ?? 0;
       if (current + file.lengthSync() > ProLimits.freeStorageBytes) {
         await showUpgradePrompt(
           context,
@@ -289,12 +289,8 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
     final isNew = _existing == null;
     if (isNew && !ref.read(authProvider).isPro) {
       final active =
-          ref
-                  .read(paintingsProvider)
-                  .valueOrNull
-                  ?.where((p) => !p.isDeleted)
-                  .length ??
-              PaintingRepository.instance.readAll().where((p) => !p.isDeleted).length;
+          ref.read(paintingsProvider).valueOrNull?.length ??
+          PaintingRepository.instance.countActive();
       if (active >= ProLimits.freePaintings) {
         await showUpgradePrompt(
           context,

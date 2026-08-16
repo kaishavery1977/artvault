@@ -17,9 +17,10 @@ import '../../data/repositories/settings_repository.dart';
 class AboutScreen extends ConsumerWidget {
   const AboutScreen({super.key});
 
-  /// Keep in sync with `version:` in pubspec.yaml.
-  static const String appVersion = '0.1.0';
-  static const String appBuild = '1';
+  /// Version metadata lives in [AppConstants] so the About screen and the
+  /// Settings footer share one source of truth (no drift on release bumps).
+  static const String appVersion = AppConstants.appVersion;
+  static const String appBuild = AppConstants.appBuild;
 
   static const String engineLabel = 'Flutter 3.44.8 · Dart 3.12';
 
@@ -269,7 +270,8 @@ class AboutScreen extends ConsumerWidget {
                 subtitle: 'Questions, suggestions or issues — email the developer',
                 icon: Icons.mail_outline,
                 onTap: () => _launch(
-                  'mailto:kaishavery1977@gmail.com?subject=ArtVault%20Feedback',
+                  'mailto:${AppConstants.supportEmail}'
+                  '?subject=ArtVault%20Feedback',
                 ),
               ),
               _link(
@@ -277,9 +279,7 @@ class AboutScreen extends ConsumerWidget {
                 'Rate ArtVault',
                 subtitle: 'Enjoying the app? Leave a review on Google Play',
                 icon: Icons.star_border,
-                onTap: () => _launch(
-                  'https://play.google.com/store/apps/details?id=com.artvault.artvault',
-                ),
+                onTap: () => _launch(AppConstants.playStoreUrl),
               ),
               _link(
                 context,
@@ -289,7 +289,7 @@ class AboutScreen extends ConsumerWidget {
                 onTap: () => ShareService.instance.shareText(
                   'Discover ArtVault — your private digital gallery. Organise, '
                   'analyse and protect your art collection, all on your device. '
-                  '${AppConstants.appName}',
+                  '${AppConstants.playStoreUrl}',
                   subject: 'ArtVault — your private gallery',
                 ),
               ),
@@ -552,9 +552,9 @@ class _StatTile extends StatelessWidget {
 }
 
 /// Transparency list of every celebration that has fired (Pro unlock,
-/// gallery published) with the date it happened. Reads the persisted history
-/// so users can see which moments were celebrated and when.
-class _CelebrationsCard extends StatelessWidget {
+/// gallery published) with the date it happened. Streams the persisted
+/// history so a new celebration appears the moment it fires.
+class _CelebrationsCard extends ConsumerWidget {
   const _CelebrationsCard();
 
   static const _labels = <String, String>{
@@ -563,8 +563,10 @@ class _CelebrationsCard extends StatelessWidget {
   };
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
+    // Rebuild when the settings box changes (markCelebrated writes there).
+    ref.watch(settingsBoxProvider);
     final history = SettingsRepository.instance.celebrationHistory;
 
     return GlassCard(

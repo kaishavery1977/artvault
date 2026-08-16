@@ -367,7 +367,9 @@ class _RoleHistoryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final audit = ref.watch(roleAuditProvider).valueOrNull ?? const [];
+    final auditAsync = ref.watch(roleAuditProvider);
+    final audit = auditAsync.valueOrNull ?? const [];
+    final shown = audit.take(20).toList();
     final scheme = Theme.of(context).colorScheme;
 
     return GlassCard(
@@ -387,7 +389,9 @@ class _RoleHistoryCard extends ConsumerWidget {
               ),
               const Spacer(),
               Text(
-                '${audit.length} change${audit.length == 1 ? '' : 's'}',
+                shown.length < audit.length
+                    ? 'latest ${shown.length} of ${audit.length}'
+                    : '${audit.length} change${audit.length == 1 ? '' : 's'}',
                 style: TextStyle(
                   fontSize: 11.5,
                   color: scheme.onSurface.withValues(alpha: 0.45),
@@ -396,7 +400,15 @@ class _RoleHistoryCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          if (audit.isEmpty)
+          if (auditAsync.hasError)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              child: Text(
+                'Could not load role history. Pull refresh to retry.',
+                style: TextStyle(fontSize: 12.5, color: scheme.error),
+              ),
+            )
+          else if (audit.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
               child: Text(
@@ -409,7 +421,7 @@ class _RoleHistoryCard extends ConsumerWidget {
               ),
             )
           else
-            for (final entry in audit.take(20))
+            for (final entry in shown)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                 child: Row(

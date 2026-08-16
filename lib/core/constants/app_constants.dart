@@ -3,6 +3,18 @@ abstract final class AppConstants {
   static const String appName = 'ArtVault';
   static const String appTagline = 'Your Private Gallery';
 
+  /// Keep in sync with `version:` and `versionCode:` in pubspec.yaml.
+  static const String appVersion = '0.1.0';
+  static const String appBuild = '1';
+
+  /// Support email used for the in-app feedback entry (project-owned
+  /// alias, not a personal address).
+  static const String supportEmail = 'support@artvault.app';
+
+  /// Play Store listing used by "Rate ArtVault" and the share text.
+  static const String playStoreUrl =
+      'https://play.google.com/store/apps/details?id=com.artvault.artvault';
+
   // Storage keys
   static const String kOnboarded = 'onboarded';
 

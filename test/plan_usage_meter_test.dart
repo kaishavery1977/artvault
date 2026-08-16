@@ -42,14 +42,17 @@ AppUser _freeUser() => AppUser(
 
 /// Pumps the home screen with a controllable paintings stream so the test
 /// can push a count across a cap boundary mid-flight.
-Widget _homeApp(Stream<List<Painting>> paintings) {
+Widget _homeApp(
+  Stream<List<Painting>> paintings, {
+  AppPlan plan = AppPlan.free,
+}) {
   return ProviderScope(
     overrides: [
       ...appOverrides(introShown: true),
       authProvider.overrideWith((ref) => FakeAuthController(
             AuthState(
               status: AuthStatus.authenticated,
-              user: _freeUser(),
+              user: _freeUser().copyWith(plan: plan),
             ),
           )),
       paintingsProvider.overrideWith((ref) => paintings),
@@ -128,6 +131,11 @@ void main() {
     );
     expect(barBefore.color, isNot(AppColors.error));
 
+    // Let the shake animation finish so no timers are pending before the
+    // second pump below (the LinearProgressIndicator color is animated by
+    // the count-up, which needs settling).
+    await tester.pump(const Duration(milliseconds: 600));
+
     // Cross the cap: full count now.
     controller.add(
       [for (var i = 0; i < ProLimits.freePaintings; i++) _paint('p$i')],
@@ -158,5 +166,20 @@ void main() {
 
     // Let the shake animation finish so no timers are pending.
     await tester.pump(const Duration(milliseconds: 600));
+  });
+
+  testWidgets('pro accounts see no free-plan usage meter', (tester) async {
+    final controller = StreamController<List<Painting>>();
+    addTearDown(controller.close);
+    controller.add([for (var i = 0; i < 5; i++) _paint('p$i')]);
+
+    await tester.pumpWidget(_homeApp(controller.stream, plan: AppPlan.pro));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1000));
+
+    // _PlanUsageCard hides entirely for Pro — unlimited needs no meter.
+    expect(find.text('Free plan usage'), findsNothing);
+    // The storage ring is also hidden for Pro (no cap to measure against).
+    expect(find.textContaining('%'), findsNothing);
   });
 }

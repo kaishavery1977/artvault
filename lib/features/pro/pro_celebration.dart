@@ -107,16 +107,21 @@ class _CelebrationDialog extends StatefulWidget {
   State<_CelebrationDialog> createState() => _CelebrationDialogState();
 }
 
-class _CelebrationDialogState extends State<_CelebrationDialog>
-    with SingleTickerProviderStateMixin {
+class _CelebrationDialogState extends State<_CelebrationDialog> {
   late final ConfettiController _confetti = ConfettiController(
     duration: const Duration(seconds: 3),
   );
 
+  // MediaQuery is only safe to read after dependencies resolve, so the
+  // reduced-motion decision lives here — and the flag guarantees the burst
+  // is triggered exactly once.
+  bool _played = false;
+
   @override
-  void initState() {
-    super.initState();
-    if (!MediaQuery.disableAnimationsOf(context)) {
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_played && !MediaQuery.disableAnimationsOf(context)) {
+      _played = true;
       _confetti.play();
     }
   }

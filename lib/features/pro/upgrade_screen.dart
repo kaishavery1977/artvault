@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -106,7 +107,22 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
   }
 
   /// Preview unlock used when the store isn't configured on this build.
+  /// Debug-only escape hatch: in a release build there is no real payment
+  /// path, so granting Pro here would hand out a paid entitlement for free.
   Future<void> _previewUnlock() async {
+    if (kReleaseMode) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'The store isn\'t configured on this build yet. '
+              'Purchases will be available once the app is published.',
+            ),
+          ),
+        );
+      }
+      return;
+    }
     await ref.read(authProvider.notifier).updatePlan(AppPlan.pro);
     if (!mounted) return;
     // Same celebration as a real purchase — the entitlement is now live.
@@ -242,11 +258,15 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                 )
               else ...[
                 // The CTA breathes gently so the paid moment feels alive.
+                // In release builds the store-unavailable path is disabled:
+                // the preview unlock is debug-only and must never grant Pro
+                // in a shipped build.
                 _GlowPulse(
                   color: scheme.primary,
                   child: FilledButton.icon(
-                    onPressed:
-                        _storeUnavailable ? _previewUnlock : (_busy ? null : _buy),
+                    onPressed: _storeUnavailable
+                        ? (kReleaseMode ? null : _previewUnlock)
+                        : (_busy ? null : _buy),
                     icon: const Icon(Icons.workspace_premium, size: 18),
                     label: Text(
                       _storeUnavailable
@@ -325,6 +345,17 @@ class _GlowPulseState extends State<_GlowPulse>
     vsync: this,
     duration: const Duration(milliseconds: 1600),
   )..repeat(reverse: true);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Keep the ticker idle under reduced motion so widget tests can settle.
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    }
+  }
 
   @override
   void dispose() {

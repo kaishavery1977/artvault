@@ -46,16 +46,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _save() async {
     final me = ref.read(authProvider).user;
     // Same guard as the Users screen: an admin must not demote their own
-    // account (would lock the organisation out of role management).
+    // account (would lock the organisation out of role management). Revert
+    // only the role and continue, so unrelated name/bio edits are kept.
     if (me != null && _role != me.role && me.role == AppRole.admin) {
+      setState(() => _role = me.role);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('You cannot demote your own account.'),
+            content: Text(
+              'You cannot demote your own account. '
+              'Your role was kept; other changes were saved.',
+            ),
           ),
         );
       }
-      return;
     }
     setState(() => _saving = true);
     try {
@@ -209,7 +213,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       prefixIcon: Icon(Icons.admin_panel_settings_outlined),
                     ),
                     items: AppRole.values
-                        .map((r) => DropdownMenuItem(value: r, child: Text(r.label)))
+                        .map(
+                          (r) => DropdownMenuItem(
+                            value: r,
+                            enabled: !(user?.role == AppRole.admin &&
+                                r != AppRole.admin),
+                            child: Text(r.label),
+                          ),
+                        )
                         .toList(),
                     onChanged: (v) => setState(() => _role = v ?? _role),
                   ),

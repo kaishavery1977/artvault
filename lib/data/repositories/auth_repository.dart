@@ -335,7 +335,10 @@ class AuthRepository {
   Future<void> revokeUser(String uid, {String? email, String? displayName}) async {
     final me = cachedUser;
     final oldRole = await _roleOf(uid);
-    await CloudBackend.instance.remove('users', uid);
+    // Fail-closed ordering: write the revocation marker BEFORE deleting the
+    // profile. If the marker write fails, the profile stays and the revoke
+    // aborts — a partially revoked account (deleted profile, no marker)
+    // could otherwise slip back in as a fresh curator.
     await CloudBackend.instance.upsert('revoked', uid, {
       'uid': uid,
       'email': email ?? '',
@@ -345,6 +348,7 @@ class AuthRepository {
       'byUid': me.uid,
       'byEmail': me.email,
     });
+    await CloudBackend.instance.remove('users', uid);
     // Audit the revocation like a role change, so the history shows it.
     try {
       await CloudBackend.instance.addDoc('role_audit', {
@@ -433,16 +437,22 @@ class AuthRepository {
     return (restored: restored, failed: failed);
   }
 
-  /// Sets the subscription tier. Plan changes are admin-only in the rules,
-  /// so a non-admin upgrade persists locally and the cloud write is
-  /// best-effort (succeeds for admins; silently skipped otherwise). The
-  /// local flag is what drives the UI, so upgrades work offline-first.
+  /// Sets the subscription tier. Plan changes are admin-only in the rules.
+  /// A rejected cloud write (permission-denied) is NOT an offline hiccup:
+  /// the plan must not be granted locally, so the error propagates and the
+  /// local entitlement is left untouched. Only offline/retryable failures
+  /// keep the local-first fallback.
   Future<void> updatePlan(String uid, AppPlan plan) async {
     try {
       await CloudBackend.instance.upsert('users', uid, {'plan': plan.wire});
-    } catch (_) {
-      // Non-admin / offline: the cloud write is denied or skipped — keep
-      // the local entitlement so the UI still reflects the upgrade.
+    } catch (e) {
+      final msg = e.toString();
+      if (msg.contains('permission-denied') ||
+          msg.contains('Missing or insufficient permissions')) {
+        rethrow;
+      }
+      // Offline / network — keep the local entitlement so the UI still
+      // reflects the upgrade and syncs when connectivity returns.
     }
     if (uid == cachedUser.uid) {
       await LocalDatabase.instance.put(

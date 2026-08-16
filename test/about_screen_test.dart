@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:artvault/core/constants/app_constants.dart';
 import 'package:artvault/core/providers/providers.dart';
 import 'package:artvault/features/settings/about_screen.dart';
 
@@ -37,12 +38,19 @@ void main() {
     // GradientShimmerText paints the wordmark twice (base + sweep layer).
     expect(find.text('ArtVault'), findsWidgets);
     expect(find.text('Your Private Gallery'), findsOneWidget);
-    expect(find.text('Version 0.1.0 (1)'), findsOneWidget);
+    expect(
+      find.text('Version ${AppConstants.appVersion} (${AppConstants.appBuild})'),
+      findsOneWidget,
+    );
     expect(find.text('About'), findsOneWidget);
 
     // The stats strip now includes the vault-storage tiles.
     expect(find.text('Stored images'), findsOneWidget);
     expect(find.text('Vault size'), findsOneWidget);
+    // 8 MB images + 2 MB documents → rendered by Formatters.bytes as 10.0 MB.
+    // The count-up takes ~850ms, so pump past it before asserting the value.
+    await tester.pump(const Duration(milliseconds: 900));
+    expect(find.text('10.0 MB'), findsOneWidget);
     expect(find.text('Plan'), findsOneWidget);
     expect(find.text('Free'), findsOneWidget);
 

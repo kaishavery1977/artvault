@@ -77,13 +77,15 @@ class SettingsRepository {
       final list = (jsonDecode(raw) as List<dynamic>)
           .map((e) => Map<String, dynamic>.from(e as Map))
           .toList();
-      // Newest first.
+      // Newest first. Timestamps are stored with microsecond precision, so
+      // ordering is deterministic even for celebrations fired in quick
+      // succession (a later mark always sorts ahead of an earlier one).
       list.sort((a, b) {
         final atA = (a['at'] as num?)?.toInt() ?? 0;
         final atB = (b['at'] as num?)?.toInt() ?? 0;
         return atB.compareTo(atA);
       });
-      return list;
+      return List.unmodifiable(list);
     } catch (_) {
       return const [];
     }
@@ -112,7 +114,9 @@ class SettingsRepository {
     )..removeWhere((e) => e['id'] == id);
     history.insert(
       0,
-      {'id': id, 'at': DateTime.now().millisecondsSinceEpoch},
+      // Microsecond precision so rapid successive celebrations keep a
+      // deterministic newest-first order (see celebrationHistory).
+      {'id': id, 'at': DateTime.now().microsecondsSinceEpoch},
     );
     // Cap the list so it can't grow forever.
     final trimmed = history.take(20).toList();

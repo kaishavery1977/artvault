@@ -56,14 +56,18 @@ service cloud.firestore {
       // Per-link view analytics. The counter doc is written by the
       // anonymous page viewer (the gallery page is public), so writes are
       // intentionally unauthenticated — but only the views counter can
-      // move, and only upward. The owner reads it through the signed-in
-      // path above.
+      // move, and only upward, and only for the doc whose name matches the
+      // link's current secret token (so a revoked or re-published link can
+      // never receive forged increments). The owner reads it through the
+      // signed-in path above.
       match /stats/{stat} {
         allow read: if isSignedIn() && uid == request.auth.uid;
         allow create: if request.auth == null
+          && stat == get(/databases/$(database)/documents/public_galleries/$(uid)).data.token
           && request.resource.data.views is int
           && request.resource.data.views == 1;
         allow update: if request.auth == null
+          && stat == get(/databases/$(database)/documents/public_galleries/$(uid)).data.token
           && request.resource.data.views is int
           && request.resource.data.views == resource.data.views + 1;
       }
@@ -81,9 +85,12 @@ service cloud.firestore {
 
     // Revoked accounts: when an admin revokes a user, a marker doc is left
     // here so the account can't re-create its profile (remote sign-out).
-    // Only admins can read or manage the markers.
+    // Admins can read/manage any marker; a signed-in user may read only
+    // their own marker so sign-in can show the revocation message instead
+    // of a raw permission error.
     match /revoked/{uid} {
-      allow read, create, delete: if isAdmin();
+      allow read: if isAdmin() || (isSignedIn() && uid == request.auth.uid);
+      allow create, delete: if isAdmin();
       allow update: if false;
     }
 
@@ -103,8 +110,7 @@ service cloud.firestore {
                    == get(/databases/$(database)/documents/bootstrap/config).data.adminCode));
       allow update: if (isSignedIn() && uid == request.auth.uid
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['uid'])
-        && (request.resource.data.role == resource.data.role
-            || request.resource.data.role != 'admin')
+        && request.resource.data.role == resource.data.role
         && (request.resource.data.plan == resource.data.plan || isAdmin()))
         || (isAdmin() && uid != request.auth.uid);
       allow delete: if isAdmin() && uid != request.auth.uid;

@@ -47,4 +47,30 @@ void main() {
     await repo.markCelebrated('pro-unlock');
     expect(repo.celebrationHistory.first['id'], 'pro-unlock');
   });
+
+  test('caps the history at 20 entries, newest first', () async {
+    for (var i = 0; i < 25; i++) {
+      await repo.markCelebrated('celebration-$i');
+    }
+
+    final history = repo.celebrationHistory;
+    expect(history.length, 20, reason: 'history is capped at 20 entries');
+    // Newest entry first; the oldest beyond the cap is dropped.
+    expect(history.first['id'], 'celebration-24');
+    expect(history.last['id'], 'celebration-5');
+  });
+
+  test('rapid successive celebrations stay newest-first', () async {
+    // Microsecond timestamps keep ordering deterministic even when marks
+    // fire back-to-back in the same millisecond.
+    for (var i = 0; i < 5; i++) {
+      await repo.markCelebrated('tie-$i');
+    }
+    final history = repo.celebrationHistory;
+    expect(history.length, 5);
+    // The most recently marked celebration sorts first, every time.
+    expect(history.first['id'], 'tie-4');
+    expect(history.last['id'], 'tie-0');
+  });
 }
+

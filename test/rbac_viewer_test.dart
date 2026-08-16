@@ -124,6 +124,29 @@ void main() {
         isNull,
       );
     });
+
+    test('/onboarding itself never self-redirects', () {
+      // An authenticated user on /onboarding must pass through (null), and
+      // an unauthenticated user too — otherwise onboarding would loop.
+      expect(
+        rbacRedirect(
+          path: '/onboarding',
+          onboarded: false,
+          auth: _auth(AppRole.viewer),
+        ),
+        isNull,
+        reason: 'authenticated user on /onboarding must not be redirected',
+      );
+      expect(
+        rbacRedirect(
+          path: '/onboarding',
+          onboarded: false,
+          auth: const AuthState(status: AuthStatus.unauthenticated),
+        ),
+        isNull,
+        reason: 'signed-out user on /onboarding must not be redirected',
+      );
+    });
   });
 
   group('home screen hides edit actions for viewers', () {
@@ -157,6 +180,11 @@ void main() {
         (tester) async {
       await pumpHome(tester, AppRole.viewer);
 
+      // Positive presence check: the UI has actually built before we assert
+      // on the absence of edit actions (a blank screen would pass trivially).
+      // The shimmer greeting paints two layers, so findsWidgets is right.
+      expect(find.textContaining('Hello,'), findsWidgets);
+      expect(find.text('This vault is read-only for your account.'), findsOneWidget);
       // The welcome hero is shown for an empty vault; its upload button must
       // NOT be there for a read-only viewer.
       expect(find.text('Upload your first painting'), findsNothing);

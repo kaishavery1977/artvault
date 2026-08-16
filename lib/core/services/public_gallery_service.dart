@@ -80,11 +80,14 @@ class PublicGalleryService {
   /// Only fields the owner opted into are shown — never price. When
   /// [watermark] is non-empty the page carries a subtle diagonal watermark
   /// on every artwork image (Pro feature) and the stats beacon that bumps
-  /// the per-link view counter.
+  /// the per-link view counter. [token] is the link's secret token — the
+  /// beacon writes to the token-scoped counter so analytics can never be
+  /// forged against a different (or revoked) link.
   String buildHtml(
     List<Painting> paintings, {
     String watermark = '',
     String? ownerUid,
+    String? token,
   }) {
     final cards = paintings.map((p) => _cardHtml(p, watermark: watermark)).join('\n');
     final wmCss = watermark.isEmpty
@@ -97,7 +100,7 @@ class PublicGalleryService {
     font-size:22px; font-weight:700; letter-spacing:2px; color:rgba(255,255,255,.28);
     border:1px solid rgba(255,255,255,.22); padding:6px 22px; border-radius:6px;
     white-space:nowrap; text-shadow:0 1px 3px rgba(0,0,0,.5); }''';
-    final beacon = _viewBeacon(ownerUid, watermark);
+    final beacon = _viewBeacon(ownerUid, watermark, token);
     return '''
 <!DOCTYPE html>
 <html lang="en">
@@ -212,13 +215,14 @@ $beacon
       );
     }
 
+    final token = newToken();
     final html = buildHtml(
       paintings,
       watermark: watermark,
       ownerUid: ownerUid,
+      token: token,
     );
     final bytes = Uint8List.fromList(utf8.encode(html));
-    final token = newToken();
     final url = await CloudBackend.instance.uploadBytesPublic(
       storagePathFor(ownerUid, token),
       bytes,
@@ -277,9 +281,11 @@ $beacon
     }
     int? views;
     try {
+      // Token-scoped counter: each published link has its own stats doc,
+      // so analytics never bleed across re-published (or revoked) links.
       final stats = await CloudBackend.instance.fetchDoc(
         _collection,
-        '$ownerUid/stats/views',
+        '$ownerUid/stats/$token',
       );
       final raw = stats?['views'];
       if (raw is num) views = raw.toInt();
@@ -317,8 +323,15 @@ $beacon
   /// The optional Pro view-tracking beacon embedded in the page. Resolves
   /// the Firebase project once so an unknown platform (tests, desktop)
   /// simply skips the beacon instead of breaking the page.
-  static String _viewBeacon(String? ownerUid, String watermark) {
-    if (ownerUid == null || watermark.isEmpty) return '';
+  ///
+  /// The counter is token-scoped (`public_galleries/{uid}/stats/{token}`) and
+  /// bumped atomically via a Firestore REST commit with a server-side
+  /// INCREMENT transform — no read-modify-write race, and a revoked or
+  /// re-published link can never receive forged increments.
+  static String _viewBeacon(String? ownerUid, String watermark, String? token) {
+    if (ownerUid == null || token == null || token.isEmpty || watermark.isEmpty) {
+      return '';
+    }
     String projectId;
     String apiKey;
     try {
@@ -327,23 +340,36 @@ $beacon
     } catch (_) {
       return '';
     }
-    final url =
+    final commitUrl =
         'https://firestore.googleapis.com/v1/projects/$projectId/'
-        'databases/(default)/documents/public_galleries/$ownerUid/'
-        'stats/views?key=$apiKey';
+        'databases/(default)/documents:commit?key=$apiKey';
+    final docName =
+        'projects/$projectId/databases/(default)/documents/'
+        'public_galleries/$ownerUid/stats/$token';
     return '''
 <script>
 (function () {
-  // Pro analytics: bump this link's view counter (best-effort, fire-and-forget).
-  var url = ${_jsStr(url)};
-  fetch(url).then(function (r) { return r.json(); }).then(function (doc) {
-    var views = doc && doc.fields && doc.fields.views
-      ? parseInt(doc.fields.views.integerValue || '0', 10) : 0;
-    return fetch(url + '&updateMask.fieldPaths=views', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fields: { views: { integerValue: String(views + 1) } } })
-    });
+  // Pro analytics: atomically increment this link's view counter
+  // (best-effort, fire-and-forget; server-side INCREMENT transform).
+  var url = ${_jsStr(commitUrl)};
+  var docName = ${_jsStr(docName)};
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      writes: [{
+        update: {
+          name: docName,
+          fields: {},
+          updateMask: { fieldPaths: ['views'] }
+        },
+        updateTransforms: [{
+          fieldPath: 'views',
+          setToServerValue: 'INCREMENT',
+          increment: { integerValue: '1' }
+        }]
+      }]
+    })
   }).catch(function () {});
 })();
 </script>''';

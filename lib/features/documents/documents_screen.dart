@@ -150,7 +150,7 @@ class DocumentsScreen extends ConsumerWidget {
     // Free-tier storage gate: document files beyond 100 MB need Pro.
     if (!ref.read(authProvider).isPro) {
       final usage = ref.read(storageUsageProvider).valueOrNull;
-      final current = usage?.documents ?? 0;
+      final current = usage?.countedBytes ?? 0;
       if (current + File(path).lengthSync() > ProLimits.freeStorageBytes) {
         if (context.mounted) {
           await showUpgradePrompt(

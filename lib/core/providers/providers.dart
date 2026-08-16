@@ -48,6 +48,12 @@ final currencyProvider = Provider<String>((ref) {
   return SettingsRepository.instance.preferredCurrency;
 });
 
+/// Emits whenever the settings box changes (celebration history, theme,
+/// toggles) so widgets like the About Celebrations card rebuild live.
+final settingsBoxProvider = StreamProvider<void>((ref) {
+  return SettingsRepository.instance.watchSettings();
+});
+
 // ---------------------------------------------------------------------------
 // Auth
 // ---------------------------------------------------------------------------
@@ -98,6 +104,13 @@ class AuthController extends StateNotifier<AuthState> {
 
   StreamSubscription<Map<String, dynamic>?>? _profileSub;
 
+  /// Serialises profile-snapshot handling: Firestore can deliver overlapping
+  /// snapshots, and an async callback could otherwise apply a stale update
+  /// after a newer one. Only the latest snapshot runs; a snapshot that
+  /// arrives while the previous is still processing is dropped.
+  bool _profileApplying = false;
+  Map<String, dynamic>? _profilePending;
+
   /// Pulls the cloud vault into the local cache after a session is restored
   /// or a fresh sign-in succeeds — a new install or a cleared cache
   /// repopulates on its own instead of showing an empty vault until a manual
@@ -117,39 +130,60 @@ class AuthController extends StateNotifier<AuthState> {
     if (user.uid.isEmpty) return;
     try {
       _profileSub = CloudBackend.instance.watchDoc('users', user.uid).listen(
-        (data) async {
-          // Profile deleted = the account was revoked by an admin. Sign the
-          // session out on this device right away (remote sign-out).
-          if (data == null) {
-            await signOut();
-            state = state.copyWith(
-              error: 'Your account was revoked by an administrator.',
-            );
-            return;
-          }
-          var remote = AppUser.fromJson(data);
-          if (remote.uid.isEmpty) return;
-          // Older cloud profiles may lack newer fields (e.g. plan). Preserve
-          // the local value for absent keys so a bare doc can't reset a
-          // locally-granted Pro plan or a local avatar path.
-          final local = state.user;
-          if (local != null) {
-            if (data['plan'] == null) {
-              remote = remote.copyWith(plan: local.plan);
-            }
-            if (data['photoPath'] == null && local.photoPath.isNotEmpty) {
-              remote = remote.copyWith(photoPath: local.photoPath);
-            }
-          }
-          await _repo.cacheRemoteUser(remote);
-          state = state.copyWith(user: remote);
-        },
+        _applyProfileSnapshot,
         onError: (_) {
           // Offline / not configured — keep the local profile.
         },
       );
     } catch (_) {
       _profileSub = null;
+    }
+  }
+
+  /// Applies one profile snapshot, serialised so overlapping snapshots can
+  /// never apply out of order (a stale one is dropped, not applied late).
+  Future<void> _applyProfileSnapshot(Map<String, dynamic>? data) async {
+    // Profile deleted = the account was revoked by an admin. Sign the
+    // session out on this device right away (remote sign-out).
+    if (data == null) {
+      await signOut();
+      state = state.copyWith(
+        error: 'Your account was revoked by an administrator.',
+      );
+      return;
+    }
+    var remote = AppUser.fromJson(data);
+    if (remote.uid.isEmpty) return;
+    // Older cloud profiles may lack newer fields (e.g. plan). Preserve
+    // the local value for absent keys so a bare doc can't reset a
+    // locally-granted Pro plan or a local avatar path.
+    final local = state.user;
+    if (local != null) {
+      if (data['plan'] == null) {
+        remote = remote.copyWith(plan: local.plan);
+      }
+      if (data['photoPath'] == null && local.photoPath.isNotEmpty) {
+        remote = remote.copyWith(photoPath: local.photoPath);
+      }
+    }
+    if (_profileApplying) {
+      _profilePending = data;
+      return;
+    }
+    _profileApplying = true;
+    try {
+      await _repo.cacheRemoteUser(remote);
+      // The notifier is alive for as long as the provider is watched; the
+      // stream itself is cancelled in dispose()/signOut(), so setting state
+      // here is safe.
+      state = state.copyWith(user: remote);
+    } finally {
+      _profileApplying = false;
+      final pending = _profilePending;
+      _profilePending = null;
+      if (pending != null) {
+        await _applyProfileSnapshot(pending);
+      }
     }
   }
 
@@ -164,6 +198,9 @@ class AuthController extends StateNotifier<AuthState> {
   @override
   void dispose() {
     _profileSub?.cancel();
+    _profileSub = null;
+    _profileApplying = false;
+    _profilePending = null;
     super.dispose();
   }
 
@@ -268,6 +305,8 @@ class AuthController extends StateNotifier<AuthState> {
   Future<void> signOut() async {
     _profileSub?.cancel();
     _profileSub = null;
+    _profileApplying = false;
+    _profilePending = null;
     await _repo.signOut();
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
@@ -452,6 +491,10 @@ class StorageUsage {
   const StorageUsage({this.images = 0, this.documents = 0, this.exports = 0});
 
   int get total => images + documents + exports;
+
+  /// Bytes that count against the free-tier storage cap: original artwork
+  /// files plus attached documents (exports/backups are excluded).
+  int get countedBytes => images + documents;
 }
 
 final storageUsageProvider = FutureProvider<StorageUsage>((ref) async {

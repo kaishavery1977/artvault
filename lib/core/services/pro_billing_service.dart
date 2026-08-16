@@ -70,7 +70,9 @@ class ProBillingService {
             _iap.completePurchase(purchase);
             settle(ProPurchaseResult.purchased);
           case PurchaseStatus.pending:
-            settle(ProPurchaseResult.pending);
+            // A pending payment must NOT cancel the attempt — the store may
+            // still confirm it later; keep listening.
+            break;
           case PurchaseStatus.error:
             settle(ProPurchaseResult.error);
           case PurchaseStatus.canceled:
@@ -90,22 +92,62 @@ class ProBillingService {
     }
 
     // Timeout guard: if the store dialog never emits an event, don't hang
-    // the UI forever.
+    // the UI forever — and always settle (cancel the subscription) on the
+    // way out so the attempt can never leak a listener.
     final result = await completer.future.timeout(
       const Duration(minutes: 3),
-      onTimeout: () => ProPurchaseResult.error,
+      onTimeout: () {
+        settle(ProPurchaseResult.error);
+        return ProPurchaseResult.error;
+      },
     );
     return result;
   }
 
-  /// Restores previous purchases (new device / reinstall).
+  /// Restores previous purchases (new device / reinstall). Returns true
+  /// only when the store actually reports a restored purchase for the Pro
+  /// product — not merely because the restore call completed.
   Future<bool> restore() async {
+    final completer = Completer<bool>();
+    late final StreamSubscription<List<PurchaseDetails>> sub;
+
+    void finish(bool ok) {
+      if (completer.isCompleted) return;
+      sub.cancel();
+      completer.complete(ok);
+    }
+
+    sub = _iap.purchaseStream.listen((details) {
+      for (final purchase in details) {
+        if (purchase.productID != proProductId) continue;
+        if (purchase.status == PurchaseStatus.restored ||
+            purchase.status == PurchaseStatus.purchased) {
+          _iap.completePurchase(purchase);
+          finish(true);
+          return;
+        }
+        if (purchase.status == PurchaseStatus.error) {
+          finish(false);
+          return;
+        }
+      }
+    }, onError: (_) => finish(false));
+
     try {
       await _iap.restorePurchases();
-      return true;
     } catch (_) {
+      finish(false);
       return false;
     }
+    // The store may never emit anything (nothing to restore) — a short
+    // grace window lets a genuine restored event arrive before we give up.
+    return completer.future.timeout(
+      const Duration(seconds: 15),
+      onTimeout: () {
+        sub.cancel();
+        return false;
+      },
+    );
   }
 }
 

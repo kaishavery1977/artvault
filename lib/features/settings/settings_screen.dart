@@ -11,7 +11,6 @@ import '../../core/widgets/motion.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/app_user.dart';
-import 'about_screen.dart';
 import '../../data/models/painting.dart';
 import '../../data/repositories/settings_repository.dart';
 
@@ -135,7 +134,7 @@ class SettingsScreen extends ConsumerWidget {
                   ? 'Active — unlimited capacity & premium gallery features'
                   : 'Free plan — unlock unlimited capacity, analytics & watermarking',
               trailing: user?.plan.isPro == true
-                  ? _ProBadge(key: ValueKey('pro-tile-${user!.plan.isPro}'))
+                  ? const _ProBadge()
                   : TagChip(label: 'Free', color: Theme.of(context).colorScheme.onSurface),
               onTap: () => context.push('/upgrade'),
             ),
@@ -214,7 +213,7 @@ class SettingsScreen extends ConsumerWidget {
           ...sections,
           Center(
             child: Text(
-              'ArtVault v${AboutScreen.appVersion} (${AboutScreen.appBuild})',
+              'ArtVault v${AppConstants.appVersion} (${AppConstants.appBuild})',
               style: TextStyle(
                 fontSize: 12,
                 color: Theme.of(
@@ -420,22 +419,24 @@ class _UserCard extends StatelessWidget {
               ],
             ),
           ),
-          Wrap(
-            spacing: 6,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              TagChip(
-                label: role?.label ?? 'Viewer',
-                color: switch (role) {
-                  AppRole.admin => scheme.primary,
-                  AppRole.curator => const Color(0xFFF59E0B),
-                  _ => scheme.onSurface,
-                },
-              ),
-              if (plan?.isPro == true)
-                _ProBadge(key: ValueKey('pro-badge-${plan!.isPro}')),
-
-            ],
+          // Flexible so the chips can wrap onto a second line at large text
+          // scales instead of overflowing the card's row.
+          Flexible(
+            child: Wrap(
+              spacing: 6,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                TagChip(
+                  label: role?.label ?? 'Viewer',
+                  color: switch (role) {
+                    AppRole.admin => scheme.primary,
+                    AppRole.curator => const Color(0xFFF59E0B),
+                    _ => scheme.onSurface,
+                  },
+                ),
+                if (plan?.isPro == true) const _ProBadge(),
+              ],
+            ),
           ),
         ],
       ),
@@ -528,10 +529,11 @@ class _SettingTile extends StatelessWidget {
 }
 
 /// Shimmering "Pro" badge shown in the user card and the Account group.
-/// Keyed by plan so flipping to Pro re-mounts it and replays the shimmer
-/// sweep — the upgrade becomes visible everywhere the moment it happens.
+/// Replaces the "Free" TagChip when the plan flips, so the widget-type
+/// change remounts it and replays the shimmer sweep — the upgrade becomes
+/// visible everywhere the moment it happens.
 class _ProBadge extends StatelessWidget {
-  const _ProBadge({super.key});
+  const _ProBadge();
 
   @override
   Widget build(BuildContext context) {

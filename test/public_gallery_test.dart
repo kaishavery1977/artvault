@@ -106,7 +106,7 @@ void main() {
     test('no watermark by default', () {
       final html = service.buildHtml([_paint('p1', title: 'Plain')]);
       expect(html, isNot(contains('class="wm"')));
-      expect(html, isNot(contains('updateMask.fieldPaths=views')));
+      expect(html, isNot(contains('setToServerValue')));
     });
 
     test('watermark overlays every image and arms the view beacon', () {
@@ -114,11 +114,14 @@ void main() {
         [_paint('p1', title: 'Owned Piece')],
         watermark: 'Kais Havery',
         ownerUid: 'owner-1',
+        token: 'tok-abc',
       );
       expect(html, contains('class="wm"'));
       expect(html, contains('data-mark="Kais Havery"'));
-      expect(html, contains('updateMask.fieldPaths=views'));
-      expect(html, contains('public_galleries/owner-1/stats/views'));
+      // Token-scoped, atomic increment via the Firestore REST commit API.
+      expect(html, contains('documents:commit'));
+      expect(html, contains('setToServerValue'));
+      expect(html, contains('public_galleries/owner-1/stats/tok-abc'));
     });
   });
 

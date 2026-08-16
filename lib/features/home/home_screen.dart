@@ -431,6 +431,7 @@ class _StorageCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
+    final isPro = ref.watch(authProvider.select((a) => a.isPro));
     final usage = ref.watch(storageUsageProvider).valueOrNull;
     final device = ref.watch(deviceStorageProvider).valueOrNull;
     final total = stats.storageBytes;
@@ -468,13 +469,15 @@ class _StorageCard extends ConsumerWidget {
               ),
               const Spacer(),
               // Free-tier usage ring: fills toward the cap and pulses once
-              // the vault nears the free storage limit.
-              _StorageRing(
-                freeBytes: usage != null
-                    ? usage.images + usage.documents
-                    : stats.storageBytes.toInt(),
-                capBytes: ProLimits.freeStorageBytes,
-              ),
+              // the vault nears the free storage limit. Pro has no cap, so
+              // the ring is hidden for Pro accounts (same as _PlanUsageCard).
+              if (!isPro)
+                _StorageRing(
+                  freeBytes: usage != null
+                      ? usage.countedBytes
+                      : stats.storageBytes.toInt(),
+                  capBytes: ProLimits.freeStorageBytes,
+                ),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -503,9 +506,6 @@ class _StorageCard extends ConsumerWidget {
   }
 }
 
-/// Free-plan usage meter: how much of each free-tier cap is used, with a
-/// one-tap upgrade entry. Hidden entirely for Pro users — unlimited needs
-/// no meter.
 /// Animated circular ring showing free-tier storage usage (vault bytes vs
 /// the free cap). Fills in on load, and pulses a warning glow once the vault
 /// is at 85%+ of the free tier. Ticker-only — reduced motion renders it
@@ -680,6 +680,9 @@ class _RingPainter extends CustomPainter {
       oldDelegate.glow != glow;
 }
 
+/// Free-plan usage meter: how much of each free-tier cap is used, with a
+/// one-tap upgrade entry. Hidden entirely for Pro users — unlimited needs
+/// no meter.
 class _PlanUsageCard extends ConsumerWidget {
   const _PlanUsageCard();
 
@@ -695,12 +698,7 @@ class _PlanUsageCard extends ConsumerWidget {
     final rows = <(String, int, int)>[
       ('Paintings', stats.paintings, ProLimits.freePaintings),
       ('Artists', stats.artists, ProLimits.freeArtists),
-      ('Documents', stats.documents, ProLimits.freeDocuments),
-      (
-        'Storage',
-        (usage?.images ?? 0) + (usage?.documents ?? 0),
-        ProLimits.freeStorageBytes,
-      ),
+      ('Documents', stats.documents, ProLimits.freeDocuments),      ('Storage', usage?.countedBytes ?? 0, ProLimits.freeStorageBytes),
     ];
 
     return GlassCard(
@@ -721,7 +719,6 @@ class _PlanUsageCard extends ConsumerWidget {
                   ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
-              const Spacer(),
               Text(
                 'Upgrade',
                 style: TextStyle(

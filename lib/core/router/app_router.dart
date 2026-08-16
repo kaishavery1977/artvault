@@ -88,6 +88,9 @@ String? rbacRedirect({
   if (path == '/splash') return null;
 
   if (!onboarded) {
+    // /onboarding itself must never redirect (would self-loop); the auth
+    // pages stay reachable so a new user can still sign in / register.
+    if (path.startsWith('/onboarding')) return null;
     return path.startsWith('/login') || path.startsWith('/register')
         ? null
         : '/onboarding';

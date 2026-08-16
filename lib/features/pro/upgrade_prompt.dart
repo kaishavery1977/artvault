@@ -3,8 +3,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
 /// Shows the "limit reached" upgrade dialog. Returns true when the user
-/// decides to upgrade (caller can navigate to the upgrade screen itself —
-/// this helper just pops with the choice).
+/// chooses to upgrade. In that case this helper also pushes `/upgrade`,
+/// so callers must not navigate again.
 Future<bool> showUpgradePrompt(
   BuildContext context, {
   required String feature,
