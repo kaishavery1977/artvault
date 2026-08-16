@@ -242,6 +242,7 @@ class UsersScreen extends ConsumerWidget {
       return;
     }
     ref.invalidate(usersProvider);
+    ref.invalidate(roleAuditProvider);
     if (context.mounted) {
       messenger.showSnackBar(
         SnackBar(content: Text('${user.displayName} is now ${role.label}.')),
