@@ -324,6 +324,21 @@ class CloudBackend {
       'https://firebasestorage.googleapis.com/v0/b/$bucket/o/'
       '${Uri.encodeComponent(path)}?alt=media';
 
+  /// Downloads the bytes at a Storage URL (tokenized `getDownloadURL` or a
+  /// plain rules-gated URL). Goes through the SDK so App Check tokens are
+  /// attached automatically; returns null when the object is gone or the
+  /// read is denied. Used by vault image recovery after a reinstall.
+  Future<Uint8List?> downloadBytes(String url) async {
+    if (!_ready || url.isEmpty) return null;
+    try {
+      final ref = FirebaseStorage.instance.refFromURL(url);
+      final data = await ref.getData();
+      return data;
+    } catch (_) {
+      return null; // missing / denied — caller keeps whatever it had
+    }
+  }
+
   Future<void> deleteFile(String path) async {
     if (!_ready) return;
     try {

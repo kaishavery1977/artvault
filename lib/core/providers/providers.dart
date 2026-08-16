@@ -117,7 +117,19 @@ class AuthController extends StateNotifier<AuthState> {
   /// sync. Fire-and-forget: never blocks the splash hand-off or the UI, and
   /// no-ops when Firebase isn't ready yet.
   void _syncVaultAfterAuth() {
-    unawaited(PaintingRepository.instance.syncNow());
+    unawaited(_syncVault());
+  }
+
+  /// Vault repopulation on sign-in: pull remote metadata, then re-download
+  /// the media files (painting images, artist photos, documents) that a
+  /// reinstall wiped locally — the remote URLs survive in Firestore, the
+  /// local files do not. Recovery is idempotent (skips files already on
+  /// disk) and runs in the background.
+  Future<void> _syncVault() async {
+    await PaintingRepository.instance.syncNow();
+    await PaintingRepository.instance.recoverImages();
+    await ArtistRepository.instance.recoverPhotos();
+    await DocumentRepository.instance.recoverDocuments();
   }
 
   /// Watches this account's `users/{uid}` doc so role/plan changes made by

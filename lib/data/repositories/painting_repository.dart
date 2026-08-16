@@ -221,6 +221,65 @@ class PaintingRepository {
     return dirty.length;
   }
 
+  /// Re-downloads painting images from Storage after a reinstall or cache
+  /// wipe: the local files are gone, but the remote [Painting.imageUrls]
+  /// survived in Firestore. Skips paintings whose local files are already
+  /// present. Returns the number of paintings whose images were recovered.
+  ///
+  /// Downloaded files are stored in the vault and the painting's local paths
+  /// are updated WITHOUT re-uploading (the remote copies already exist), so
+  /// this is safe to run on every sign-in — it is idempotent.
+  Future<int> recoverImages() async {
+    final cloud = CloudBackend.instance;
+    if (!cloud.isReady) return 0;
+    final storage = FileStorageService.instance;
+    var recovered = 0;
+    for (final painting in readAll()) {
+      if (painting.isDeleted) continue;
+      final urls = painting.imageUrls;
+      if (urls.isEmpty && painting.coverImageUrl.isEmpty) continue;
+      final allLocal = painting.images.isNotEmpty &&
+          painting.images.every((p) => File(p).existsSync()) &&
+          (painting.coverImagePath.isEmpty ||
+              File(painting.coverImagePath).existsSync());
+      if (allLocal) continue;
+
+      // (expected local path, remote url) pairs aligned by index.
+      final pairs = <(String, String)>[
+        for (var i = 0; i < painting.images.length; i++)
+          (painting.images[i], i < urls.length ? urls[i] : ''),
+      ];
+      // Older docs may only carry a cover — add it as its own pair when it
+      // isn't already covered by images[0].
+      if (painting.coverImagePath.isNotEmpty &&
+          pairs.every((pair) => pair.$1 != painting.coverImagePath)) {
+        pairs.add((painting.coverImagePath, painting.coverImageUrl));
+      }
+
+      final newPaths = <String>[];
+      for (final (local, url) in pairs) {
+        if (local.isNotEmpty && File(local).existsSync()) {
+          newPaths.add(local);
+          continue;
+        }
+        if (url.isEmpty) continue;
+        final bytes = await cloud.downloadBytes(url);
+        if (bytes == null) continue;
+        final path = await storage.saveImageBytes(bytes);
+        newPaths.add(path);
+        await storage.makeThumbnail(path);
+      }
+      if (newPaths.isEmpty) continue;
+
+      final updated = painting
+          .copyWith(images: newPaths, coverImagePath: newPaths.first)
+          .markSynced(); // remote copies already exist — never re-upload
+      await _db.put(AppConstants.boxPaintings, updated.id, updated.toJson());
+      recovered++;
+    }
+    return recovered;
+  }
+
   /// Purged ids awaiting a confirmed cloud delete. Purge writes a tombstone
   /// here (fire-and-forget), so an offline purge can't be resurrected by the
   /// next pull. Cleared once the remote delete succeeds.

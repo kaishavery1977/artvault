@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -66,11 +67,34 @@ class FileStorageService {
     return thumb.path;
   }
 
+  /// Writes already-encoded image bytes (e.g. re-downloaded from the cloud
+  /// after a reinstall) into the vault and returns the local path. The
+  /// bytes are assumed to be a final JPEG, so no re-compression happens.
+  Future<String> saveImageBytes(Uint8List bytes) async {
+    final dir = imagesDir;
+    final name =
+        'img_${DateTime.now().millisecondsSinceEpoch}.$imageExtension';
+    final target = File(p.join(dir.path, name));
+    await target.writeAsBytes(bytes, flush: true);
+    return target.path;
+  }
+
   /// Imports a document (pdf/image/docx) into the vault.
   Future<String> importDocument(File source, String name) async {
     final safe = name.replaceAll(RegExp(r'[^\w.\- ]+'), '_');
     final target = File(p.join(documentsDir.path, '${DateTime.now().millisecondsSinceEpoch}_$safe'));
     await source.copy(target.path);
+    return target.path;
+  }
+
+  /// Writes re-downloaded document bytes into the vault (cloud recovery
+  /// after a reinstall) and returns the local path.
+  Future<String> saveDocumentBytes(Uint8List bytes, String name) async {
+    final safe = name.replaceAll(RegExp(r'[^\w.\- ]+'), '_');
+    final target = File(
+      p.join(documentsDir.path, '${DateTime.now().millisecondsSinceEpoch}_$safe'),
+    );
+    await target.writeAsBytes(bytes, flush: true);
     return target.path;
   }
 

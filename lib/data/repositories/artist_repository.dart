@@ -78,6 +78,35 @@ class ArtistRepository {
     }
   }
 
+  /// Re-downloads artist photos from Storage after a reinstall (local file
+  /// gone, [Artist.photoUrl] survived in Firestore). Skips artists whose
+  /// photo is already on disk. Returns the number of photos restored.
+  Future<int> recoverPhotos() async {
+    final cloud = CloudBackend.instance;
+    if (!cloud.isReady) return 0;
+    final storage = FileStorageService.instance;
+    var recovered = 0;
+    for (final artist in readAll()) {
+      if (artist.isDeleted || artist.photoUrl.isEmpty) continue;
+      if (artist.photoPath.isNotEmpty && File(artist.photoPath).existsSync()) {
+        continue;
+      }
+      final bytes = await cloud.downloadBytes(artist.photoUrl);
+      if (bytes == null) continue;
+      final path = await storage.saveImageBytes(bytes);
+      await storage.makeThumbnail(path);
+      await _db.put(
+        AppConstants.boxArtists,
+        artist.id,
+        artist
+            .copyWith(photoPath: path, needsSync: false, synced: true)
+            .toJson(),
+      );
+      recovered++;
+    }
+    return recovered;
+  }
+
   Future<void> _syncArtist(Artist artist) async {
     final cloud = CloudBackend.instance;
     try {

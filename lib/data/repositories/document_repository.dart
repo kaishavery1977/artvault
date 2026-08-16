@@ -105,6 +105,32 @@ class DocumentRepository {
     }
   }
 
+  /// Re-downloads attached documents from Storage after a reinstall (local
+  /// file gone, [ArtDocument.remoteUrl] survived in Firestore). Skips docs
+  /// already on disk. Returns the number of documents restored.
+  Future<int> recoverDocuments() async {
+    final cloud = CloudBackend.instance;
+    if (!cloud.isReady) return 0;
+    final storage = FileStorageService.instance;
+    var recovered = 0;
+    for (final doc in readAll()) {
+      if (doc.isDeleted || doc.remoteUrl.isEmpty) continue;
+      if (doc.localPath.isNotEmpty && File(doc.localPath).existsSync()) {
+        continue;
+      }
+      final bytes = await cloud.downloadBytes(doc.remoteUrl);
+      if (bytes == null) continue;
+      final path = await storage.saveDocumentBytes(bytes, doc.name);
+      await _db.put(
+        AppConstants.boxDocuments,
+        doc.id,
+        doc.copyWith(localPath: path, needsSync: false, synced: true).toJson(),
+      );
+      recovered++;
+    }
+    return recovered;
+  }
+
   Future<void> _syncDocument(ArtDocument doc) async {
     final cloud = CloudBackend.instance;
     try {
