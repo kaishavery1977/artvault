@@ -23,17 +23,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _confirm = TextEditingController();
+  final _adminCode = TextEditingController();
   // Per-field obscurity so revealing one password never reveals the other,
   // matching the login screen's suffix-eye-toggle pattern.
   bool _obscure = true;
   bool _confirmObscure = true;
+  bool _showAdminCode = false;
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
-    final ok = await ref
-        .read(authProvider.notifier)
-        .register(_name.text, _email.text, _password.text);
+    final ok = await ref.read(authProvider.notifier).register(
+          _name.text,
+          _email.text,
+          _password.text,
+          adminCode:
+              _showAdminCode && _adminCode.text.trim().isNotEmpty
+              ? _adminCode.text.trim()
+              : null,
+        );
     if (ok && mounted) context.go('/home');
   }
 
@@ -142,6 +150,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   onPressed: () => setState(() => _confirmObscure = !_confirmObscure),
                 ),
               ),
+              // Optional one-time setup: the very first account can become
+              // admin with the bootstrap code created in Firestore
+              // (bootstrap/config.adminCode). Hidden by default so everyday
+              // sign-ups never see it.
+              TextButton.icon(
+                onPressed: () => setState(() => _showAdminCode = !_showAdminCode),
+                icon: Icon(
+                  _showAdminCode
+                      ? Icons.expand_less
+                      : Icons.admin_panel_settings_outlined,
+                  size: 18,
+                ),
+                label: Text(
+                  _showAdminCode
+                      ? 'Hide admin setup code'
+                      : 'First admin? Enter setup code',
+                ),
+              ),
+              if (_showAdminCode) ...[
+                const SizedBox(height: AppSpacing.xs),
+                AppTextField(
+                  controller: _adminCode,
+                  label: 'Admin setup code',
+                  icon: Icons.key_outlined,
+                  textInputAction: TextInputAction.done,
+                ),
+              ],
               const SizedBox(height: AppSpacing.md),
               AppButton(
                 label: 'Create Account',

@@ -75,6 +75,50 @@ Page<void> _page(Widget child) {
   );
 }
 
+/// Pure RBAC redirect decision — the exact guard the router applies on
+/// every navigation. Extracted so tests can exercise the permission model
+/// without booting the whole app: viewers must be bounced off edit routes,
+/// non-admins off admin routes, and the auth/onboarding flow stays intact.
+String? rbacRedirect({
+  required String path,
+  required bool onboarded,
+  required AuthState auth,
+}) {
+  // Splash decides where to go.
+  if (path == '/splash') return null;
+
+  if (!onboarded) {
+    return path.startsWith('/login') || path.startsWith('/register')
+        ? null
+        : '/onboarding';
+  }
+  if (auth.status == AuthStatus.unknown) return '/splash';
+
+  final loggedIn = auth.status == AuthStatus.authenticated;
+
+  // Public auth pages.
+  final isAuthPage =
+      path.startsWith('/login') ||
+      path.startsWith('/register') ||
+      path.startsWith('/forgot');
+  if (!loggedIn) {
+    return isAuthPage ? null : '/login';
+  }
+  if (isAuthPage) {
+    return '/home';
+  }
+
+  // RBAC guards.
+  if (_editRoutes.any(path.startsWith) && !auth.canEdit) {
+    return '/home';
+  }
+  if (_adminRoutes.any(path.startsWith) && !auth.canManageUsers) {
+    return '/home';
+  }
+
+  return null;
+}
+
 final routerProvider = Provider<GoRouter>((ref) {
   final router = GoRouter(
     navigatorKey: rootNavigatorKey,
@@ -82,41 +126,11 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final auth = ref.read(authProvider);
       final onboarded = ref.read(onboardedProvider);
-      final path = state.matchedLocation;
-
-      // Splash decides where to go.
-      if (path == '/splash') return null;
-
-      if (!onboarded) {
-        return path.startsWith('/login') || path.startsWith('/register')
-            ? null
-            : '/onboarding';
-      }
-      if (auth.status == AuthStatus.unknown) return '/splash';
-
-      final loggedIn = auth.status == AuthStatus.authenticated;
-
-      // Public auth pages.
-      final isAuthPage =
-          path.startsWith('/login') ||
-          path.startsWith('/register') ||
-          path.startsWith('/forgot');
-      if (!loggedIn) {
-        return isAuthPage ? null : '/login';
-      }
-      if (isAuthPage) {
-        return '/home';
-      }
-
-      // RBAC guards.
-      if (_editRoutes.any(path.startsWith) && !auth.canEdit) {
-        return '/home';
-      }
-      if (_adminRoutes.any(path.startsWith) && !auth.canManageUsers) {
-        return '/home';
-      }
-
-      return null;
+      return rbacRedirect(
+        path: state.matchedLocation,
+        onboarded: onboarded,
+        auth: auth,
+      );
     },
     routes: [
       GoRoute(

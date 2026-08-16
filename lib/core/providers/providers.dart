@@ -191,10 +191,20 @@ class AuthController extends StateNotifier<AuthState> {
     }
   }
 
-  Future<bool> register(String name, String email, String password) async {
+  Future<bool> register(
+    String name,
+    String email,
+    String password, {
+    String? adminCode,
+  }) async {
     state = state.copyWith(busy: true, clearError: true);
     try {
-      final user = await _repo.register(name, email, password);
+      final user = await _repo.register(
+        name,
+        email,
+        password,
+        adminCode: adminCode,
+      );
       _onAuthenticated(user);
       return true;
     } catch (e) {
@@ -329,6 +339,53 @@ final usersProvider = StreamProvider<List<AppUser>>((ref) async* {
   } else {
     yield [AuthRepository.instance.cachedUser];
   }
+});
+
+/// One recorded role change: who changed whom, from what to what, when.
+class RoleAuditEntry {
+  final String uid;
+  final String byUid;
+  final String byEmail;
+  final String oldRole;
+  final String newRole;
+  final DateTime at;
+
+  const RoleAuditEntry({
+    required this.uid,
+    required this.byUid,
+    required this.byEmail,
+    required this.oldRole,
+    required this.newRole,
+    required this.at,
+  });
+
+  factory RoleAuditEntry.fromJson(Map<String, dynamic> json) =>
+      RoleAuditEntry(
+        uid: (json['uid'] as String?) ?? '',
+        byUid: (json['byUid'] as String?) ?? '',
+        byEmail: (json['byEmail'] as String?) ?? '',
+        oldRole: (json['oldRole'] as String?) ?? 'unknown',
+        newRole: (json['newRole'] as String?) ?? 'unknown',
+        at: DateTime.tryParse((json['at'] as String?) ?? '') ?? DateTime.now(),
+      );
+}
+
+/// Role-change audit trail (admin only), newest first.
+///
+/// Streams the Firestore `role_audit` collection when connected; yields an
+/// empty list offline so the Users screen stays usable.
+final roleAuditProvider = StreamProvider<List<RoleAuditEntry>>((ref) async* {
+  final cloud = CloudBackend.instance;
+  if (!cloud.isReady) {
+    yield const [];
+    return;
+  }
+  yield* cloud.watchCollection('role_audit').map(
+    (list) => list
+        .map(RoleAuditEntry.fromJson)
+        .toList()
+        ..sort((a, b) => b.at.compareTo(a.at)),
+  );
 });
 
 /// On-disk storage usage (bytes) broken down by category.

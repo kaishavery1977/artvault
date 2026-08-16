@@ -69,16 +69,28 @@ service cloud.firestore {
       }
     }
 
+    // Bootstrap: the secret code that grants the very first admin.
+    // The code itself is never readable by clients — rules read it with
+    // get() only — so a brand-new project's owner can create it once via
+    // `firebase firestore:set` and register an admin with it, no console
+    // editing of the users collection needed. Once an admin exists they can
+    // rotate or delete the code here.
+    match /bootstrap/{doc} {
+      allow read, write: if isAdmin();
+    }
+
     // User profiles: readable by every signed-in user (the admin panel lists
     // users, and profile lookups read this collection). Writes are
-    // self-service for profile fields; nobody can self-promote to admin.
-    // Role changes for others require an existing admin — the first admin
-    // must be granted manually in the Firebase console.
+    // self-service for profile fields; nobody can self-promote to admin
+    // except with a valid bootstrap code.
     match /users/{uid} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && uid == request.auth.uid
-        && request.resource.data.role == 'curator'
-        && request.resource.data.plan == 'free';
+        && request.resource.data.plan == 'free'
+        && (request.resource.data.role == 'curator'
+            || (request.resource.data.role == 'admin'
+                && request.resource.data.bootstrapCode
+                   == get(/databases/$(database)/documents/bootstrap/config).data.adminCode));
       allow update: if (isSignedIn() && uid == request.auth.uid
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['uid'])
         && (request.resource.data.role == resource.data.role
@@ -86,6 +98,14 @@ service cloud.firestore {
         && (request.resource.data.plan == resource.data.plan || isAdmin()))
         || (isAdmin() && uid != request.auth.uid);
       allow delete: if isAdmin() && uid != request.auth.uid;
+    }
+
+    // Role-change audit trail: written by admins when they change someone's
+    // role, readable only by admins (shown in the Users screen history).
+    match /role_audit/{doc} {
+      allow create: if isAdmin();
+      allow read, list: if isAdmin();
+      allow update, delete: if false;
     }
   }
 }

@@ -199,6 +199,22 @@ class CloudBackend {
     await FirebaseFirestore.instance.collection(collection).doc(id).delete();
   }
 
+  /// Appends a document with an auto-generated id (e.g. audit-log entries).
+  Future<void> addDoc(String collection, Map<String, dynamic> data) async {
+    if (!_ready) return;
+    await FirebaseFirestore.instance.collection(collection).add(data);
+  }
+
+  /// Removes a single field from a document (used to strip the one-time
+  /// bootstrap code after it has granted the first admin).
+  Future<void> deleteField(String collection, String id, String field) async {
+    if (!_ready) return;
+    await FirebaseFirestore.instance
+        .collection(collection)
+        .doc(id)
+        .set({field: FieldValue.delete()}, SetOptions(merge: true));
+  }
+
   /// Fetches every document in [collection]. Pass [owner] (a UID) to only
   /// fetch documents owned by that user — required under the owner-scoped
   /// Firestore rules.

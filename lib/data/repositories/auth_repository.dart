@@ -81,21 +81,40 @@ class AuthRepository {
     throw AuthException('Unable to sign in. Please check your credentials.');
   }
 
-  Future<AppUser> register(String name, String email, String password) async {
+  Future<AppUser> register(
+    String name,
+    String email,
+    String password, {
+    String? adminCode,
+  }) async {
     final cloud = CloudBackend.instance;
     if (cloud.isReady) {
       final user = await cloud.createAccount(email, password);
       if (user != null) {
         await user.updateDisplayName(name);
+        final wantsAdmin = adminCode != null && adminCode.isNotEmpty;
     final profile = AppUser(
       uid: user.uid,
       email: email,
       displayName: name,
-      role: AppRole.curator, // first user of an organisation = curator
+      // With a valid bootstrap code the registering user becomes the very
+      // first admin of the organisation; otherwise a curator. The rules
+      // verify the code server-side, so a wrong/absent code can never
+      // self-promote.
+      role: wantsAdmin ? AppRole.admin : AppRole.curator,
       createdAt: DateTime.now(),
       lastLogin: DateTime.now(),
     );
-    await cloud.upsert('users', user.uid, profile.toJson());
+    final data = Map<String, dynamic>.from(profile.toJson());
+    if (wantsAdmin) {
+      // The rules check this field against bootstrap/config.adminCode.
+      data['bootstrapCode'] = adminCode;
+    }
+    await cloud.upsert('users', user.uid, data);
+    if (wantsAdmin) {
+      // Strip the one-time code so it never lingers in the profile doc.
+      await cloud.deleteField('users', user.uid, 'bootstrapCode');
+    }
         await _persistUser(profile);
         return profile;
       }
@@ -257,7 +276,22 @@ class AuthRepository {
   }
 
   Future<void> updateRole(String uid, AppRole role) async {
+    final me = cachedUser;
+    final oldRole = await _roleOf(uid);
     await CloudBackend.instance.upsert('users', uid, {'role': role.wire});
+    // Audit the change: who did it, to whom, from what to what, when.
+    try {
+      await CloudBackend.instance.addDoc('role_audit', {
+        'uid': uid,
+        'byUid': me.uid,
+        'byEmail': me.email,
+        'oldRole': oldRole,
+        'newRole': role.wire,
+        'at': DateTime.now().toIso8601String(),
+      });
+    } catch (_) {
+      // Best-effort: an audit write failure must never block a role change.
+    }
     if (uid == cachedUser.uid) {
       await LocalDatabase.instance.put(
         AppConstants.boxProfile,
@@ -265,6 +299,16 @@ class AuthRepository {
         cachedUser.copyWith(role: role).toJson(),
       );
     }
+  }
+
+  /// Reads a user's current role from the cloud (best-effort; defaults to
+  /// the previous local knowledge when offline).
+  static Future<String> _roleOf(String uid) async {
+    try {
+      final doc = await CloudBackend.instance.fetchDoc('users', uid);
+      if (doc != null && doc['role'] is String) return doc['role'] as String;
+    } catch (_) {}
+    return 'unknown';
   }
 
   /// Sets the subscription tier. Plan changes are admin-only in the rules,

@@ -107,7 +107,10 @@ class UsersScreen extends ConsumerWidget {
           IconButton(
             tooltip: 'Refresh',
             icon: const Icon(Icons.refresh),
-            onPressed: () => ref.invalidate(usersProvider),
+            onPressed: () {
+              ref.invalidate(usersProvider);
+              ref.invalidate(roleAuditProvider);
+            },
           ),
         ],
       ),
@@ -169,12 +172,119 @@ class UsersScreen extends ConsumerWidget {
                 if (i < users.length - 1)
                   const SizedBox(height: AppSpacing.sm),
               ],
+              const SizedBox(height: AppSpacing.lg),
+              const _RoleHistoryCard(),
               const SizedBox(height: AppSpacing.xxl),
             ],
           );
         },
       ),
     );
+  }
+}
+
+/// Recent role-change activity, newest first. Streams `role_audit` live so
+/// the admin sees every change (who, whom, old → new, when) as it happens.
+class _RoleHistoryCard extends ConsumerWidget {
+  const _RoleHistoryCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final audit = ref.watch(roleAuditProvider).valueOrNull ?? const [];
+    final scheme = Theme.of(context).colorScheme;
+
+    return GlassCard(
+      padding: AppSpacing.cardPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.history, size: 20, color: scheme.primary),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                'Role history',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const Spacer(),
+              Text(
+                '${audit.length} change${audit.length == 1 ? '' : 's'}',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color: scheme.onSurface.withValues(alpha: 0.45),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          if (audit.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              child: Text(
+                'No role changes recorded yet. Changes you make above will appear here.',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  height: 1.45,
+                  color: scheme.onSurface.withValues(alpha: 0.55),
+                ),
+              ),
+            )
+          else
+            for (final entry in audit.take(20))
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.swap_horiz,
+                      size: 15,
+                      color: scheme.onSurface.withValues(alpha: 0.4),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${_cap(entry.oldRole)} → ${_cap(entry.newRole)}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${entry.byEmail.isEmpty ? 'Someone' : entry.byEmail} '
+                            '· ${_when(entry.at)}',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: scheme.onSurface.withValues(alpha: 0.5),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+        ],
+      ),
+    );
+  }
+
+  static String _cap(String s) => s.isEmpty
+      ? 'unknown'
+      : '${s[0].toUpperCase()}${s.substring(1)}';
+
+  static String _when(DateTime at) {
+    final diff = DateTime.now().difference(at);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+    if (diff.inDays < 1) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
   }
 }
 

@@ -61,7 +61,10 @@ class HomeScreen extends ConsumerWidget {
                       if (showLoading)
                         const _HomeSkeleton()
                       else if (paintings.isEmpty)
-                        _WelcomeHero(onUpload: () => context.push('/painting/new'))
+                        _WelcomeHero(
+                          canEdit: canEdit,
+                          onUpload: () => context.push('/painting/new'),
+                        )
                       else ...[
                         _StatsGrid(stats: stats, canEdit: canEdit),
                         const SizedBox(height: AppSpacing.lg),
@@ -278,9 +281,10 @@ class _HeaderAction extends StatelessWidget {
 }
 
 class _WelcomeHero extends StatelessWidget {
+  final bool canEdit;
   final VoidCallback onUpload;
 
-  const _WelcomeHero({required this.onUpload});
+  const _WelcomeHero({required this.canEdit, required this.onUpload});
 
   @override
   Widget build(BuildContext context) {
@@ -316,15 +320,24 @@ class _WelcomeHero extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
-          FilledButton.icon(
-            onPressed: onUpload,
-            style: FilledButton.styleFrom(
-              backgroundColor: scheme.onPrimary,
-              foregroundColor: scheme.primary,
+          if (canEdit)
+            FilledButton.icon(
+              onPressed: onUpload,
+              style: FilledButton.styleFrom(
+                backgroundColor: scheme.onPrimary,
+                foregroundColor: scheme.primary,
+              ),
+              icon: const Icon(Icons.add),
+              label: const Text('Upload your first painting'),
+            )
+          else
+            Text(
+              'This vault is read-only for your account.',
+              style: TextStyle(
+                color: scheme.onPrimary.withValues(alpha: 0.85),
+                fontSize: 13,
+              ),
             ),
-            icon: const Icon(Icons.add),
-            label: const Text('Upload your first painting'),
-          ),
         ],
       ),
     )
