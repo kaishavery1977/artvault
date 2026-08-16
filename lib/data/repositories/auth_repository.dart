@@ -393,6 +393,40 @@ class AuthRepository {
     }
   }
 
+  /// Restores every revoked account at once — removes each `revoked/{uid}`
+  /// marker so the rules re-allow those profiles, and logs one audit entry
+  /// per restored account. Returns the number restored.
+  Future<int> restoreAllUsers() async {
+    final me = cachedUser;
+    final markers = await CloudBackend.instance
+        .watchCollection('revoked')
+        .first;
+    var restored = 0;
+    for (final marker in markers) {
+      final uid = (marker['uid'] as String?) ?? '';
+      if (uid.isEmpty) continue;
+      try {
+        await CloudBackend.instance.remove('revoked', uid);
+        try {
+          await CloudBackend.instance.addDoc('role_audit', {
+            'uid': uid,
+            'byUid': me.uid,
+            'byEmail': me.email,
+            'oldRole': (marker['role'] as String?) ?? 'revoked',
+            'newRole': 'restored',
+            'at': DateTime.now().toIso8601String(),
+          });
+        } catch (_) {
+          // Best-effort audit.
+        }
+        restored++;
+      } catch (_) {
+        // Skip markers that failed; keep restoring the rest.
+      }
+    }
+    return restored;
+  }
+
   /// Sets the subscription tier. Plan changes are admin-only in the rules,
   /// so a non-admin upgrade persists locally and the cloud write is
   /// best-effort (succeeds for admins; silently skipped otherwise). The

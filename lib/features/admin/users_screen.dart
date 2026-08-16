@@ -134,6 +134,58 @@ class UsersScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _restoreAll(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final revoked = ref.read(revokedProvider).valueOrNull ?? const [];
+    if (revoked.isEmpty) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.person_add_alt_1, size: 32),
+        title: const Text('Restore all revoked accounts?'),
+        content: Text(
+          'Bring back all ${revoked.length} revoked account(s)?\n\n'
+          'Each will be able to sign in again as a curator, and their vault '
+          'data (which was never deleted) will sync back automatically.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Restore all'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      final restored = await AuthRepository.instance.restoreAllUsers();
+      ref.invalidate(revokedProvider);
+      ref.invalidate(usersProvider);
+      ref.invalidate(roleAuditProvider);
+      if (context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Restored $restored account${restored == 1 ? '' : 's'}.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Could not restore accounts: ${_cleanError(e)}'),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _changeRole(
     BuildContext context,
     WidgetRef ref,
@@ -292,6 +344,7 @@ class UsersScreen extends ConsumerWidget {
               const SizedBox(height: AppSpacing.lg),
               _RevokedCard(
                 onRestore: (account) => _restore(context, ref, account),
+                onRestoreAll: () => _restoreAll(context, ref),
               ),
               const SizedBox(height: AppSpacing.lg),
               const _RoleHistoryCard(),
@@ -413,8 +466,12 @@ class _RoleHistoryCard extends ConsumerWidget {
 /// back without touching the console.
 class _RevokedCard extends ConsumerWidget {
   final ValueChanged<RevokedAccount> onRestore;
+  final VoidCallback onRestoreAll;
 
-  const _RevokedCard({required this.onRestore});
+  const _RevokedCard({
+    required this.onRestore,
+    required this.onRestoreAll,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -446,6 +503,19 @@ class _RevokedCard extends ConsumerWidget {
                   color: scheme.onSurface.withValues(alpha: 0.45),
                 ),
               ),
+              if (revoked.length > 1) ...[
+                const SizedBox(width: AppSpacing.sm),
+                TextButton.icon(
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    foregroundColor: scheme.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                  ),
+                  onPressed: onRestoreAll,
+                  icon: const Icon(Icons.person_add_alt_1, size: 15),
+                  label: const Text('Restore all'),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: AppSpacing.xs),
