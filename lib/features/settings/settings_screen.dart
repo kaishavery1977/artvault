@@ -11,6 +11,8 @@ import '../../core/widgets/motion.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/app_user.dart';
+import '../../data/models/art_document.dart';
+import '../../data/models/artist.dart';
 import '../../data/models/painting.dart';
 import '../../data/repositories/settings_repository.dart';
 import 'repair_images_screen.dart';
@@ -260,14 +262,20 @@ class SettingsScreen extends ConsumerWidget {
   static String _repairSubtitle(WidgetRef ref) {
     final paintings =
         ref.watch(paintingsProvider).valueOrNull ?? const <Painting>[];
+    final artists =
+        ref.watch(artistsProvider).valueOrNull ?? const <Artist>[];
+    final docs =
+        ref.watch(documentsProvider).valueOrNull ?? const <ArtDocument>[];
     final missing = paintings
-        .where((p) => !p.isDeleted)
-        .where(RepairImagesScreen.needsRepair)
-        .length;
+            .where((p) => !p.isDeleted)
+            .where(RepairImagesScreen.needsRepair)
+            .length +
+        artists.where(RepairImagesScreen.artistPhotoMissing).length +
+        docs.where(RepairImagesScreen.documentMissing).length;
     return switch (missing) {
-      0 => 'All images present',
-      1 => '1 artwork needs an image',
-      _ => '$missing artworks need images',
+      0 => 'All files present',
+      1 => '1 file needs restoring',
+      _ => '$missing files need restoring',
     };
   }
 

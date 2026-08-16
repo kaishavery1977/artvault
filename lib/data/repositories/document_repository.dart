@@ -105,6 +105,25 @@ class DocumentRepository {
     }
   }
 
+  /// Re-imports a user-picked replacement file for a document whose local
+  /// copy was lost (e.g. after a reinstall wiped the vault). Marks the doc
+  /// for re-sync so the new file reaches the cloud on the next connection.
+  Future<void> restoreFile(String id, File file) async {
+    final doc = get(id);
+    if (doc == null) return;
+    final localPath = await FileStorageService.instance.importDocument(
+      file,
+      doc.name,
+    );
+    await _db.put(
+      AppConstants.boxDocuments,
+      id,
+      doc.copyWith(localPath: localPath, needsSync: true).toJson(),
+    );
+    unawaited(_syncDocument(doc.copyWith(localPath: localPath, needsSync: true)));
+    BackupService.instance.scheduleAutoBackup();
+  }
+
   /// Re-downloads attached documents from Storage after a reinstall (local
   /// file gone, [ArtDocument.remoteUrl] survived in Firestore). Skips docs
   /// already on disk. Returns the number of documents restored.

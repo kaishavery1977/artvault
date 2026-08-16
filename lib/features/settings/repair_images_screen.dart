@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,13 +12,23 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../data/models/app_user.dart';
+import '../../data/models/art_document.dart';
+import '../../data/models/artist.dart';
 import '../../data/models/painting.dart';
 import '../../data/repositories/auth_repository.dart';
+import '../../data/repositories/document_repository.dart';
+import '../../data/repositories/artist_repository.dart';
 import '../../data/repositories/painting_repository.dart';
 
-/// Finds paintings whose local image files are missing (e.g. after an app
+/// Finds vault files whose local copies are missing (e.g. after an app
 /// reinstall / uninstall wiped the vault) and walks the user through
-/// re-picking a replacement from the gallery.
+/// re-picking replacements from the gallery / files.
+///
+/// Covers four cases:
+///  - paintings whose image files are gone,
+///  - artists whose profile photos are gone,
+///  - documents whose files are gone,
+///  - the signed-in user's own profile photo.
 class RepairImagesScreen extends ConsumerStatefulWidget {
   const RepairImagesScreen({super.key});
 
@@ -42,6 +53,22 @@ class RepairImagesScreen extends ConsumerStatefulWidget {
     return user.photoPath.isNotEmpty && !File(user.photoPath).existsSync();
   }
 
+  /// An artist needs repair when their photo file is missing and there is no
+  /// remote copy to fall back on.
+  static bool artistPhotoMissing(Artist a) {
+    if (a.isDeleted) return false;
+    if (a.photoUrl.isNotEmpty) return false;
+    return a.photoPath.isNotEmpty && !File(a.photoPath).existsSync();
+  }
+
+  /// A document needs repair when its file is missing and there is no remote
+  /// copy to fall back on.
+  static bool documentMissing(ArtDocument d) {
+    if (d.isDeleted) return false;
+    if (d.remoteUrl.isNotEmpty) return false;
+    return d.localPath.isNotEmpty && !File(d.localPath).existsSync();
+  }
+
   @override
   ConsumerState<RepairImagesScreen> createState() =>
       _RepairImagesScreenState();
@@ -50,7 +77,9 @@ class RepairImagesScreen extends ConsumerStatefulWidget {
 class _RepairImagesScreenState extends ConsumerState<RepairImagesScreen> {
   bool _scanning = true;
   bool _busy = false;
-  List<Painting> _broken = const [];
+  List<Painting> _brokenPaintings = const [];
+  List<Artist> _brokenArtists = const [];
+  List<ArtDocument> _brokenDocs = const [];
 
   @override
   void initState() {
@@ -60,13 +89,22 @@ class _RepairImagesScreenState extends ConsumerState<RepairImagesScreen> {
 
   Future<void> _rescan() async {
     setState(() => _scanning = true);
-    // Let the provider settle before scanning (it may be mid-restore).
+    // Let the providers settle before scanning (they may be mid-restore).
     await Future<void>.delayed(const Duration(milliseconds: 150));
     if (!mounted) return;
-    final all = ref.read(paintingsProvider).valueOrNull ?? const <Painting>[];
+    final paintings =
+        ref.read(paintingsProvider).valueOrNull ?? const <Painting>[];
+    final artists =
+        ref.read(artistsProvider).valueOrNull ?? const <Artist>[];
+    final docs =
+        ref.read(documentsProvider).valueOrNull ?? const <ArtDocument>[];
     setState(() {
-      _broken = all.where(RepairImagesScreen.needsRepair).toList()
+      _brokenPaintings = paintings.where(RepairImagesScreen.needsRepair).toList()
         ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      _brokenArtists = artists.where(RepairImagesScreen.artistPhotoMissing).toList()
+        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      _brokenDocs = docs.where(RepairImagesScreen.documentMissing).toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       _scanning = false;
     });
   }
@@ -106,7 +144,7 @@ class _RepairImagesScreenState extends ConsumerState<RepairImagesScreen> {
     }
   }
 
-  Future<void> _repair(Painting painting) async {
+  Future<void> _repairPainting(Painting painting) async {
     if (_busy) return;
     setState(() => _busy = true);
     try {
@@ -144,13 +182,87 @@ class _RepairImagesScreenState extends ConsumerState<RepairImagesScreen> {
     }
   }
 
+  Future<void> _repairArtist(Artist artist) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final file = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: AppConstants.coverThumbDimension.toDouble(),
+        imageQuality: 85,
+      );
+      if (file == null) return; // cancelled
+
+      await ArtistRepository.instance.save(
+        artist,
+        photoFile: File(file.path),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Photo restored for ${artist.name}'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      await _rescan();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not restore photo: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _repairDocument(ArtDocument doc) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final picked = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'],
+      );
+      if (picked == null || picked.files.isEmpty) return; // cancelled
+      final path = picked.files.single.path;
+      if (path == null) return;
+
+      await DocumentRepository.instance.restoreFile(doc.id, File(path));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('File restored for “${doc.name}”'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      await _rescan();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not restore file: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  int get _totalBroken =>
+      _brokenPaintings.length +
+      _brokenArtists.length +
+      _brokenDocs.length;
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final user = ref.watch(authProvider).user;
-    final total = (ref.watch(paintingsProvider).valueOrNull ?? const <Painting>[])
-        .where((p) => !p.isDeleted)
-        .length;
     final profileMissing = RepairImagesScreen.profilePhotoMissing(user);
 
     return Scaffold(
@@ -174,7 +286,7 @@ class _RepairImagesScreenState extends ConsumerState<RepairImagesScreen> {
                   const SizedBox(width: AppSpacing.xs),
                   Expanded(
                     child: Text(
-                      'Repair images',
+                      'Repair files',
                       style: AppTheme.display(context, size: 26),
                     ),
                   ),
@@ -186,9 +298,11 @@ class _RepairImagesScreenState extends ConsumerState<RepairImagesScreen> {
               child: Text(
                 _scanning
                     ? 'Scanning your vault…'
-                    : _broken.isEmpty && !profileMissing
-                    ? 'All ${total == 1 ? 'artwork' : '$total artworks'} have their images. 🎉'
-                    : '${_broken.length} of $total ${_broken.length == 1 ? 'artwork needs' : 'artworks need'} an image — pick a replacement from your gallery.',
+                    : _totalBroken == 0 && !profileMissing
+                    ? 'Everything has its files. 🎉'
+                    : '${_totalBroken + (profileMissing ? 1 : 0)} '
+                        '${_totalBroken + (profileMissing ? 1 : 0) == 1 ? 'file needs' : 'files need'} '
+                        'a replacement — pick from your gallery or files.',
                 style: TextStyle(
                   fontSize: 13,
                   color: scheme.onSurface.withValues(alpha: 0.6),
@@ -199,8 +313,8 @@ class _RepairImagesScreenState extends ConsumerState<RepairImagesScreen> {
             Expanded(
               child: _scanning
                   ? const Center(child: CircularProgressIndicator())
-                  : (_broken.isEmpty && !profileMissing)
-                  ? _EmptyState(total: total)
+                  : _totalBroken == 0 && !profileMissing
+                  ? const _EmptyState()
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(
                         AppSpacing.md,
@@ -208,93 +322,10 @@ class _RepairImagesScreenState extends ConsumerState<RepairImagesScreen> {
                         AppSpacing.md,
                         AppSpacing.xxl,
                       ),
-                      itemCount: _broken.length + (profileMissing ? 1 : 0),
+                      itemCount: _items.length,
                       separatorBuilder: (_, _) =>
                           const SizedBox(height: AppSpacing.sm),
-                      itemBuilder: (context, index) {
-                        if (profileMissing && index == 0) {
-                          return _ProfilePhotoCard(
-                            user: user!,
-                            busy: _busy,
-                            onFix: _fixProfilePhoto,
-                          );
-                        }
-                        final painting =
-                            _broken[index - (profileMissing ? 1 : 0)];
-                        return GlassCard(
-                          padding: const EdgeInsets.all(AppSpacing.md),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 56,
-                                height: 56,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(
-                                    AppSpacing.radiusCard,
-                                  ),
-                                  color: scheme.surfaceContainerHighest
-                                      .withValues(alpha: 0.5),
-                                ),
-                                child: Icon(
-                                  Icons.broken_image_outlined,
-                                  color: scheme.onSurface.withValues(
-                                    alpha: 0.4,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: AppSpacing.md),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      painting.title,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      painting.artistName.isEmpty
-                                          ? 'No artist'
-                                          : painting.artistName,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: scheme.onSurface.withValues(
-                                          alpha: 0.55,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              FilledButton.tonalIcon(
-                                onPressed: _busy
-                                    ? null
-                                    : () => _repair(painting),
-                                icon: _busy
-                                    ? const SizedBox(
-                                        width: 14,
-                                        height: 14,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Icon(Icons.add_photo_alternate,
-                                        size: 16),
-                                label: const Text('Fix'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+                      itemBuilder: (context, index) => _items[index],
                     ),
             ),
           ],
@@ -302,18 +333,137 @@ class _RepairImagesScreenState extends ConsumerState<RepairImagesScreen> {
       ),
     );
   }
+
+  /// The repair cards in display order: profile photo, then artists, then
+  /// documents, then paintings.
+  List<Widget> get _items {
+    final user = ref.read(authProvider).user;
+    final items = <Widget>[];
+
+    if (RepairImagesScreen.profilePhotoMissing(user)) {
+      items.add(_ProfilePhotoCard(
+        busy: _busy,
+        onFix: _fixProfilePhoto,
+      ));
+    }
+
+    for (final artist in _brokenArtists) {
+      items.add(_RepairCard(
+        icon: Icons.person_off_outlined,
+        title: artist.name,
+        subtitle: 'Artist profile photo missing',
+        busy: _busy,
+        onFix: () => _repairArtist(artist),
+      ));
+    }
+
+    for (final doc in _brokenDocs) {
+      items.add(_RepairCard(
+        icon: Icons.description_outlined,
+        title: doc.name,
+        subtitle: 'Document file missing',
+        busy: _busy,
+        onFix: () => _repairDocument(doc),
+      ));
+    }
+
+    for (final painting in _brokenPaintings) {
+      items.add(_RepairCard(
+        icon: Icons.broken_image_outlined,
+        title: painting.title,
+        subtitle: painting.artistName.isEmpty
+            ? 'Artwork image missing'
+            : '${painting.artistName} — artwork image missing',
+        busy: _busy,
+        onFix: () => _repairPainting(painting),
+      ));
+    }
+
+    return items;
+  }
 }
 
-class _ProfilePhotoCard extends StatelessWidget {
-  final AppUser user;
+class _RepairCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
   final bool busy;
   final VoidCallback onFix;
 
-  const _ProfilePhotoCard({
-    required this.user,
+  const _RepairCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
     required this.busy,
     required this.onFix,
   });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return GlassCard(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+              color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            ),
+            child: Icon(icon, color: scheme.onSurface.withValues(alpha: 0.4)),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurface.withValues(alpha: 0.55),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          FilledButton.tonalIcon(
+            onPressed: busy ? null : onFix,
+            icon: busy
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.add_photo_alternate, size: 16),
+            label: const Text('Fix'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfilePhotoCard extends StatelessWidget {
+  final bool busy;
+  final VoidCallback onFix;
+
+  const _ProfilePhotoCard({required this.busy, required this.onFix});
 
   @override
   Widget build(BuildContext context) {
@@ -381,8 +531,7 @@ class _ProfilePhotoCard extends StatelessWidget {
 }
 
 class _EmptyState extends StatelessWidget {
-  final int total;
-  const _EmptyState({required this.total});
+  const _EmptyState();
 
   @override
   Widget build(BuildContext context) {
@@ -397,15 +546,10 @@ class _EmptyState extends StatelessWidget {
             color: scheme.primary.withValues(alpha: 0.6),
           ),
           const SizedBox(height: AppSpacing.md),
-          Text(
-            'Nothing to repair',
-            style: AppTheme.display(context, size: 20),
-          ),
+          Text('Nothing to repair', style: AppTheme.display(context, size: 20)),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            total == 0
-                ? 'Add an artwork to get started.'
-                : 'Every artwork in your vault has an image.',
+            'Every image and document in your vault is present.',
             style: TextStyle(
               fontSize: 13,
               color: scheme.onSurface.withValues(alpha: 0.55),

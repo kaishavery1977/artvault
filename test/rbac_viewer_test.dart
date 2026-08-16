@@ -10,8 +10,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:artvault/core/providers/providers.dart';
 import 'package:artvault/core/router/app_router.dart';
 import 'package:artvault/data/models/app_user.dart';
+import 'package:artvault/data/models/art_document.dart';
+import 'package:artvault/data/models/artist.dart';
 import 'package:artvault/data/models/painting.dart';
 import 'package:artvault/features/home/home_screen.dart';
+import 'package:artvault/features/settings/repair_images_screen.dart';
 
 import 'helpers.dart';
 
@@ -267,6 +270,63 @@ void main() {
       );
 
       expect(find.textContaining('needs its image back'), findsNothing);
+    });
+  });
+
+  group('repair detection statics', () {
+    test('artist photo missing when file is gone and no remote copy', () {
+      final a = Artist(
+        id: 'a1',
+        name: 'Ravi',
+        photoPath: '/nonexistent/path/photo.jpg',
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+      );
+      expect(RepairImagesScreen.artistPhotoMissing(a), isTrue);
+    });
+
+    test('artist photo fine when remote URL exists or file present', () {
+      final remote = Artist(
+        id: 'a1',
+        name: 'Ravi',
+        photoPath: '/nonexistent/path/photo.jpg',
+        photoUrl: 'https://example.com/photo.jpg',
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+      );
+      expect(RepairImagesScreen.artistPhotoMissing(remote), isFalse);
+      final empty = Artist(
+        id: 'a2',
+        name: 'None',
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+      );
+      expect(RepairImagesScreen.artistPhotoMissing(empty), isFalse);
+    });
+
+    test('document missing when file is gone and no remote copy', () {
+      final d = ArtDocument(
+        id: 'd1',
+        paintingId: 'p1',
+        type: 'Certificate',
+        name: 'cert.pdf',
+        localPath: '/nonexistent/path/cert.pdf',
+        createdAt: DateTime(2026),
+      );
+      expect(RepairImagesScreen.documentMissing(d), isTrue);
+    });
+
+    test('document fine when remote URL exists', () {
+      final d = ArtDocument(
+        id: 'd1',
+        paintingId: 'p1',
+        type: 'Certificate',
+        name: 'cert.pdf',
+        localPath: '/nonexistent/path/cert.pdf',
+        remoteUrl: 'https://example.com/cert.pdf',
+        createdAt: DateTime(2026),
+      );
+      expect(RepairImagesScreen.documentMissing(d), isFalse);
     });
   });
 }
