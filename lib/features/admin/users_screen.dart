@@ -54,7 +54,11 @@ class UsersScreen extends ConsumerWidget {
     if (confirmed != true) return;
 
     try {
-      await AuthRepository.instance.revokeUser(user.uid);
+      await AuthRepository.instance.revokeUser(
+        user.uid,
+        email: user.email,
+        displayName: user.displayName,
+      );
     } catch (e) {
       if (context.mounted) {
         messenger.showSnackBar(
@@ -66,12 +70,66 @@ class UsersScreen extends ConsumerWidget {
       return;
     }
     ref.invalidate(usersProvider);
+    ref.invalidate(revokedProvider);
     ref.invalidate(roleAuditProvider);
     if (context.mounted) {
       messenger.showSnackBar(
         SnackBar(
           content: Text('${user.displayName} was revoked and signed out.'),
         ),
+      );
+    }
+  }
+
+  Future<void> _restore(
+    BuildContext context,
+    WidgetRef ref,
+    RevokedAccount account,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final name = account.displayName.isEmpty ? account.uid : account.displayName;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.person_add_alt_1, size: 32),
+        title: const Text('Restore account?'),
+        content: Text(
+          'Bring $name back?\n\n'
+          'They will be able to sign in again as a curator, and their vault '
+          'data (which was never deleted) will sync back automatically.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Restore'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await AuthRepository.instance.restoreUser(account.uid);
+    } catch (e) {
+      if (context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Could not restore account: ${_cleanError(e)}'),
+          ),
+        );
+      }
+      return;
+    }
+    ref.invalidate(revokedProvider);
+    ref.invalidate(usersProvider);
+    ref.invalidate(roleAuditProvider);
+    if (context.mounted) {
+      messenger.showSnackBar(
+        SnackBar(content: Text('$name can sign in again.')),
       );
     }
   }
@@ -232,6 +290,10 @@ class UsersScreen extends ConsumerWidget {
                   const SizedBox(height: AppSpacing.sm),
               ],
               const SizedBox(height: AppSpacing.lg),
+              _RevokedCard(
+                onRestore: (account) => _restore(context, ref, account),
+              ),
+              const SizedBox(height: AppSpacing.lg),
               const _RoleHistoryCard(),
               const SizedBox(height: AppSpacing.xxl),
             ],
@@ -344,6 +406,100 @@ class _RoleHistoryCard extends ConsumerWidget {
     if (diff.inHours < 1) return '${diff.inMinutes}m ago';
     if (diff.inDays < 1) return '${diff.inHours}h ago';
     return '${diff.inDays}d ago';
+  }
+}
+
+/// Revoked accounts with a one-tap restore, so an admin can bring someone
+/// back without touching the console.
+class _RevokedCard extends ConsumerWidget {
+  final ValueChanged<RevokedAccount> onRestore;
+
+  const _RevokedCard({required this.onRestore});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final revoked = ref.watch(revokedProvider).valueOrNull ?? const [];
+    final scheme = Theme.of(context).colorScheme;
+
+    if (revoked.isEmpty) return const SizedBox.shrink();
+
+    return GlassCard(
+      padding: AppSpacing.cardPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.person_off_outlined, size: 20, color: scheme.error),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                'Revoked accounts',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const Spacer(),
+              Text(
+                '${revoked.length}',
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color: scheme.onSurface.withValues(alpha: 0.45),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          for (final account in revoked)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          account.displayName.isEmpty
+                              ? 'Revoked user'
+                              : account.displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          account.email.isEmpty
+                              ? 'No email on file'
+                              : account.email,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            color: scheme.onSurface.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      foregroundColor: scheme.primary,
+                    ),
+                    onPressed: () => onRestore(account),
+                    icon: const Icon(Icons.person_add_alt_1, size: 15),
+                    label: const Text('Restore'),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 

@@ -396,6 +396,53 @@ final roleAuditProvider = StreamProvider<List<RoleAuditEntry>>((ref) async* {
   );
 });
 
+/// A revoked account marker (`revoked/{uid}`), kept so an admin can see who
+/// was blocked and restore them.
+class RevokedAccount {
+  final String uid;
+  final String email;
+  final String displayName;
+  final String role;
+  final DateTime revokedAt;
+  final String byEmail;
+
+  const RevokedAccount({
+    required this.uid,
+    required this.email,
+    required this.displayName,
+    required this.role,
+    required this.revokedAt,
+    required this.byEmail,
+  });
+
+  factory RevokedAccount.fromJson(Map<String, dynamic> json) =>
+      RevokedAccount(
+        uid: (json['uid'] as String?) ?? '',
+        email: (json['email'] as String?) ?? '',
+        displayName: (json['displayName'] as String?) ?? 'Revoked user',
+        role: (json['role'] as String?) ?? 'unknown',
+        revokedAt:
+            DateTime.tryParse((json['revokedAt'] as String?) ?? '') ??
+            DateTime.now(),
+        byEmail: (json['byEmail'] as String?) ?? '',
+      );
+}
+
+/// Revoked accounts (admin only), newest first — drives the Restore list.
+final revokedProvider = StreamProvider<List<RevokedAccount>>((ref) async* {
+  final cloud = CloudBackend.instance;
+  if (!cloud.isReady) {
+    yield const [];
+    return;
+  }
+  yield* cloud.watchCollection('revoked').map(
+    (list) => list
+        .map(RevokedAccount.fromJson)
+        .toList()
+        ..sort((a, b) => b.revokedAt.compareTo(a.revokedAt)),
+  );
+});
+
 /// On-disk storage usage (bytes) broken down by category.
 class StorageUsage {
   final int images;

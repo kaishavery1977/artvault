@@ -329,12 +329,18 @@ class AuthRepository {
   /// leaves a `revoked/{uid}` marker so the rules refuse to re-create the
   /// profile, and signs them out remotely — the live profile watcher on
   /// their device sees the doc disappear and ends the session immediately.
-  Future<void> revokeUser(String uid) async {
+  ///
+  /// The marker keeps the name/email/role so an admin can later restore the
+  /// account from the Users screen.
+  Future<void> revokeUser(String uid, {String? email, String? displayName}) async {
     final me = cachedUser;
     final oldRole = await _roleOf(uid);
     await CloudBackend.instance.remove('users', uid);
     await CloudBackend.instance.upsert('revoked', uid, {
       'uid': uid,
+      'email': email ?? '',
+      'displayName': displayName ?? '',
+      'role': oldRole,
       'revokedAt': DateTime.now().toIso8601String(),
       'byUid': me.uid,
       'byEmail': me.email,
@@ -355,6 +361,35 @@ class AuthRepository {
     // Drop the local copy if this device happened to be that account.
     if (uid == cachedUser.uid) {
       await signOut();
+    }
+  }
+
+  /// Restores a revoked account: removes the `revoked/{uid}` marker so the
+  /// rules allow the profile to be re-created (curator) on their next
+  /// sign-in, and logs the restore in the audit trail. Vault data was never
+  /// deleted, so everything they owned re-syncs as before.
+  Future<void> restoreUser(String uid) async {
+    final me = cachedUser;
+    // Remember the old role for the audit before deleting the marker.
+    String oldRole = 'revoked';
+    try {
+      final marker = await CloudBackend.instance.fetchDoc('revoked', uid);
+      if (marker != null && marker['role'] is String) {
+        oldRole = marker['role'] as String;
+      }
+    } catch (_) {}
+    await CloudBackend.instance.remove('revoked', uid);
+    try {
+      await CloudBackend.instance.addDoc('role_audit', {
+        'uid': uid,
+        'byUid': me.uid,
+        'byEmail': me.email,
+        'oldRole': oldRole,
+        'newRole': 'restored',
+        'at': DateTime.now().toIso8601String(),
+      });
+    } catch (_) {
+      // Best-effort audit.
     }
   }
 
