@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +13,7 @@ import '../../core/providers/providers.dart';
 import '../../data/models/app_user.dart';
 import '../../data/models/painting.dart';
 import '../../data/repositories/settings_repository.dart';
+import 'repair_images_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -263,15 +262,7 @@ class SettingsScreen extends ConsumerWidget {
         ref.watch(paintingsProvider).valueOrNull ?? const <Painting>[];
     final missing = paintings
         .where((p) => !p.isDeleted)
-        .where(
-          (p) =>
-              p.coverImageUrl.isEmpty &&
-              p.imageUrls.isEmpty &&
-              (p.images.isEmpty ||
-                  p.images.every(
-                    (path) => path.isNotEmpty && !File(path).existsSync(),
-                  )),
-        )
+        .where(RepairImagesScreen.needsRepair)
         .length;
     return switch (missing) {
       0 => 'All images present',

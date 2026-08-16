@@ -18,6 +18,7 @@ import '../../core/providers/providers.dart';
 import '../../data/models/painting.dart';
 import '../../data/repositories/painting_repository.dart';
 import '../gallery/painting_card.dart';
+import '../settings/repair_images_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -34,6 +35,7 @@ class HomeScreen extends ConsumerWidget {
         .toList();
     final recent = [...paintings]
       ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    final missingImages = paintings.where(RepairImagesScreen.needsRepair).length;
     final showLoading =
         paintingsAsync.isLoading && paintingsAsync.valueOrNull == null;
 
@@ -66,6 +68,13 @@ class HomeScreen extends ConsumerWidget {
                           onUpload: () => context.push('/painting/new'),
                         )
                       else ...[
+                        if (missingImages > 0) ...[
+                          _MissingImagesBanner(
+                            count: missingImages,
+                            onTap: () => context.push('/repair-images'),
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                        ],
                         _StatsGrid(stats: stats, canEdit: canEdit),
                         const SizedBox(height: AppSpacing.lg),
                         _StorageCard(stats: stats),
@@ -162,6 +171,66 @@ class _HomeSkeleton extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Warning banner shown when one or more artworks lost their image files
+/// (e.g. after a reinstall wiped the vault). One tap jumps to Repair images.
+class _MissingImagesBanner extends StatelessWidget {
+  final int count;
+  final VoidCallback onTap;
+
+  const _MissingImagesBanner({required this.count, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: AppColors.warning.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Row(
+            children: [
+              Icon(Icons.broken_image_outlined, color: AppColors.warning),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      count == 1
+                          ? '1 artwork needs its image back'
+                          : '$count artworks need their images back',
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Tap to re-pick from your gallery',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: scheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: scheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

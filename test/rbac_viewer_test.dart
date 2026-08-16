@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:artvault/core/providers/providers.dart';
 import 'package:artvault/core/router/app_router.dart';
 import 'package:artvault/data/models/app_user.dart';
+import 'package:artvault/data/models/painting.dart';
 import 'package:artvault/features/home/home_screen.dart';
 
 import 'helpers.dart';
@@ -196,6 +197,76 @@ void main() {
       await pumpHome(tester, AppRole.curator);
 
       expect(find.text('Upload your first painting'), findsOneWidget);
+    });
+  });
+
+  group('home screen missing-images banner', () {
+    Future<void> pumpHomeWith(WidgetTester tester, Painting painting) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ...appOverrides(introShown: true),
+            authProvider.overrideWith(
+              (ref) => FakeAuthController(_auth(AppRole.admin)),
+            ),
+            paintingsProvider.overrideWith(
+              (ref) => Stream.value([painting]),
+            ),
+            artistsProvider.overrideWith((ref) => Stream.value(const [])),
+            documentsProvider.overrideWith((ref) => Stream.value(const [])),
+            notificationsProvider.overrideWith((ref) => Stream.value(const [])),
+            storageUsageProvider.overrideWith(
+              (ref) async =>
+                  const StorageUsage(images: 0, documents: 0, exports: 0),
+            ),
+            deviceStorageProvider.overrideWith((ref) async => null),
+            currencyProvider.overrideWith((ref) => 'USD'),
+          ],
+          child: const MaterialApp(home: HomeScreen()),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+
+    Painting painting({String? coverImagePath, List<String> images = const []}) {
+      final now = DateTime(2026, 1, 1, 12);
+      return Painting(
+        id: 'p1',
+        title: 'Broken Work',
+        artistId: 'a1',
+        artistName: 'Artist',
+        coverImagePath: coverImagePath ?? '',
+        images: images,
+        createdAt: now,
+        updatedAt: now,
+      );
+    }
+
+    testWidgets('shows the banner when an artwork is missing its image',
+        (tester) async {
+      await pumpHomeWith(
+        tester,
+        painting(
+          coverImagePath: '/nonexistent/path/img.jpg',
+          images: ['/nonexistent/path/img.jpg'],
+        ),
+      );
+
+      expect(
+        find.text('1 artwork needs its image back'),
+        findsOneWidget,
+      );
+      expect(find.text('Tap to re-pick from your gallery'), findsOneWidget);
+    });
+
+    testWidgets('no banner when every artwork has its image', (tester) async {
+      await pumpHomeWith(
+        tester,
+        painting(coverImagePath: '', images: const []),
+      );
+
+      expect(find.textContaining('needs its image back'), findsNothing);
     });
   });
 }
