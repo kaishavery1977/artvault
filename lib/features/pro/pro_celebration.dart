@@ -25,9 +25,11 @@ const List<Color> kCelebrationColors = [
 /// feels physical. Each celebration is keyed by [id] and only replays once
 /// per cooldown window (persisted) — unless [replay] is true, which skips
 /// the cooldown so repeatable moments (adding a painting, artist or
-/// document) always celebrate, no matter how often they happen. Ticker-only
-/// (no timers), so tests that end mid-flight stay clean; reduced motion
-/// renders the card statically without confetti.
+/// document) always celebrate, no matter how often they happen. Set
+/// [celebratory] for repeatable add moments: the dialog layers a system
+/// click and a heavier haptic thump under the confetti so the reward feels
+/// more physical. Ticker-only (no timers), so tests that end mid-flight
+/// stay clean; reduced motion renders the card statically without confetti.
 Future<void> showConfettiCelebration(
   BuildContext context, {
   required String id,
@@ -37,6 +39,7 @@ Future<void> showConfettiCelebration(
   String? iconLabel,
   List<Color> colors = kCelebrationColors,
   bool replay = false,
+  bool celebratory = false,
 }) async {
   // Capture everything we need from the context before any async gap, so
   // no BuildContext is touched across the persistence/haptic boundary.
@@ -56,8 +59,17 @@ Future<void> showConfettiCelebration(
   await SettingsRepository.instance.markCelebrated(id);
 
   if (!reduced) {
-    // Haptics are best-effort — fire-and-forget, never block the dialog.
-    unawaited(HapticFeedback.mediumImpact().catchError((_) {}));
+    if (celebratory) {
+      // A richer "reward" feel for repeatable moments: the system click
+      // plus a heavier thump, layered under the confetti burst. Both are
+      // best-effort — fire-and-forget, never block the dialog, and no
+      // timers so widget tests that end mid-flight stay clean.
+      unawaited(SystemSound.play(SystemSoundType.click).catchError((_) {}));
+      unawaited(HapticFeedback.heavyImpact().catchError((_) {}));
+    } else {
+      // Haptics are best-effort — fire-and-forget, never block the dialog.
+      unawaited(HapticFeedback.mediumImpact().catchError((_) {}));
+    }
   }
   // Push through the captured NavigatorState — no BuildContext touched
   // across the async boundary.

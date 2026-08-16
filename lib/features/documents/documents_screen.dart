@@ -181,6 +181,7 @@ class DocumentsScreen extends ConsumerWidget {
         icon: Icons.description,
         iconLabel: 'Saved',
         replay: true,
+        celebratory: true,
       );
     }
   }

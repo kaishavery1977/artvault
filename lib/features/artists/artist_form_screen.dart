@@ -142,6 +142,7 @@ class _ArtistFormScreenState extends ConsumerState<ArtistFormScreen> {
         icon: Icons.person_add,
         iconLabel: 'Saved to collection',
         replay: true,
+        celebratory: true,
       );
       if (!mounted) return;
     }

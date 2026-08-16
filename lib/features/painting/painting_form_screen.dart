@@ -424,6 +424,7 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
           icon: Icons.brush,
           iconLabel: 'Saved to vault',
           replay: true,
+          celebratory: true,
         );
         if (!mounted) return;
       }
