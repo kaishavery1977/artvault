@@ -395,16 +395,21 @@ class AuthRepository {
 
   /// Restores every revoked account at once — removes each `revoked/{uid}`
   /// marker so the rules re-allow those profiles, and logs one audit entry
-  /// per restored account. Returns the number restored.
-  Future<int> restoreAllUsers() async {
+  /// per restored account. Returns `(restored, failed)` so partial failures
+  /// can be surfaced instead of swallowed.
+  Future<({int restored, int failed})> restoreAllUsers() async {
     final me = cachedUser;
     final markers = await CloudBackend.instance
         .watchCollection('revoked')
         .first;
     var restored = 0;
+    var failed = 0;
     for (final marker in markers) {
-      final uid = (marker['uid'] as String?) ?? '';
-      if (uid.isEmpty) continue;
+      final uid = marker['uid'] is String ? marker['uid'] as String : '';
+      if (uid.isEmpty) {
+        failed++;
+        continue;
+      }
       try {
         await CloudBackend.instance.remove('revoked', uid);
         try {
@@ -422,9 +427,10 @@ class AuthRepository {
         restored++;
       } catch (_) {
         // Skip markers that failed; keep restoring the rest.
+        failed++;
       }
     }
-    return restored;
+    return (restored: restored, failed: failed);
   }
 
   /// Sets the subscription tier. Plan changes are admin-only in the rules,

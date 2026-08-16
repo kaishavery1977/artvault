@@ -164,16 +164,18 @@ class UsersScreen extends ConsumerWidget {
     if (confirmed != true) return;
 
     try {
-      final restored = await AuthRepository.instance.restoreAllUsers();
+      final result = await AuthRepository.instance.restoreAllUsers();
       ref.invalidate(revokedProvider);
       ref.invalidate(usersProvider);
       ref.invalidate(roleAuditProvider);
       if (context.mounted) {
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text('Restored $restored account${restored == 1 ? '' : 's'}.'),
-          ),
-        );
+        final msg = result.failed > 0
+            ? 'Restored ${result.restored} of '
+                  '${result.restored + result.failed} accounts '
+                  '(${result.failed} failed).'
+            : 'Restored ${result.restored} '
+                  'account${result.restored == 1 ? '' : 's'}.';
+        messenger.showSnackBar(SnackBar(content: Text(msg)));
       }
     } catch (e) {
       if (context.mounted) {
