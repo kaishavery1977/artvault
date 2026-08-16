@@ -1,7 +1,7 @@
-import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart' show debugPrint, kDebugMode, kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, debugPrint, defaultTargetPlatform, kDebugMode, kIsWeb;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
@@ -49,7 +49,9 @@ class CloudBackend {
   /// App Check" rather than taking the whole cloud offline; the web/desktop
   /// targets keep their defaults until a provider is configured for them.
   Future<void> _activateAppCheck() async {
-    if (kIsWeb || !Platform.isAndroid) return;
+    // defaultTargetPlatform (not dart:io Platform) so this file stays
+    // web-safe — no unconditional native dependency.
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
     try {
       await FirebaseAppCheck.instance.activate(
         providerAndroid: kDebugMode
