@@ -238,6 +238,18 @@ class CloudBackend {
   /// Live list of every registered user's profile (`users/{uid}`).
   Stream<List<Map<String, dynamic>>> watchUsers() => watchCollection('users');
 
+  /// Live stream of a single document, e.g. `users/{uid}` so a role change
+  /// made by an admin applies on the target device immediately instead of
+  /// waiting for the next sign-in.
+  Stream<Map<String, dynamic>?> watchDoc(String collection, String id) {
+    if (!_ready) return const Stream.empty();
+    return FirebaseFirestore.instance
+        .collection(collection)
+        .doc(id)
+        .snapshots()
+        .map((snap) => snap.exists ? snap.data() : null);
+  }
+
   Future<List<Map<String, dynamic>>> fetchUsers() async => fetchAll('users');
 
   // --------------------------------------------------------------- Storage --

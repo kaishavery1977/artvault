@@ -58,13 +58,41 @@ class UsersScreen extends ConsumerWidget {
     );
     if (confirmed != true) return;
 
-    await AuthRepository.instance.updateRole(user.uid, role);
+    try {
+      await AuthRepository.instance.updateRole(user.uid, role);
+    } catch (e) {
+      // e.g. the rules rejected the write (own role not admin in Firestore)
+      // or the network failed — surface the real reason instead of leaving
+      // the admin thinking the change went through.
+      if (context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Could not update role: ${_cleanError(e)}'),
+          ),
+        );
+      }
+      return;
+    }
     ref.invalidate(usersProvider);
     if (context.mounted) {
       messenger.showSnackBar(
         SnackBar(content: Text('${user.displayName} is now ${role.label}.')),
       );
     }
+  }
+
+  /// Turns a Firebase permission/network error into a short readable line.
+  static String _cleanError(Object e) {
+    final msg = e.toString().replaceFirst('Exception: ', '');
+    if (msg.contains('permission-denied') ||
+        msg.contains('Missing or insufficient permissions')) {
+      return 'denied by security rules — your account may not be admin yet.';
+    }
+    if (msg.contains('unavailable') || msg.contains('network')) {
+      return 'network error — check your connection and try again.';
+    }
+    final trimmed = msg.trim();
+    return trimmed.isEmpty ? 'something went wrong' : trimmed;
   }
 
   @override

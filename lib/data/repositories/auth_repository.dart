@@ -245,6 +245,17 @@ class AuthRepository {
 
   // ------------------------------------------------------------------ RBAC --
 
+  /// Persists a profile fetched from the cloud (live role/plan sync) into
+  /// the local cache so the UI reflects remote changes immediately.
+  Future<void> cacheRemoteUser(AppUser user) async {
+    await LocalDatabase.instance.put(
+      AppConstants.boxProfile,
+      'me',
+      user.toJson(),
+    );
+    CloudBackend.instance.setUser(user.uid, user.email);
+  }
+
   Future<void> updateRole(String uid, AppRole role) async {
     await CloudBackend.instance.upsert('users', uid, {'role': role.wire});
     if (uid == cachedUser.uid) {

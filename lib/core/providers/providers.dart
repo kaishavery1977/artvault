@@ -96,6 +96,8 @@ class AuthController extends StateNotifier<AuthState> {
 
   AuthRepository get _repo => AuthRepository.instance;
 
+  StreamSubscription<Map<String, dynamic>?>? _profileSub;
+
   /// Pulls the cloud vault into the local cache after a session is restored
   /// or a fresh sign-in succeeds — a new install or a cleared cache
   /// repopulates on its own instead of showing an empty vault until a manual
@@ -105,13 +107,64 @@ class AuthController extends StateNotifier<AuthState> {
     unawaited(PaintingRepository.instance.syncNow());
   }
 
+  /// Watches this account's `users/{uid}` doc so role/plan changes made by
+  /// an admin (or any remote profile edit) apply on this device immediately
+  /// — the RBAC guards and the whole UI react without a sign-out/sign-in
+  /// cycle or an app restart.
+  void _watchMyProfile(AppUser user) {
+    _profileSub?.cancel();
+    _profileSub = null;
+    if (user.uid.isEmpty) return;
+    try {
+      _profileSub = CloudBackend.instance.watchDoc('users', user.uid).listen(
+        (data) async {
+          if (data == null) return;
+          var remote = AppUser.fromJson(data);
+          if (remote.uid.isEmpty) return;
+          // Older cloud profiles may lack newer fields (e.g. plan). Preserve
+          // the local value for absent keys so a bare doc can't reset a
+          // locally-granted Pro plan or a local avatar path.
+          final local = state.user;
+          if (local != null) {
+            if (data['plan'] == null) {
+              remote = remote.copyWith(plan: local.plan);
+            }
+            if (data['photoPath'] == null && local.photoPath.isNotEmpty) {
+              remote = remote.copyWith(photoPath: local.photoPath);
+            }
+          }
+          await _repo.cacheRemoteUser(remote);
+          state = state.copyWith(user: remote);
+        },
+        onError: (_) {
+          // Offline / not configured — keep the local profile.
+        },
+      );
+    } catch (_) {
+      _profileSub = null;
+    }
+  }
+
+  /// Central auth-success path: set the authenticated state, kick the vault
+  /// sync and start watching the profile for remote role/plan changes.
+  void _onAuthenticated(AppUser user) {
+    state = AuthState(status: AuthStatus.authenticated, user: user);
+    _syncVaultAfterAuth();
+    _watchMyProfile(user);
+  }
+
+  @override
+  void dispose() {
+    _profileSub?.cancel();
+    super.dispose();
+  }
+
   /// Called at startup — restores a remembered/secure session without UI.
   Future<void> bootstrap() async {
     if (await _repo.hasRememberedSession) {
       try {
         final user = await _repo.restoreSession();
-        state = AuthState(status: AuthStatus.authenticated, user: user);
-        _syncVaultAfterAuth();
+        _onAuthenticated(user);
         return;
       } catch (_) {}
     }
@@ -130,8 +183,7 @@ class AuthController extends StateNotifier<AuthState> {
         password,
         remember: remember,
       );
-      state = AuthState(status: AuthStatus.authenticated, user: user);
-      _syncVaultAfterAuth();
+      _onAuthenticated(user);
       return true;
     } catch (e) {
       state = state.copyWith(busy: false, error: _message(e));
@@ -143,8 +195,7 @@ class AuthController extends StateNotifier<AuthState> {
     state = state.copyWith(busy: true, clearError: true);
     try {
       final user = await _repo.register(name, email, password);
-      state = AuthState(status: AuthStatus.authenticated, user: user);
-      _syncVaultAfterAuth();
+      _onAuthenticated(user);
       return true;
     } catch (e) {
       state = state.copyWith(busy: false, error: _message(e));
@@ -156,8 +207,7 @@ class AuthController extends StateNotifier<AuthState> {
     state = state.copyWith(busy: true, clearError: true);
     try {
       final user = await _repo.signInWithGoogle();
-      state = AuthState(status: AuthStatus.authenticated, user: user);
-      _syncVaultAfterAuth();
+      _onAuthenticated(user);
       return true;
     } catch (e) {
       state = state.copyWith(busy: false, error: _message(e));
@@ -169,8 +219,7 @@ class AuthController extends StateNotifier<AuthState> {
     state = state.copyWith(busy: true, clearError: true);
     try {
       final user = await _repo.signInWithApple();
-      state = AuthState(status: AuthStatus.authenticated, user: user);
-      _syncVaultAfterAuth();
+      _onAuthenticated(user);
       return true;
     } catch (e) {
       state = state.copyWith(busy: false, error: _message(e));
@@ -199,6 +248,8 @@ class AuthController extends StateNotifier<AuthState> {
   }
 
   Future<void> signOut() async {
+    _profileSub?.cancel();
+    _profileSub = null;
     await _repo.signOut();
     state = const AuthState(status: AuthStatus.unauthenticated);
   }

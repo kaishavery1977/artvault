@@ -44,6 +44,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _save() async {
+    final me = ref.read(authProvider).user;
+    // Same guard as the Users screen: an admin must not demote their own
+    // account (would lock the organisation out of role management).
+    if (me != null && _role != me.role && me.role == AppRole.admin) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You cannot demote your own account.'),
+          ),
+        );
+      }
+      return;
+    }
     setState(() => _saving = true);
     try {
       await AuthRepository.instance.updateProfile(

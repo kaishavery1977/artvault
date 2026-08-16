@@ -191,9 +191,13 @@ void main() {
     });
 
     test('reminders are per-owner and never leak across users', () async {
+      // Use the real clock (check() has no injectable now): the link expires
+      // a day from now so it always lands in the "expiring" window no matter
+      // when the suite runs.
+      final future = DateTime.now().add(const Duration(days: 1));
       await GalleryLinkReminderService.instance.check(
         'alice',
-        statusLoader: () async => _status(expiresAt: now.add(const Duration(days: 1))),
+        statusLoader: () async => _status(expiresAt: future),
       );
       await GalleryLinkReminderService.instance.check(
         'bob',
