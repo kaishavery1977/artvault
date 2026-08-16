@@ -79,14 +79,24 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Revoked accounts: when an admin revokes a user, a marker doc is left
+    // here so the account can't re-create its profile (remote sign-out).
+    // Only admins can read or manage the markers.
+    match /revoked/{uid} {
+      allow read, create, delete: if isAdmin();
+      allow update: if false;
+    }
+
     // User profiles: readable by every signed-in user (the admin panel lists
     // users, and profile lookups read this collection). Writes are
     // self-service for profile fields; nobody can self-promote to admin
-    // except with a valid bootstrap code.
+    // except with a valid bootstrap code, and revoked accounts cannot
+    // re-create their profile.
     match /users/{uid} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && uid == request.auth.uid
         && request.resource.data.plan == 'free'
+        && !exists(/databases/$(database)/documents/revoked/$(uid))
         && (request.resource.data.role == 'curator'
             || (request.resource.data.role == 'admin'
                 && request.resource.data.bootstrapCode

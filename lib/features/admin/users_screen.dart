@@ -18,6 +18,64 @@ import '../../data/repositories/auth_repository.dart';
 class UsersScreen extends ConsumerWidget {
   const UsersScreen({super.key});
 
+  Future<void> _revoke(
+    BuildContext context,
+    WidgetRef ref,
+    AppUser user,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.block, size: 32),
+        title: const Text('Revoke account?'),
+        content: Text(
+          'Remove ${user.displayName} (${user.email.isEmpty ? 'no email' : user.email}) '
+          'from this vault?\n\n'
+          'Their profile is deleted, they are signed out remotely, and they '
+          'cannot sign back in. Any vault data they own stays in the cloud '
+          'and can be restored by an admin later.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Revoke'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await AuthRepository.instance.revokeUser(user.uid);
+    } catch (e) {
+      if (context.mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Could not revoke account: ${_cleanError(e)}'),
+          ),
+        );
+      }
+      return;
+    }
+    ref.invalidate(usersProvider);
+    ref.invalidate(roleAuditProvider);
+    if (context.mounted) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('${user.displayName} was revoked and signed out.'),
+        ),
+      );
+    }
+  }
+
   Future<void> _changeRole(
     BuildContext context,
     WidgetRef ref,
@@ -164,6 +222,7 @@ class UsersScreen extends ConsumerWidget {
                     user: users[i],
                     isMe: me?.uid == users[i].uid,
                     onRoleChanged: (role) => _changeRole(context, ref, users[i], role),
+                    onRevoke: () => _revoke(context, ref, users[i]),
                   ),
                   i,
                   key: ValueKey(users[i].uid),
@@ -292,11 +351,13 @@ class _UserRow extends StatelessWidget {
   final AppUser user;
   final bool isMe;
   final ValueChanged<AppRole> onRoleChanged;
+  final VoidCallback onRevoke;
 
   const _UserRow({
     required this.user,
     required this.isMe,
     required this.onRoleChanged,
+    required this.onRevoke,
   });
 
   @override
@@ -354,6 +415,16 @@ class _UserRow extends StatelessWidget {
             role: user.role,
             onChanged: isMe ? null : onRoleChanged,
           ),
+          if (!isMe) ...[
+            const SizedBox(width: AppSpacing.xxs),
+            IconButton(
+              tooltip: 'Revoke account',
+              iconSize: 18,
+              color: scheme.error,
+              icon: const Icon(Icons.person_remove_outlined),
+              onPressed: onRevoke,
+            ),
+          ],
         ],
       ),
     );

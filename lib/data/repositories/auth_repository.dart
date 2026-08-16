@@ -239,6 +239,19 @@ class AuthRepository {
     final email = (firebaseUser.email as String?) ?? '';
     final name = (firebaseUser.displayName as String?) ?? 'ArtVault User';
 
+    // A revoked account must not silently come back as a fresh curator.
+    try {
+      final revoked = await CloudBackend.instance.fetchDoc('revoked', uid);
+      if (revoked != null) {
+        throw AuthException(
+          'This account has been revoked by an administrator.',
+        );
+      }
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      // Offline / rules hiccup — fall through and try the profile lookup.
+    }
+
     // Check Firestore for an existing profile (preserves assigned role).
     try {
       final profiles = await CloudBackend.instance.fetchAll('users');
@@ -309,6 +322,40 @@ class AuthRepository {
       if (doc != null && doc['role'] is String) return doc['role'] as String;
     } catch (_) {}
     return 'unknown';
+  }
+
+  /// Revokes a user entirely: deletes their profile document (their vault
+  /// data stays in the cloud and re-syncs if the account is ever restored),
+  /// leaves a `revoked/{uid}` marker so the rules refuse to re-create the
+  /// profile, and signs them out remotely — the live profile watcher on
+  /// their device sees the doc disappear and ends the session immediately.
+  Future<void> revokeUser(String uid) async {
+    final me = cachedUser;
+    final oldRole = await _roleOf(uid);
+    await CloudBackend.instance.remove('users', uid);
+    await CloudBackend.instance.upsert('revoked', uid, {
+      'uid': uid,
+      'revokedAt': DateTime.now().toIso8601String(),
+      'byUid': me.uid,
+      'byEmail': me.email,
+    });
+    // Audit the revocation like a role change, so the history shows it.
+    try {
+      await CloudBackend.instance.addDoc('role_audit', {
+        'uid': uid,
+        'byUid': me.uid,
+        'byEmail': me.email,
+        'oldRole': oldRole,
+        'newRole': 'revoked',
+        'at': DateTime.now().toIso8601String(),
+      });
+    } catch (_) {
+      // Best-effort audit.
+    }
+    // Drop the local copy if this device happened to be that account.
+    if (uid == cachedUser.uid) {
+      await signOut();
+    }
   }
 
   /// Sets the subscription tier. Plan changes are admin-only in the rules,

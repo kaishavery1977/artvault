@@ -118,7 +118,15 @@ class AuthController extends StateNotifier<AuthState> {
     try {
       _profileSub = CloudBackend.instance.watchDoc('users', user.uid).listen(
         (data) async {
-          if (data == null) return;
+          // Profile deleted = the account was revoked by an admin. Sign the
+          // session out on this device right away (remote sign-out).
+          if (data == null) {
+            await signOut();
+            state = state.copyWith(
+              error: 'Your account was revoked by an administrator.',
+            );
+            return;
+          }
           var remote = AppUser.fromJson(data);
           if (remote.uid.isEmpty) return;
           // Older cloud profiles may lack newer fields (e.g. plan). Preserve
