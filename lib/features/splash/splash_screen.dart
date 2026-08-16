@@ -15,11 +15,13 @@ import '../../data/repositories/settings_repository.dart';
 
 /// Cinematic branded launch screen.
 ///
-/// Plays a staged "video" intro — a spotlight blooms behind the logo,
-/// the mark drops in with a rotation settle, the wordmark reveals
-/// letter-by-letter with a gold shimmer sweep, then a pulsing dot loader
-/// hands off to the next screen with a camera-push exit. Everything is
-/// transform/opacity only (no blur), so it stays smooth on budget phones.
+/// Plays the full staged "video" intro on every launch — a spotlight blooms
+/// behind the logo, an expanding shockwave ring lands, the mark drops in
+/// with a rotation settle, the wordmark reveals letter-by-letter with a
+/// gold shimmer sweep, then a pulsing dot loader hands off to the next
+/// screen with a camera-push exit. Everything is transform/opacity only
+/// (no blur), so it stays smooth on budget phones. Reduced motion renders
+/// the mark statically and hands off immediately.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -36,16 +38,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final Animation<double> _exitOpacity;
 
   /// Total intro runtime before the hand-off starts: the full choreography
-  /// on first launch, a short fade on later launches, and a near-static
-  /// render when the system asks for reduced motion.
+  /// on every launch (so the ring + logo entrance always plays), and a
+  /// near-static render when the system asks for reduced motion.
   static const Duration _introFull = Duration(milliseconds: 3400);
-  static const Duration _introQuick = Duration(milliseconds: 700);
   static const Duration _introReduced = Duration(milliseconds: 350);
 
   /// Hold time after the camera-push exit starts (the exit animation runs in
   /// parallel; the hold only paces the router hand-off).
   static const Duration _exitHoldFull = Duration(milliseconds: 560);
-  static const Duration _exitHoldQuick = Duration(milliseconds: 280);
 
   @override
   void initState() {
@@ -67,14 +67,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (!mounted) return;
 
     // Pick the presentation before the intro timer starts so the delay is
-    // exact. The flag never changes during the splash's lifetime.
+    // exact. The full choreography plays on every launch — reduced motion
+    // is the only case that skips it (for a near-static hold).
     final reducedMotion = MediaQuery.disableAnimationsOf(context);
-    final quick = !reducedMotion && ref.read(splashIntroShownProvider);
-    final present = reducedMotion
-        ? _introReduced
-        : quick
-            ? _introQuick
-            : _introFull;
+    final present = reducedMotion ? _introReduced : _introFull;
 
     // Restore session / check remember-me while the intro plays, so the
     // animation is never gated on the network.
@@ -110,20 +106,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     }
     if (!mounted) return;
 
-    // First full play-through: remember it so later launches get the quick
-    // intro instead of the whole choreography again. Best-effort — a storage
-    // hiccup must never block the hand-off (worst case: the full intro plays
-    // once more on the next launch).
-    if (!reducedMotion && !quick) {
-      try {
-        await SettingsRepository.instance.setSplashIntroShown();
-        ref.read(splashIntroShownProvider.notifier).state = true;
-      } catch (_) {
-        // Non-critical — see comment above.
-      }
-    }
-    if (!mounted) return;
-
     // Reduced motion: hand off straight away — no camera-push exit.
     if (reducedMotion) {
       context.go(target);
@@ -132,7 +114,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     // Camera-push exit, then hand off to the next screen.
     _exit.forward();
-    await Future<void>.delayed(quick ? _exitHoldQuick : _exitHoldFull);
+    await Future<void>.delayed(_exitHoldFull);
     if (!mounted) return;
     context.go(target);
   }
@@ -149,7 +131,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final fg = isDark ? AppColors.darkText : AppColors.lightText;
     final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final reducedMotion = MediaQuery.disableAnimationsOf(context);
-    final quick = !reducedMotion && ref.watch(splashIntroShownProvider);
 
     final mark = _LogoMark();
     final Widget content;
@@ -167,55 +148,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           ),
         ],
       );
-    } else if (quick) {
-      // Return launch: the logo still does its video-like entrance — the
-      // spotlight blooms behind it and the mark drops in with a rotation
-      // settle — compressed to fit the short intro. Only the letter
-      // stagger, shimmer, tagline and dot loader are skipped.
-      content = Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 200,
-            height: 200,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Soft gold spotlight blooming open behind the mark.
-                _Spotlight()
-                    .animate()
-                    .scaleXY(
-                      begin: 0.25,
-                      end: 1,
-                      duration: 500.ms,
-                      curve: Curves.easeOutCubic,
-                    )
-                    .fadeIn(duration: 400.ms),
-                // The logo tile dropping in with a rotation settle.
-                _LogoMark()
-                    .animate(delay: 100.ms)
-                    .scaleXY(
-                      begin: 0.4,
-                      end: 1,
-                      duration: 450.ms,
-                      curve: Curves.easeOutBack,
-                    )
-                    .rotate(
-                      begin: -0.12,
-                      end: 0,
-                      duration: 450.ms,
-                      curve: Curves.easeOutCubic,
-                    )
-                    .fadeIn(duration: 350.ms),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          _StaggeredWordmark(color: fg, quick: true),
-        ],
-      );
     } else {
-      // First launch: the full choreography.
+      // Every launch: the full choreography — spotlight, shockwave ring,
+      // logo settle, letter-by-letter wordmark with the gold shimmer,
+      // tagline, and the pulsing dot loader.
       content = Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -395,14 +331,10 @@ class _Spotlight extends StatelessWidget {
 }
 
 /// "ArtVault" revealed one letter at a time, sliding up from below.
-///
-/// With [quick] set, letters just fade in close together (no movement) —
-/// used by the return-launch intro.
 class _StaggeredWordmark extends StatelessWidget {
   final Color color;
-  final bool quick;
 
-  const _StaggeredWordmark({required this.color, this.quick = false});
+  const _StaggeredWordmark({required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -418,15 +350,10 @@ class _StaggeredWordmark extends StatelessWidget {
                 word[i],
                 style:
                     AppTheme.display(context, size: 40).copyWith(color: color),
-              ).animate(delay: (quick ? 120 : 900 + i * 90).ms);
-              return quick
-                  ? letter.fadeIn(
-                      duration: 400.ms,
-                      curve: Curves.easeOutCubic,
-                    )
-                  : letter
-                      .slideY(begin: 0.6)
-                      .fadeIn(duration: 600.ms, curve: Curves.easeOutCubic);
+              ).animate(delay: (900 + i * 90).ms);
+              return letter
+                  .slideY(begin: 0.6)
+                  .fadeIn(duration: 600.ms, curve: Curves.easeOutCubic);
             },
           ),
       ],

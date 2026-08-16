@@ -20,6 +20,7 @@ import '../../core/widgets/app_fields.dart';
 import '../../core/widgets/art_image.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
+import '../../features/pro/pro_celebration.dart';
 import '../../features/pro/upgrade_prompt.dart';
 import '../../data/models/artist.dart';
 import '../../data/models/painting.dart';
@@ -411,6 +412,21 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
     }
 
     if (mounted) {
+      // New artworks always get the full celebration — every addition is
+      // its own moment, so the confetti replays no matter how often the
+      // user adds (replay skips the once-per-cooldown suppression).
+      if (isNew) {
+        await showConfettiCelebration(
+          context,
+          id: 'painting-added',
+          title: 'Painting added!',
+          message: '\u201c${painting.title}\u201d is now part of your vault.',
+          icon: Icons.brush,
+          iconLabel: 'Saved to vault',
+          replay: true,
+        );
+        if (!mounted) return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(isEdit ? 'Painting updated' : 'Painting added to your vault')),
       );

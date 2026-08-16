@@ -15,6 +15,7 @@ import '../../core/widgets/motion.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
+import '../../features/pro/pro_celebration.dart';
 import '../../features/pro/upgrade_prompt.dart';
 import '../../data/models/art_document.dart';
 import '../../data/models/painting.dart';
@@ -169,6 +170,19 @@ class DocumentsScreen extends ConsumerWidget {
       name: file.name,
       file: File(path),
     );
+    if (context.mounted) {
+      // Every new document celebrates (replay skips the cooldown so adding
+      // several documents in a row all fire confetti).
+      await showConfettiCelebration(
+        context,
+        id: 'document-added',
+        title: 'Document added!',
+        message: '\u201c${file.name}\u201d is attached to ${painting.title}.',
+        icon: Icons.description,
+        iconLabel: 'Saved',
+        replay: true,
+      );
+    }
   }
 
   static Future<Painting?> _pickPainting(BuildContext context, List<Painting> paintings) async {

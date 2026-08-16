@@ -45,11 +45,12 @@ List<Override> appOverrides({required bool introShown}) => [
       authProvider.overrideWith((ref) => FakeAuthController()),
     ];
 
-/// Pumps through the quick splash (repeat-launch intro) into onboarding,
-/// draining the route transition and the incoming page's mount timers.
+/// Pumps through the full splash intro (played on every launch) into
+/// onboarding, draining the exit hold, the route transition and the
+/// incoming page's mount timers.
 Future<void> pumpToOnboarding(WidgetTester tester) async {
   await tester.pump(); // splash first frame
-  await tester.pump(const Duration(milliseconds: 750)); // quick intro done
-  await tester.pump(const Duration(milliseconds: 1200)); // hand-off + transition
-  await tester.pump(const Duration(milliseconds: 900)); // drain mount timers
+  await tester.pump(const Duration(milliseconds: 2400)); // intro part 1
+  await tester.pump(const Duration(milliseconds: 1600)); // intro + exit hold
+  await tester.pump(const Duration(milliseconds: 900)); // hand-off + drain mount timers
 }

@@ -5,6 +5,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:artvault/data/repositories/settings_repository.dart';
+import 'package:artvault/features/pro/pro_celebration.dart';
 
 import 'hive_test_harness.dart';
 
@@ -71,6 +72,24 @@ void main() {
     // The most recently marked celebration sorts first, every time.
     expect(history.first['id'], 'tie-4');
     expect(history.last['id'], 'tie-0');
+  });
+
+  test('replay moments always fire, cooldown suppresses the rest', () {
+    // replay (adds): celebrate even when the same id fired recently.
+    expect(
+      shouldFireCelebration(replay: true, wasCelebratedRecently: true),
+      isTrue,
+    );
+    // Not celebrated yet: fires normally.
+    expect(
+      shouldFireCelebration(replay: false, wasCelebratedRecently: false),
+      isTrue,
+    );
+    // Celebrated within the cooldown and not replay: suppressed.
+    expect(
+      shouldFireCelebration(replay: false, wasCelebratedRecently: true),
+      isFalse,
+    );
   });
 }
 

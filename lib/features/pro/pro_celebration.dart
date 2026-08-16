@@ -23,10 +23,11 @@ const List<Color> kCelebrationColors = [
 /// Reusable full-screen celebration: a burst of brand-colored confetti
 /// behind a glass card that springs in, plus a haptic thump so the moment
 /// feels physical. Each celebration is keyed by [id] and only replays once
-/// per cooldown window (persisted), so relaunching or re-tapping the same
-/// moment never dumps confetti every time. Ticker-only (no timers), so
-/// tests that end mid-flight stay clean; reduced motion renders the card
-/// statically without confetti.
+/// per cooldown window (persisted) — unless [replay] is true, which skips
+/// the cooldown so repeatable moments (adding a painting, artist or
+/// document) always celebrate, no matter how often they happen. Ticker-only
+/// (no timers), so tests that end mid-flight stay clean; reduced motion
+/// renders the card statically without confetti.
 Future<void> showConfettiCelebration(
   BuildContext context, {
   required String id,
@@ -35,15 +36,23 @@ Future<void> showConfettiCelebration(
   IconData icon = Icons.workspace_premium,
   String? iconLabel,
   List<Color> colors = kCelebrationColors,
+  bool replay = false,
 }) async {
   // Capture everything we need from the context before any async gap, so
   // no BuildContext is touched across the persistence/haptic boundary.
   final reduced = MediaQuery.disableAnimationsOf(context);
   final navigator = Navigator.of(context, rootNavigator: true);
 
-  // Already celebrated recently? Skip the whole moment silently — the
-  // user has seen it and doesn't need it replayed.
-  if (SettingsRepository.instance.wasCelebratedRecently(id)) return;
+  // Already celebrated recently? Skip the whole moment silently — the user
+  // has seen it and doesn't need it replayed. [replay] moments (adds) are
+  // the exception: every one is a fresh achievement worth celebrating.
+  if (!shouldFireCelebration(
+    replay: replay,
+    wasCelebratedRecently:
+        SettingsRepository.instance.wasCelebratedRecently(id),
+  )) {
+    return;
+  }
   await SettingsRepository.instance.markCelebrated(id);
 
   if (!reduced) {
@@ -74,6 +83,15 @@ Future<void> showConfettiCelebration(
     ),
   );
 }
+
+/// Whether a celebration should fire: [replay] moments (adding a painting,
+/// artist or document) always fire — every one is a fresh achievement —
+/// while other moments respect the once-per-cooldown suppression.
+bool shouldFireCelebration({
+  required bool replay,
+  required bool wasCelebratedRecently,
+}) =>
+    replay || !wasCelebratedRecently;
 
 /// Shorthand for the Pro-unlock celebration (kept for call-site clarity).
 Future<void> showProCelebration(BuildContext context) {

@@ -1,6 +1,6 @@
-// Widget tests for the branded boot sequence: full cinematic splash on first
-// launch, quick intro on repeat launches, and a static render when the system
-// requests reduced motion.
+// Widget tests for the branded boot sequence: the full cinematic splash
+// (shockwave ring + letter stagger) on every launch, and a static render
+// when the system requests reduced motion.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,7 +42,8 @@ void main() {
     expect(find.text('Curate Your Collection'), findsOneWidget);
   });
 
-  testWidgets('Repeat launches get the quick intro', (WidgetTester tester) async {
+  testWidgets('Every launch plays the full cinematic intro',
+      (WidgetTester tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: appOverrides(introShown: true),
@@ -51,10 +52,9 @@ void main() {
     );
     await tester.pump();
 
-    // Quick variant: the logo mark still does its video-like entrance
-    // (spotlight bloom + drop-in) and the wordmark fades — only the
-    // cinematic extras (tagline, dot loader) are skipped.
-    expect(find.text('Your Private Gallery'), findsNothing);
+    // The full choreography is not a first-launch treat: repeat launches
+    // get the shockwave ring, tagline and dot loader too.
+    expect(find.text('Your Private Gallery'), findsOneWidget);
     // Mid-intro: the palette mark and the first letters are on screen.
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.byIcon(Icons.palette), findsOneWidget);

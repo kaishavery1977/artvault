@@ -9,6 +9,7 @@ import '../../core/constants/pro_limits.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/validators.dart';
 import '../../core/providers/providers.dart';
+import '../../features/pro/pro_celebration.dart';
 import '../../features/pro/upgrade_prompt.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_fields.dart';
@@ -130,6 +131,20 @@ class _ArtistFormScreenState extends ConsumerState<ArtistFormScreen> {
 
     await ArtistRepository.instance.save(artist, photoFile: _photo);
     if (!mounted) return;
+    // New artists always get the celebration (replay skips the cooldown so
+    // every addition fires confetti, however frequent).
+    if (isNew) {
+      await showConfettiCelebration(
+        context,
+        id: 'artist-added',
+        title: 'Artist added!',
+        message: '${artist.name} is now in your artists.',
+        icon: Icons.person_add,
+        iconLabel: 'Saved to collection',
+        replay: true,
+      );
+      if (!mounted) return;
+    }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(isEdit ? 'Artist updated' : 'Artist added')),
     );
