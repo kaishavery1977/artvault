@@ -139,8 +139,10 @@ void main() {
             expiresAt: now.add(const Duration(days: 2)),
           );
 
-      await GalleryLinkReminderService.instance.check('u1', statusLoader: loader);
-      await GalleryLinkReminderService.instance.check('u1', statusLoader: loader);
+      await GalleryLinkReminderService.instance
+          .check('u1', statusLoader: loader, now: now);
+      await GalleryLinkReminderService.instance
+          .check('u1', statusLoader: loader, now: now);
 
       final all = NotificationRepository.instance.all();
       expect(all.where((n) => n.id == 'gallery-link-expiring-u1').length, 1);
@@ -152,6 +154,7 @@ void main() {
         statusLoader: () async => _status(
           expiresAt: now.add(const Duration(days: 2)),
         ),
+        now: now,
       );
       expect(
         NotificationRepository.instance.all().map((n) => n.id),
@@ -161,6 +164,7 @@ void main() {
       await GalleryLinkReminderService.instance.check(
         'u1',
         statusLoader: () async => _status(expiresAt: now.subtract(const Duration(days: 1))),
+        now: now,
       );
 
       final ids = NotificationRepository.instance.all().map((n) => n.id).toSet();
@@ -191,13 +195,14 @@ void main() {
     });
 
     test('reminders are per-owner and never leak across users', () async {
-      // Use the real clock (check() has no injectable now): the link expires
-      // a day from now so it always lands in the "expiring" window no matter
-      // when the suite runs.
-      final future = DateTime.now().add(const Duration(days: 1));
+      // Pin the clock so the link always lands in the "expiring" window
+      // no matter when the suite runs.
       await GalleryLinkReminderService.instance.check(
         'alice',
-        statusLoader: () async => _status(expiresAt: future),
+        statusLoader: () async => _status(
+          expiresAt: now.add(const Duration(days: 1)),
+        ),
+        now: now,
       );
       await GalleryLinkReminderService.instance.check(
         'bob',

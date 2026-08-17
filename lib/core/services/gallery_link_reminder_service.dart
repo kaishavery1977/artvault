@@ -93,10 +93,12 @@ class GalleryLinkReminderService {
   /// link state. Best-effort and safe to fire-and-forget.
   ///
   /// [statusLoader] is injectable for tests; production callers use the
-  /// default (the real link status, gated on the cloud being ready).
+  /// default (the real link status, gated on the cloud being ready). [now]
+  /// pins the clock for tests; production callers use the real time.
   Future<void> check(
     String uid, {
     Future<PublicGalleryStatus?> Function()? statusLoader,
+    DateTime? now,
   }) async {
     if (uid.isEmpty) return;
     if (statusLoader == null) {
@@ -105,10 +107,10 @@ class GalleryLinkReminderService {
     }
     try {
       final status = await statusLoader();
-      final reminder = reminderFor(status);
+      final current = now ?? DateTime.now();
+      final reminder = reminderFor(status, now: current);
       final repo = NotificationRepository.instance;
       final existing = repo.all().map((n) => n.id).toSet();
-      final current = DateTime.now();
 
       if (reminder == GalleryLinkReminder.none) {
         if (existing.contains(_expiringId(uid))) {
