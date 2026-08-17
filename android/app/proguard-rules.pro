@@ -27,3 +27,12 @@
 # Keep ML Kit vision
 -keep class com.google.mlkit.vision.** { *; }
 -dontwarn com.google.mlkit.vision.**
+
+# Razorpay checkout (required by razorpay_flutter / the Razorpay Android SDK)
+-keepattributes *Annotation*
+-dontwarn com.razorpay.**
+-keep class com.razorpay.** { *; }
+-optimizations !method/inlining/
+-keepclasseswithmembers class * {
+    public void onPayment*(...);
+}

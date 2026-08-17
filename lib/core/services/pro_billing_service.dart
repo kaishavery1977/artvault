@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 /// Real in-app purchase for ArtVault Pro using the official
@@ -21,9 +22,16 @@ class ProBillingService {
 
   final InAppPurchase _iap = InAppPurchase.instance;
 
+  /// Test hook: forces [isAvailable] to report the store as unavailable so
+  /// widget tests can exercise the no-store paths deterministically (the
+  /// host platform in tests reports "available" by default).
+  @visibleForTesting
+  static bool debugForceStoreUnavailable = false;
+
   /// True when the store is reachable on this device (Play Billing /
   /// StoreKit available and the app is installed via the store).
   Future<bool> get isAvailable async {
+    if (debugForceStoreUnavailable) return false;
     try {
       return await _iap.isAvailable();
     } catch (_) {
@@ -47,18 +55,20 @@ class ProBillingService {
   }
 
   /// Starts a purchase for the given product and waits for the outcome.
-  /// Returns null when the user cancelled; [ProPurchaseResult.error] on any
-  /// failure; [ProPurchaseResult.purchased] on success.
-  Future<ProPurchaseResult?> buy(ProductDetails product) async {
-    final completer = Completer<ProPurchaseResult?>();
+  /// Returns null when the user cancelled; an outcome carrying
+  /// [ProPurchaseResult.error] on any failure; [ProPurchaseResult.purchased]
+  /// on success. The outcome also carries the store's purchase token so the
+  /// caller can verify the purchase server-side before granting the plan.
+  Future<ProPurchaseOutcome?> buy(ProductDetails product) async {
+    final completer = Completer<ProPurchaseOutcome?>();
     late final StreamSubscription<List<PurchaseDetails>> sub;
     var settled = false;
 
-    void settle(ProPurchaseResult? result) {
+    void settle(ProPurchaseOutcome? outcome) {
       if (settled) return;
       settled = true;
       sub.cancel();
-      if (!completer.isCompleted) completer.complete(result);
+      if (!completer.isCompleted) completer.complete(outcome);
     }
 
     sub = _iap.purchaseStream.listen((details) {
@@ -68,18 +78,23 @@ class ProBillingService {
           case PurchaseStatus.purchased:
           case PurchaseStatus.restored:
             _iap.completePurchase(purchase);
-            settle(ProPurchaseResult.purchased);
+            settle(ProPurchaseOutcome(
+              ProPurchaseResult.purchased,
+              // The token the Play Developer API validates (purchase token
+              // on Android; the app receipt on iOS).
+              purchaseToken: purchase.verificationData.serverVerificationData,
+            ));
           case PurchaseStatus.pending:
             // A pending payment must NOT cancel the attempt — the store may
             // still confirm it later; keep listening.
             break;
           case PurchaseStatus.error:
-            settle(ProPurchaseResult.error);
+            settle(const ProPurchaseOutcome(ProPurchaseResult.error));
           case PurchaseStatus.canceled:
             settle(null);
         }
       }
-    }, onError: (_) => settle(ProPurchaseResult.error));
+    }, onError: (_) => settle(const ProPurchaseOutcome(ProPurchaseResult.error)));
 
     try {
       final param = PurchaseParam(
@@ -88,20 +103,20 @@ class ProBillingService {
       );
       await _iap.buyNonConsumable(purchaseParam: param);
     } catch (_) {
-      settle(ProPurchaseResult.error);
+      settle(const ProPurchaseOutcome(ProPurchaseResult.error));
     }
 
     // Timeout guard: if the store dialog never emits an event, don't hang
     // the UI forever — and always settle (cancel the subscription) on the
     // way out so the attempt can never leak a listener.
-    final result = await completer.future.timeout(
+    final outcome = await completer.future.timeout(
       const Duration(minutes: 3),
       onTimeout: () {
-        settle(ProPurchaseResult.error);
-        return ProPurchaseResult.error;
+        settle(const ProPurchaseOutcome(ProPurchaseResult.error));
+        return const ProPurchaseOutcome(ProPurchaseResult.error);
       },
     );
-    return result;
+    return outcome;
   }
 
   /// Restores previous purchases (new device / reinstall). Returns true
@@ -149,6 +164,19 @@ class ProBillingService {
       },
     );
   }
+}
+
+/// Outcome of a purchase attempt, including the store's purchase token so
+/// the plan grant can be verified server-side (the Firestore rules reject
+/// a non-admin self-grant).
+class ProPurchaseOutcome {
+  final ProPurchaseResult result;
+
+  /// The provider's verification token (Play purchase token on Android, the
+  /// app receipt on iOS). Empty when the outcome is not a purchase.
+  final String purchaseToken;
+
+  const ProPurchaseOutcome(this.result, {this.purchaseToken = ''});
 }
 
 /// Outcome of a purchase attempt.

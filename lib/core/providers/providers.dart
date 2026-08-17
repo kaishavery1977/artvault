@@ -338,6 +338,19 @@ class AuthController extends StateNotifier<AuthState> {
     await refreshProfile();
   }
 
+  /// Applies a plan grant that was verified and written **server-side**
+  /// (Cloud Function with the Admin SDK). The client must not rewrite the
+  /// plan here — the Firestore rules reject a non-admin self plan-change, so
+  /// a legitimate buyer would otherwise be blocked right after paying. We
+  /// only update the local cache + state; the live profile watcher
+  /// reconciles with the server document.
+  Future<void> applyServerPlanGrant(AppPlan plan) async {
+    final user = state.user;
+    if (user == null) return;
+    await _repo.cacheRemoteUser(user.copyWith(plan: plan));
+    state = state.copyWith(user: user.copyWith(plan: plan));
+  }
+
   /// Reloads the signed-in profile from local storage so edits (avatar,
   /// display name, bio, role) appear immediately in the UI.
   Future<void> refreshProfile() async {

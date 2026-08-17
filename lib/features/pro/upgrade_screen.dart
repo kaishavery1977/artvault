@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 import '../../core/constants/pro_limits.dart';
+import '../../core/services/play_purchase_verifier.dart';
 import '../../core/services/pro_billing_service.dart';
+import '../../core/services/razorpay_payment_service.dart';
 import '../../core/theme/app_spacing.dart';
 import 'pro_celebration.dart';
 import '../../core/theme/app_theme.dart';
@@ -17,9 +19,15 @@ import '../../data/models/app_user.dart' show AppPlan;
 /// In-app upgrade screen. The primary path is a real purchase through the
 /// device store ([ProBillingService]); the plan flag is written to Firestore
 /// (admin-gated by the rules) and cached locally so the entitlement works
-/// offline-first exactly like roles. When the store isn't configured yet
-/// (debug builds, sideloaded APKs), it falls back to the preview unlock so
-/// the flow is never a dead end.
+/// offline-first exactly like roles.
+///
+/// When the store isn't configured yet (debug builds, sideloaded APKs), the
+/// screen offers a real Razorpay checkout (UPI / cards / netbanking) when
+/// `--dart-define=RAZORPAY_KEY_ID` is set — the payment is verified by a
+/// Cloud Function before the plan is granted. Only when no payment path
+/// exists at all does a *clearly labelled* developer preview unlock appear
+/// behind an explicit confirmation dialog (debug builds only; never in
+/// release).
 class UpgradeScreen extends ConsumerStatefulWidget {
   const UpgradeScreen({super.key});
 
@@ -32,6 +40,10 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
   bool _restoring = false;
   ProductDetails? _product;
   bool _storeUnavailable = false;
+
+  /// Razorpay billing mode (one-time unlock vs monthly subscription); only
+  /// shown when the Razorpay payment path is active.
+  RazorpayBillingMode _billingMode = RazorpayBillingMode.oneTime;
 
   @override
   void initState() {
@@ -59,11 +71,33 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
     if (product == null || _busy) return;
     setState(() => _busy = true);
     try {
-      final result = await ProBillingService.instance.buy(product);
+      final outcome = await ProBillingService.instance.buy(product);
       if (!mounted) return;
-      switch (result) {
+      switch (outcome?.result) {
         case ProPurchaseResult.purchased:
-          await ref.read(authProvider.notifier).updatePlan(AppPlan.pro);
+          // The Firestore rules only let an admin change a user's plan, so
+          // a Play buyer (usually not an admin) must be granted server-side
+          // after the Cloud Function validates the purchase token.
+          final verified = await PlayPurchaseVerifier.instance.verify(
+            productId: product.id,
+            purchaseToken: outcome?.purchaseToken ?? '',
+          );
+          if (verified != ProPurchaseResult.purchased) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Payment received, but it could not be verified yet. '
+                    'It will activate once verified.',
+                  ),
+                ),
+              );
+            }
+            break;
+          }
+          await ref.read(authProvider.notifier).applyServerPlanGrant(
+            AppPlan.pro,
+          );
           if (!mounted) return;
           // Celebratory moment before returning to the app.
           await showProCelebration(context);
@@ -106,16 +140,66 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
     );
   }
 
-  /// Preview unlock used when the store isn't configured on this build.
-  /// Debug-only escape hatch: in a release build there is no real payment
-  /// path, so granting Pro here would hand out a paid entitlement for free.
-  Future<void> _previewUnlock() async {
+  /// Razorpay checkout (UPI / cards / netbanking) for builds where the
+  /// store isn't available. The payment is verified by the Cloud Function
+  /// backend before the plan is granted. [monthly] chooses the recurring
+  /// subscription instead of the one-time unlock.
+  Future<void> _buyRazorpay({bool monthly = false}) async {
+    final user = ref.read(authProvider).user;
+    if (user == null || _busy) return;
+    setState(() => _busy = true);
+    try {
+      final result = await RazorpayPaymentService.instance.checkout(
+        uid: user.uid,
+        email: user.email,
+        name: user.displayName,
+        mode: monthly
+            ? RazorpayBillingMode.monthly
+            : RazorpayBillingMode.oneTime,
+      );
+      if (!mounted) return;
+      switch (result) {
+        case ProPurchaseResult.purchased:
+          // The backend wrote the plan with the Admin SDK (verified
+          // signature); reflect the grant locally — the live profile
+          // watcher reconciles with the server document.
+          await ref.read(authProvider.notifier).applyServerPlanGrant(
+            AppPlan.pro,
+          );
+          if (!mounted) return;
+          await showProCelebration(context);
+          if (!mounted) return;
+          context.pop();
+        case ProPurchaseResult.pending:
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Waiting for payment confirmation…')),
+          );
+        case ProPurchaseResult.error:
+        case ProPurchaseResult.unavailable:
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Payment could not be completed. Please try again.'),
+            ),
+          );
+        case null:
+          // Cancelled by the user — silent.
+          break;
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// Developer preview unlock, only reachable through an explicit
+  /// confirmation dialog on debug builds. Never grants Pro in release — a
+  /// paid entitlement must not be handed out for free in a shipped build.
+  Future<void> _confirmPreviewUnlock() async {
     if (kReleaseMode) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'The store isn\'t configured on this build yet. '
+              'No payment method is configured on this build yet. '
               'Purchases will be available once the app is published.',
             ),
           ),
@@ -123,6 +207,29 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
       }
       return;
     }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.developer_mode, size: 32),
+        title: const Text('Developer preview unlock?'),
+        content: const Text(
+          'This build has no payment method configured, so this is a free '
+          'developer preview — no payment is processed. '
+          'Activate Pro for testing?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Activate preview'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
     await ref.read(authProvider.notifier).updatePlan(AppPlan.pro);
     if (!mounted) return;
     // Same celebration as a real purchase — the entitlement is now live.
@@ -257,20 +364,63 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                   label: const Text('Processing…'),
                 )
               else ...[
+                // Payment paths, in priority order: the device store when
+                // available, then Razorpay (sideloaded builds), then — only
+                // on debug builds, behind a confirmation dialog — the free
+                // developer preview unlock.
+                if (_storeUnavailable &&
+                    RazorpayPaymentService.instance.isConfigured) ...[
+                  SegmentedButton<RazorpayBillingMode>(
+                    showSelectedIcon: false,
+                    segments: const [
+                      ButtonSegment(
+                        value: RazorpayBillingMode.oneTime,
+                        icon: Icon(Icons.bolt, size: 16),
+                        label: Text('One-time'),
+                      ),
+                      ButtonSegment(
+                        value: RazorpayBillingMode.monthly,
+                        icon: Icon(Icons.repeat, size: 16),
+                        label: Text('Monthly'),
+                      ),
+                    ],
+                    selected: {_billingMode},
+                    onSelectionChanged: (selection) {
+                      setState(() => _billingMode = selection.first);
+                    },
+                    style: SegmentedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                ],
                 // The CTA breathes gently so the paid moment feels alive.
-                // In release builds the store-unavailable path is disabled:
-                // the preview unlock is debug-only and must never grant Pro
-                // in a shipped build.
                 _GlowPulse(
                   color: scheme.primary,
                   child: FilledButton.icon(
-                    onPressed: _storeUnavailable
-                        ? (kReleaseMode ? null : _previewUnlock)
-                        : (_busy ? null : _buy),
+                    onPressed: _busy
+                        ? null
+                        : _storeUnavailable
+                        ? (RazorpayPaymentService.instance.isConfigured
+                              ? () => _buyRazorpay(
+                                    monthly:
+                                        _billingMode ==
+                                        RazorpayBillingMode.monthly,
+                                  )
+                              : _confirmPreviewUnlock)
+                        : _buy,
                     icon: const Icon(Icons.workspace_premium, size: 18),
                     label: Text(
                       _storeUnavailable
-                          ? 'Unlock Pro'
+                          ? (RazorpayPaymentService.instance.isConfigured
+                                ? _billingMode == RazorpayBillingMode.monthly
+                                      ? 'Subscribe monthly — ₹'
+                                            '${(RazorpayPaymentService.proMonthlyPricePaise / 100).toStringAsFixed(0)}'
+                                      : 'Unlock — ₹'
+                                            '${(RazorpayPaymentService.proPricePaise / 100).toStringAsFixed(0)}'
+                                : (kReleaseMode
+                                      ? 'Unlock Pro'
+                                      : 'Unlock Pro (preview)'))
                           : 'Subscribe — ${_product?.price ?? ''}'.trim(),
                     ),
                   ),
@@ -278,9 +428,13 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   _storeUnavailable
-                      ? 'The in-app store isn\'t configured on this build yet, so '
-                          'this is a preview unlock. Once the app is published, '
-                          'upgrading here processes a real payment.'
+                      ? (RazorpayPaymentService.instance.isConfigured
+                            ? 'Payment is processed securely by Razorpay (UPI / '
+                                'cards / netbanking) and verified by our server '
+                                'before Pro is activated.'
+                            : 'No payment method is configured on this build '
+                                'yet. ${kReleaseMode ? '' : 'The button is a free developer preview. '}'
+                                'Real payments arrive with the store or Razorpay.')
                       : 'Payment is processed securely by your device\'s app store. '
                           'Your plan syncs to the cloud and unlocks on every device.',
                   textAlign: TextAlign.center,

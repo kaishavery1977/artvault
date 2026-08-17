@@ -252,6 +252,25 @@ class UsersScreen extends ConsumerWidget {
     }
   }
 
+  /// Appends an actionable hint to cloud load failures: a missing App Check
+  /// debug token (debug builds must be registered in the console) and a
+  /// network drop are the two usual causes of "users won't load".
+  static String _cloudHint(Object e) {
+    final msg = e.toString();
+    if (msg.contains('permission-denied') ||
+        msg.contains('Missing or insufficient permissions')) {
+      return 'permission denied. If you are running a debug build, make sure '
+          'the App Check debug token for this device is registered in the '
+          'Firebase console (App Check → Manage debug tokens).';
+    }
+    if (msg.contains('unavailable') || msg.contains('network')) {
+      return 'network error — check your connection and tap retry.';
+    }
+    return msg.replaceFirst('Exception: ', '').trim().isEmpty
+        ? 'something went wrong'
+        : msg.replaceFirst('Exception: ', '');
+  }
+
   /// Turns a Firebase permission/network error into a short readable line.
   static String _cleanError(Object e) {
     final msg = e.toString().replaceFirst('Exception: ', '');
@@ -270,11 +289,26 @@ class UsersScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final usersAsync = ref.watch(usersProvider);
     final me = ref.watch(authProvider).user;
+    final cloudReady = ref.watch(cloudReadyProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Users & roles'),
         actions: [
+          // Live/offline chip: shows whether this list is streaming from
+          // the cloud (everyone) or showing only the signed-in profile
+          // (cloud not connected).
+          Padding(
+            padding: const EdgeInsets.only(right: AppSpacing.xs),
+            child: Center(
+              child: TagChip(
+                label: cloudReady ? 'Live' : 'Offline',
+                color: cloudReady
+                    ? const Color(0xFF22C55E)
+                    : Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
           IconButton(
             tooltip: 'Refresh',
             icon: const Icon(Icons.refresh),
@@ -288,7 +322,7 @@ class UsersScreen extends ConsumerWidget {
       body: usersAsync.when(
         loading: () => const LoadingView(message: 'Loading users…'),
         error: (e, _) => ErrorState(
-          message: 'Could not load users: $e',
+          message: 'Could not load users: ${_cloudHint(e)}',
           onRetry: () => ref.invalidate(usersProvider),
         ),
         data: (users) {
@@ -302,6 +336,39 @@ class UsersScreen extends ConsumerWidget {
           return ListView(
             padding: AppSpacing.screenPadding,
             children: [
+              // When the cloud isn't connected the provider yields only the
+              // signed-in profile — say so instead of pretending the list
+              // is complete.
+              if (!cloudReady)
+                GlassCard(
+                  padding: AppSpacing.cardPadding,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.cloud_off_outlined,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          'Cloud not connected — showing your profile only. '
+                          'Sign in with cloud sync to see every user live.',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            height: 1.45,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                const SizedBox.shrink(),
+              if (!cloudReady) const SizedBox(height: AppSpacing.md),
               GlassCard(
                 padding: AppSpacing.cardPadding,
                 child: Row(
