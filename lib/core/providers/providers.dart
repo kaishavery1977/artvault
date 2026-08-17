@@ -98,7 +98,14 @@ class AuthState {
 }
 
 class AuthController extends StateNotifier<AuthState> {
-  AuthController() : super(const AuthState());
+  AuthController({this.onRestoreProgress}) : super(const AuthState());
+
+  /// Reports restore-from-cloud progress to the UI (wired to
+  /// [restoreProgressProvider] by the provider factory).
+  final void Function(RestoreProgress?)? onRestoreProgress;
+
+  /// Guards against overlapping restore runs (sign-in kick + manual button).
+  bool _restoring = false;
 
   AuthRepository get _repo => AuthRepository.instance;
 
@@ -117,19 +124,66 @@ class AuthController extends StateNotifier<AuthState> {
   /// sync. Fire-and-forget: never blocks the splash hand-off or the UI, and
   /// no-ops when Firebase isn't ready yet.
   void _syncVaultAfterAuth() {
-    unawaited(_syncVault());
+    unawaited(restoreFromCloud());
   }
 
-  /// Vault repopulation on sign-in: pull remote metadata, then re-download
-  /// the media files (painting images, artist photos, documents) that a
-  /// reinstall wiped locally — the remote URLs survive in Firestore, the
-  /// local files do not. Recovery is idempotent (skips files already on
-  /// disk) and runs in the background.
-  Future<void> _syncVault() async {
-    await PaintingRepository.instance.syncNow();
-    await PaintingRepository.instance.recoverImages();
-    await ArtistRepository.instance.recoverPhotos();
-    await DocumentRepository.instance.recoverDocuments();
+  /// Re-downloads the vault from the cloud, either automatically after a
+  /// session is restored / sign-in succeeds, or on demand from Settings.
+  ///
+  /// Pulls remote metadata, then re-downloads the media files (painting
+  /// images, artist photos, documents, condition photos, profile photo)
+  /// that a reinstall wiped locally — the remote URLs survive in
+  /// Firestore, the local files do not. The pulls rebuild the local boxes
+  /// first (a wiped vault has no rows, so the recover* pass alone would
+  /// find nothing), then each recover* re-downloads the files. Everything
+  /// is idempotent (skips files already on disk) and runs in the
+  /// background.
+  ///
+  /// Reports live progress through [restoreProgressProvider] — the home
+  /// banner and the Settings tile react without polling. Returns the total
+  /// number of files re-downloaded.
+  Future<int> restoreFromCloud() async {
+    if (_restoring) return 0;
+    _restoring = true;
+    var restored = 0;
+
+    void stage(String label) {
+      onRestoreProgress?.call(
+        RestoreProgress(running: true, stage: label, itemsRestored: restored),
+      );
+    }
+
+    try {
+      stage('Restoring paintings…');
+      await PaintingRepository.instance.syncNow();
+      restored += await PaintingRepository.instance.recoverImages();
+
+      stage('Restoring artists…');
+      await ArtistRepository.instance.pullRemote();
+      restored += await ArtistRepository.instance.recoverPhotos();
+
+      stage('Restoring documents…');
+      await DocumentRepository.instance.pullRemote();
+      restored += await DocumentRepository.instance.recoverDocuments();
+
+      stage('Restoring condition reports…');
+      await ConditionReportRepository.instance.pullRemote();
+      restored += await ConditionReportRepository.instance.recoverPhotos();
+
+      stage('Restoring profile photo…');
+      await AuthRepository.instance.recoverProfilePhoto();
+      // The avatar may have swapped from a network URL to a fresh local
+      // file; pick it up so the UI shows it without a restart.
+      await refreshProfile();
+      return restored;
+    } finally {
+      _restoring = false;
+      // 'done' signals the completion state to the UI (banner switches to
+      // a summary until dismissed; the Settings tile falls back to idle).
+      onRestoreProgress?.call(
+        RestoreProgress(running: false, stage: 'done', itemsRestored: restored),
+      );
+    }
   }
 
   /// Watches this account's `users/{uid}` doc so role/plan changes made by
@@ -213,6 +267,7 @@ class AuthController extends StateNotifier<AuthState> {
     _profileSub = null;
     _profileApplying = false;
     _profilePending = null;
+    _restoring = false;
     super.dispose();
   }
 
@@ -319,6 +374,8 @@ class AuthController extends StateNotifier<AuthState> {
     _profileSub = null;
     _profileApplying = false;
     _profilePending = null;
+    // A restore must never leak into the next session.
+    onRestoreProgress?.call(null);
     await _repo.signOut();
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
@@ -369,7 +426,10 @@ class AuthController extends StateNotifier<AuthState> {
 }
 
 final authProvider = StateNotifierProvider<AuthController, AuthState>((ref) {
-  return AuthController();
+  return AuthController(
+    onRestoreProgress: (progress) =>
+        ref.read(restoreProgressProvider.notifier).state = progress,
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -563,6 +623,24 @@ final deviceStorageProvider = FutureProvider<DeviceStorage?>((ref) async {
     return null; // graceful fallback: card shows vault-only usage as before
   }
 });
+
+/// Live progress of the vault restore-from-cloud pipeline (runs after
+/// sign-in and on demand from Settings). null = idle.
+class RestoreProgress {
+  final bool running;
+  final String stage;
+  final int itemsRestored;
+
+  const RestoreProgress({
+    this.running = false,
+    this.stage = '',
+    this.itemsRestored = 0,
+  });
+}
+
+/// Emits restore progress while the vault re-downloads from the cloud;
+/// null when idle.
+final restoreProgressProvider = StateProvider<RestoreProgress?>((ref) => null);
 
 /// Single painting looked up by id.
 final paintingByIdProvider = Provider.family<Painting?, String>((ref, id) {

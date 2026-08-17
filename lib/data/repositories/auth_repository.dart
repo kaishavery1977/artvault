@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart' as crypto;
@@ -9,6 +10,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/biometric_service.dart';
 import '../../core/services/face_debug_log.dart';
+import '../../core/services/file_storage_service.dart';
 import '../../core/services/notification_service.dart';
 import '../../data/models/app_user.dart';
 import '../../data/remote/cloud_backend.dart';
@@ -461,6 +463,27 @@ class AuthRepository {
         cachedUser.copyWith(plan: plan).toJson(),
       );
     }
+  }
+
+  /// Re-downloads the signed-in profile photo from Storage after a
+  /// reinstall (local file gone, [AppUser.photoUrl] survived in the cloud
+  /// profile). Writes only the local copy — the remote file already exists,
+  /// so it must never be re-uploaded. Idempotent: skips when the local file
+  /// is already on disk or there is no remote URL.
+  Future<void> recoverProfilePhoto() async {
+    final cloud = CloudBackend.instance;
+    if (!cloud.isReady) return;
+    final me = cachedUser;
+    if (me.photoUrl.isEmpty) return;
+    if (me.photoPath.isNotEmpty && File(me.photoPath).existsSync()) return;
+    final bytes = await cloud.downloadBytes(me.photoUrl);
+    if (bytes == null) return;
+    final path = await FileStorageService.instance.saveImageBytes(bytes);
+    await LocalDatabase.instance.put(
+      AppConstants.boxProfile,
+      'me',
+      me.copyWith(photoPath: path).toJson(),
+    );
   }
 
   /// Updates the local + cloud copy of the signed-in profile.

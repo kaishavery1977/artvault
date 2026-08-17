@@ -27,6 +27,7 @@ class SettingsScreen extends ConsumerWidget {
     final settings = SettingsRepository.instance;
     final notificationsOn = settings.notificationsEnabled;
     final autoBackup = settings.autoBackup;
+    final restore = ref.watch(restoreProgressProvider);
 
     // Header + each settings group cascade in one after another.
     final sections = staggerReveal(
@@ -147,6 +148,23 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => context.push('/backup'),
             ),
             _SettingTile(
+              icon: Icons.cloud_download_outlined,
+              title: 'Restore from cloud',
+              subtitle: restore?.running == true
+                  ? restore!.stage
+                  : 'Re-download your whole vault from the cloud',
+              trailing: restore?.running == true
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : null,
+              onTap: restore?.running == true
+                  ? null
+                  : () => _restoreFromCloud(context, ref),
+            ),
+            _SettingTile(
               icon: Icons.delete_sweep_outlined,
               title: 'Storage & data',
               onTap: () => context.push('/storage'),
@@ -232,6 +250,28 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Runs the full restore-from-cloud pipeline on demand and summarises
+  /// the outcome. Live progress is already shown on this tile (and the home
+  /// banner) through [restoreProgressProvider]; the snackbar confirms the
+  /// result once it finishes.
+  static Future<void> _restoreFromCloud(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final restored = await ref.read(authProvider.notifier).restoreFromCloud();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          restored > 0
+              ? 'Restored $restored '
+                  '${restored == 1 ? 'file' : 'files'} from the cloud'
+              : 'Your vault is already up to date',
+        ),
       ),
     );
   }

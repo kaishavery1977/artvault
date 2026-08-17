@@ -78,6 +78,33 @@ class ArtistRepository {
     }
   }
 
+  /// Pulls every remote artist for this owner into the local box — the
+  /// metadata half of reinstall recovery (a wiped vault has no local rows,
+  /// so [recoverPhotos] alone finds nothing to restore). Local soft-deleted
+  /// records are never resurrected: their delete is still pending a remote
+  /// confirmation and would otherwise be re-created by the pull.
+  Future<void> pullRemote() async {
+    final cloud = CloudBackend.instance;
+    if (!cloud.isReady) return;
+    try {
+      final uid = cloud.currentUid;
+      if (uid.isEmpty) return;
+      final remote = await cloud.fetchAll(_collection, owner: uid);
+      for (final data in remote) {
+        final artist = Artist.fromJson(data);
+        final local = get(artist.id);
+        if (local != null && local.isDeleted) continue;
+        if (local == null || artist.updatedAt.isAfter(local.updatedAt)) {
+          await _db.put(
+            AppConstants.boxArtists,
+            artist.id,
+            artist.copyWith(needsSync: false, synced: true).toJson(),
+          );
+        }
+      }
+    } catch (_) {}
+  }
+
   /// Re-downloads artist photos from Storage after a reinstall (local file
   /// gone, [Artist.photoUrl] survived in Firestore). Skips artists whose
   /// photo is already on disk. Returns the number of photos restored.

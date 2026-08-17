@@ -108,6 +108,62 @@ class ConditionReportRepository {
     }
   }
 
+  /// Pulls every remote condition report for this owner into the local box
+  /// — the metadata half of reinstall recovery (a wiped vault has no local
+  /// rows, so [recoverPhotos] alone finds nothing to restore). Local
+  /// soft-deleted records are never resurrected.
+  Future<void> pullRemote() async {
+    final cloud = CloudBackend.instance;
+    if (!cloud.isReady) return;
+    try {
+      final uid = cloud.currentUid;
+      if (uid.isEmpty) return;
+      final remote = await cloud.fetchAll(_collection, owner: uid);
+      for (final data in remote) {
+        final report = ConditionReport.fromJson(data);
+        final local = get(report.id);
+        if (local != null && local.isDeleted) continue;
+        if (local == null || report.createdAt.isAfter(local.createdAt)) {
+          await _db.put(
+            AppConstants.boxConditionReports,
+            report.id,
+            report.copyWith(needsSync: false, synced: true).toJson(),
+          );
+        }
+      }
+    } catch (_) {}
+  }
+
+  /// Re-downloads condition-report photos from Storage after a reinstall
+  /// (local file gone, [ConditionReport.photoUrl] survived in Firestore).
+  /// Skips reports whose photo is already on disk. Returns the number of
+  /// photos restored.
+  Future<int> recoverPhotos() async {
+    final cloud = CloudBackend.instance;
+    if (!cloud.isReady) return 0;
+    final storage = FileStorageService.instance;
+    var recovered = 0;
+    for (final report in readAll()) {
+      if (report.isDeleted || report.photoUrl.isEmpty) continue;
+      if (report.photoPath.isNotEmpty &&
+          File(report.photoPath).existsSync()) {
+        continue;
+      }
+      final bytes = await cloud.downloadBytes(report.photoUrl);
+      if (bytes == null) continue;
+      final path = await storage.saveImageBytes(bytes);
+      await _db.put(
+        AppConstants.boxConditionReports,
+        report.id,
+        report
+            .copyWith(photoPath: path, needsSync: false, synced: true)
+            .toJson(),
+      );
+      recovered++;
+    }
+    return recovered;
+  }
+
   Future<void> _syncReport(ConditionReport report) async {
     final cloud = CloudBackend.instance;
     try {

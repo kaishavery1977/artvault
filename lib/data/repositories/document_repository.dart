@@ -105,6 +105,32 @@ class DocumentRepository {
     }
   }
 
+  /// Pulls every remote document for this owner into the local box — the
+  /// metadata half of reinstall recovery (a wiped vault has no local rows,
+  /// so [recoverDocuments] alone finds nothing to restore). Local
+  /// soft-deleted records are never resurrected.
+  Future<void> pullRemote() async {
+    final cloud = CloudBackend.instance;
+    if (!cloud.isReady) return;
+    try {
+      final uid = cloud.currentUid;
+      if (uid.isEmpty) return;
+      final remote = await cloud.fetchAll(_collection, owner: uid);
+      for (final data in remote) {
+        final doc = ArtDocument.fromJson(data);
+        final local = get(doc.id);
+        if (local != null && local.isDeleted) continue;
+        if (local == null || doc.createdAt.isAfter(local.createdAt)) {
+          await _db.put(
+            AppConstants.boxDocuments,
+            doc.id,
+            doc.copyWith(needsSync: false, synced: true).toJson(),
+          );
+        }
+      }
+    } catch (_) {}
+  }
+
   /// Re-imports a user-picked replacement file for a document whose local
   /// copy was lost (e.g. after a reinstall wiped the vault). Marks the doc
   /// for re-sync so the new file reaches the cloud on the next connection.

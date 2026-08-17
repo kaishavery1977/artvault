@@ -36,6 +36,9 @@ class HomeScreen extends ConsumerWidget {
     final recent = [...paintings]
       ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     final missingImages = paintings.where(RepairImagesScreen.needsRepair).length;
+    final restore = ref.watch(restoreProgressProvider);
+    final showRestore =
+        restore != null && (restore.running || restore.itemsRestored > 0);
     final showLoading =
         paintingsAsync.isLoading && paintingsAsync.valueOrNull == null;
 
@@ -60,6 +63,10 @@ class HomeScreen extends ConsumerWidget {
                 delegate: SliverChildListDelegate(
                   staggerReveal(
                     [
+                      if (showRestore) ...[
+                        _RestoreBanner(progress: restore),
+                        const SizedBox(height: AppSpacing.lg),
+                      ],
                       if (showLoading)
                         const _HomeSkeleton()
                       else if (paintings.isEmpty)
@@ -178,6 +185,80 @@ class _HomeSkeleton extends StatelessWidget {
 
 /// Warning banner shown when one or more artworks lost their image files
 /// (e.g. after a reinstall wiped the vault). One tap jumps to Repair images.
+/// Live banner for the restore-from-cloud pipeline: a spinner + stage label
+/// while it runs, a dismissible summary once it finishes with files
+/// re-downloaded. Hidden entirely when nothing was restored.
+class _RestoreBanner extends ConsumerWidget {
+  final RestoreProgress progress;
+
+  const _RestoreBanner({required this.progress});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final done = !progress.running;
+    final accent = done ? const Color(0xFF34A853) : scheme.primary;
+    return Material(
+      color: accent.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          children: [
+            if (done)
+              Icon(Icons.check_circle_outline, color: accent)
+            else
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: accent,
+                ),
+              ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    done
+                        ? 'Restored ${progress.itemsRestored} '
+                            '${progress.itemsRestored == 1 ? 'file' : 'files'} '
+                            'from the cloud'
+                        : progress.stage,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (!done) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      'Re-downloading your vault — keep the app open',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: scheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (done)
+              IconButton(
+                onPressed: () =>
+                    ref.read(restoreProgressProvider.notifier).state = null,
+                icon: const Icon(Icons.close, size: 18),
+                visualDensity: VisualDensity.compact,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _MissingImagesBanner extends StatelessWidget {
   final int count;
   final VoidCallback onTap;
