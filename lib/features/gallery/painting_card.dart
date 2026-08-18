@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -11,6 +13,25 @@ import '../../core/utils/formatters.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/painting.dart';
 import '../../data/repositories/painting_repository.dart';
+
+/// Best cover for a card: the stored cover, or the first image whose local
+/// file actually exists when the cover is empty or its file is gone. Mirrors
+/// the detail screen's images-first fallback, so a card never shows "no
+/// image" while the artwork has one.
+({String path, String url}) _effectiveCover(Painting p) {
+  var path = p.coverImagePath;
+  if (path.isEmpty || !File(path).existsSync()) {
+    for (final img in p.images) {
+      if (img.isNotEmpty && File(img).existsSync()) {
+        path = img;
+        break;
+      }
+    }
+  }
+  var url = p.coverImageUrl;
+  if (url.isEmpty && p.imageUrls.isNotEmpty) url = p.imageUrls.first;
+  return (path: path, url: url);
+}
 
 /// Masonry-friendly grid card for the gallery and home "recent" sections.
 class PaintingGridCard extends ConsumerWidget {
@@ -38,9 +59,10 @@ class PaintingGridCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final canEdit = ref.watch(authProvider).canEdit;
+    final cover = _effectiveCover(painting);
     final image = ArtImage(
-      path: painting.coverImagePath,
-      url: painting.coverImageUrl,
+      path: cover.path,
+      url: cover.url,
       fit: BoxFit.cover,
     );
 
@@ -174,6 +196,7 @@ class PaintingListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final cover = _effectiveCover(painting);
     return PressScale(
       child: Material(
         color: Theme.of(context).cardColor,
@@ -186,8 +209,8 @@ class PaintingListTile extends StatelessWidget {
             child: Row(
               children: [
                 ArtImage(
-                  path: painting.coverImagePath,
-                  url: painting.coverImageUrl,
+                  path: cover.path,
+                  url: cover.url,
                   width: 76,
                   height: 76,
                   borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
