@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:camera/camera.dart';
@@ -139,9 +140,24 @@ class _FaceScanScreenState extends State<FaceScanScreen>
   }
 
   Future<void> _init() async {
+    // If the camera pipeline doesn't come up in time, surface it instead of
+    // spinning on "Starting camera…" forever: a wedged camera HAL or a slow
+    // permission dialog must never look like an infinite loading state. The
+    // guard is cancelled on every exit path (success, early return, error).
+    final initGuard = Timer(const Duration(seconds: 12), () {
+      if (mounted && !_ready && !_done) {
+        setState(() {
+          _status = 'Camera is taking too long — go back and try another '
+              'unlock method';
+        });
+      }
+    });
+    void cancelGuard() => initGuard.cancel();
+
     try {
       final granted = await Permission.camera.request().isGranted;
       if (!granted) {
+        cancelGuard();
         if (mounted) {
           setState(
             () => _status = 'Camera permission is required for face unlock',
@@ -151,6 +167,7 @@ class _FaceScanScreenState extends State<FaceScanScreen>
       }
       final cams = await availableCameras();
       if (cams.isEmpty) {
+        cancelGuard();
         if (mounted) setState(() => _status = 'No camera found on this device');
         return;
       }
@@ -173,6 +190,7 @@ class _FaceScanScreenState extends State<FaceScanScreen>
       await controller.initialize();
       await controller.startImageStream(_onFrame);
       _streamStartedAt = DateTime.now();
+      cancelGuard();
       if (mounted) {
         setState(() {
           _ready = true;
@@ -182,6 +200,7 @@ class _FaceScanScreenState extends State<FaceScanScreen>
         });
       }
     } catch (e) {
+      cancelGuard();
       if (mounted) setState(() => _status = 'Camera error: $e');
     }
   }

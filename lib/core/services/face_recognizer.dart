@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
@@ -44,12 +45,17 @@ class FaceRecognizer {
   /// Crops [face] out of an upright RGB frame ([width]x[height], 3 bytes per
   /// pixel), resizes to 112x112, normalizes to [-1, 1] and runs the model.
   /// Returns an empty list if the crop is invalid or inference fails.
+  ///
+  /// [timeout] bounds the native call: a stalled channel must surface as a
+  /// recoverable "no embedding" frame (which the UI reports after a few
+  /// misses) rather than leaving the scan frozen on a forever-pending await.
   Future<List<double>> embeddingFromRgb(
     Uint8List rgb,
     int width,
     int height,
-    Rect face,
-  ) async {
+    Rect face, {
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
     var left = math.max(0, face.left.floor());
     var top = math.max(0, face.top.floor());
     var right = math.min(width, face.right.ceil());
@@ -79,10 +85,16 @@ class FaceRecognizer {
 
     final List<dynamic>? out;
     try {
-      out = await _channel.invokeMethod<List<dynamic>>('embed', {
-        'input': input.toList(),
-      });
+      out = await _channel
+          .invokeMethod<List<dynamic>>('embed', {
+            'input': input.toList(),
+          })
+          .timeout(timeout);
       lastError = '';
+    } on TimeoutException {
+      lastError = 'embed channel timed out after ${timeout.inSeconds}s';
+      await FaceDebugLog.instance.log('embed channel timed out');
+      return const [];
     } catch (e) {
       lastError = 'embed channel error: $e';
       await FaceDebugLog.instance.log('embed channel error: $e');

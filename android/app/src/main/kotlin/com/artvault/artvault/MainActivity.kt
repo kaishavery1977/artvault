@@ -30,11 +30,22 @@ class MainActivity : FlutterFragmentActivity() {
                         result.error("bad_input", "embedding input is null", null)
                         return@setMethodCallHandler
                     }
-                    try {
-                        result.success(embed(input))
-                    } catch (e: Exception) {
-                        result.error("embed_failed", e.message, null)
-                    }
+                    // Run model load + inference OFF the main thread:
+                    // MethodChannel handlers execute on the platform main
+                    // thread, and loading the 5MB MobileFaceNet model plus
+                    // the first inference there freezes the whole UI — and
+                    // starves the camera frame callbacks queued behind it —
+                    // which the app surface read as an infinite "loading"
+                    // state. A MethodChannel.Result may be completed from
+                    // any thread; getFaceModel() is @Synchronized so
+                    // concurrent calls stay safe.
+                    Thread {
+                        try {
+                            result.success(embed(input))
+                        } catch (e: Exception) {
+                            result.error("embed_failed", e.message, null)
+                        }
+                    }.start()
                 }
                 else -> result.notImplemented()
             }
