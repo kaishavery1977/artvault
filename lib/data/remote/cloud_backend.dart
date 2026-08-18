@@ -1,7 +1,13 @@
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart'
-    show TargetPlatform, debugPrint, defaultTargetPlatform, kDebugMode, kIsWeb;
+    show
+        TargetPlatform,
+        ValueNotifier,
+        debugPrint,
+        defaultTargetPlatform,
+        kDebugMode,
+        kIsWeb;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
@@ -26,6 +32,28 @@ class CloudBackend {
 
   bool _ready = false;
   bool get isReady => _ready;
+
+  /// Consecutive failed media uploads. A single blip is silent; once this
+  /// climbs past [uploadFailureHintAfter] the home screen shows a subtle
+  /// "cloud sync unavailable" hint. Any successful upload resets it.
+  final ValueNotifier<int> failedUploadStreak = ValueNotifier<int>(0);
+
+  /// Threshold for the home-screen "cloud sync unavailable" hint.
+  static const int uploadFailureHintAfter = 3;
+
+  /// Runs [op], resetting [failedUploadStreak] on success and incrementing it
+  /// on failure (rethrow). Early no-op returns (e.g. Firebase not configured)
+  /// never count — the app is expected to be fully offline then.
+  Future<T> _trackUpload<T>(Future<T> Function() op) async {
+    try {
+      final result = await op();
+      if (failedUploadStreak.value > 0) failedUploadStreak.value = 0;
+      return result;
+    } catch (_) {
+      failedUploadStreak.value++;
+      rethrow;
+    }
+  }
 
   /// Attempts to initialise Firebase. Returns true only on success.
   Future<bool> initialize() async {
@@ -278,15 +306,17 @@ class CloudBackend {
     String? contentType,
   }) async {
     if (!_ready) return null;
-    final ref = FirebaseStorage.instance.ref(path);
-    await ref.putData(
-      bytes,
-      SettableMetadata(
-        contentType: contentType ?? 'image/jpeg',
-        cacheControl: 'public, max-age=31536000',
-      ),
-    );
-    return ref.getDownloadURL();
+    return _trackUpload(() async {
+      final ref = FirebaseStorage.instance.ref(path);
+      await ref.putData(
+        bytes,
+        SettableMetadata(
+          contentType: contentType ?? 'image/jpeg',
+          cacheControl: 'public, max-age=31536000',
+        ),
+      );
+      return ref.getDownloadURL();
+    });
   }
 
   /// Uploads bytes and returns a **rules-gated** plain download URL (no
@@ -301,15 +331,17 @@ class CloudBackend {
     String? contentType,
   }) async {
     if (!_ready) return null;
-    final ref = FirebaseStorage.instance.ref(path);
-    await ref.putData(
-      bytes,
-      SettableMetadata(
-        contentType: contentType ?? 'text/html; charset=utf-8',
-        cacheControl: 'private, no-store',
-      ),
-    );
-    return publicUrlFor(path);
+    return _trackUpload(() async {
+      final ref = FirebaseStorage.instance.ref(path);
+      await ref.putData(
+        bytes,
+        SettableMetadata(
+          contentType: contentType ?? 'text/html; charset=utf-8',
+          cacheControl: 'private, no-store',
+        ),
+      );
+      return publicUrlFor(path);
+    });
   }
 
   /// The plain (untokenized) download URL for [path]; reads against it are

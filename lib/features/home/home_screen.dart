@@ -17,6 +17,7 @@ import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/painting.dart';
 import '../../data/repositories/painting_repository.dart';
+import '../../data/remote/cloud_backend.dart';
 import '../gallery/painting_card.dart';
 import '../settings/repair_images_screen.dart';
 
@@ -39,6 +40,18 @@ class HomeScreen extends ConsumerWidget {
     final restore = ref.watch(restoreProgressProvider);
     final showRestore =
         restore != null && (restore.running || restore.itemsRestored > 0);
+    final failedUploads = ref.watch(cloudSyncHealthProvider);
+    // A successful sync (streak back to 0) un-dismisses the hint so it can
+    // return if failures start accumulating again — dismissal is per-issue,
+    // not permanent.
+    ref.listen(cloudSyncHealthProvider, (prev, next) {
+      if (next == 0 && (prev ?? 0) > 0) {
+        ref.read(cloudSyncHintDismissedProvider.notifier).state = false;
+      }
+    });
+    final hintDismissed = ref.watch(cloudSyncHintDismissedProvider);
+    final showCloudHint = failedUploads >= CloudBackend.uploadFailureHintAfter &&
+        !hintDismissed;
     final showLoading =
         paintingsAsync.isLoading && paintingsAsync.valueOrNull == null;
 
@@ -65,6 +78,10 @@ class HomeScreen extends ConsumerWidget {
                     [
                       if (showRestore) ...[
                         _RestoreBanner(progress: restore),
+                        const SizedBox(height: AppSpacing.lg),
+                      ],
+                      if (showCloudHint) ...[
+                        const _CloudSyncUnavailableHint(),
                         const SizedBox(height: AppSpacing.lg),
                       ],
                       if (showLoading)
@@ -253,6 +270,83 @@ class _RestoreBanner extends ConsumerWidget {
                 visualDensity: VisualDensity.compact,
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Compact "cloud sync unavailable" chip: shown after several consecutive
+/// upload failures (not on a rare blip), dismissible, and deliberately muted
+/// — the app keeps working fully offline, so this is information, not an
+/// alarm. Tapping the row retries the sync once; the ✕ hides it for the
+/// session.
+class _CloudSyncUnavailableHint extends ConsumerWidget {
+  const _CloudSyncUnavailableHint();
+
+  Future<void> _retry(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Retrying cloud sync…')),
+    );
+    await PaintingRepository.instance.syncNow();
+    final streak = CloudBackend.instance.failedUploadStreak.value;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          streak > 0
+              ? 'Still can’t reach the cloud — changes stay on this device.'
+              : 'Cloud sync is working again.',
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final scheme = Theme.of(context).colorScheme;
+    final muted = scheme.onSurface.withValues(alpha: 0.55);
+    return Material(
+      color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+        onTap: () => _retry(context),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: 4,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.cloud_off_outlined,
+                size: 14,
+                color: muted,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Cloud sync unavailable — tap to retry',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(fontSize: 12, color: muted),
+                ),
+              ),
+              IconButton(
+                onPressed: () =>
+                    ref.read(cloudSyncHintDismissedProvider.notifier).state =
+                        true,
+                icon: const Icon(Icons.close, size: 14),
+                color: muted,
+                tooltip: 'Dismiss',
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints:
+                    const BoxConstraints(minWidth: 28, minHeight: 28),
+              ),
+            ],
+          ),
         ),
       ),
     );

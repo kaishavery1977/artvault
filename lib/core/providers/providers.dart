@@ -641,6 +641,36 @@ class RestoreProgress {
 /// null when idle.
 final restoreProgressProvider = StateProvider<RestoreProgress?>((ref) => null);
 
+/// Mirrors [CloudBackend.failedUploadStreak] into Riverpod state so the UI
+/// rebuilds when the streak changes (a bare [ValueNotifier] wouldn't trigger
+/// widget rebuilds on its own).
+class CloudSyncHealthNotifier extends Notifier<int> {
+  @override
+  int build() {
+    final streak = CloudBackend.instance.failedUploadStreak;
+    streak.addListener(_onStreakChanged);
+    ref.onDispose(() => streak.removeListener(_onStreakChanged));
+    return streak.value;
+  }
+
+  void _onStreakChanged() {
+    state = CloudBackend.instance.failedUploadStreak.value;
+  }
+}
+
+/// Number of consecutive failed media uploads (see
+/// [CloudBackend.failedUploadStreak]). The home screen shows a subtle
+/// "cloud sync unavailable" hint once it passes the threshold, and a
+/// successful upload clears it.
+final cloudSyncHealthProvider =
+    NotifierProvider<CloudSyncHealthNotifier, int>(CloudSyncHealthNotifier.new);
+
+/// Whether the user dismissed the "cloud sync unavailable" hint for this
+/// session. Reset when the failed-upload streak drops back to 0 (a sync
+/// succeeded), so a recovered cloud brings the hint back only if failures
+/// start accumulating again.
+final cloudSyncHintDismissedProvider = StateProvider<bool>((ref) => false);
+
 /// Single painting looked up by id.
 final paintingByIdProvider = Provider.family<Painting?, String>((ref, id) {
   final paintings = ref.watch(paintingsProvider).valueOrNull ?? const [];
