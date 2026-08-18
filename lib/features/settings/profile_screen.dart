@@ -24,7 +24,6 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   late final TextEditingController _name;
   late final TextEditingController _bio;
-  AppRole _role = AppRole.curator;
   bool _saving = false;
 
   @override
@@ -33,7 +32,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final user = ref.read(authProvider).user;
     _name = TextEditingController(text: user?.displayName ?? '');
     _bio = TextEditingController(text: user?.bio ?? '');
-    _role = user?.role ?? AppRole.curator;
   }
 
   @override
@@ -44,29 +42,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _save() async {
-    final me = ref.read(authProvider).user;
-    // Same guard as the Users screen: an admin must not demote their own
-    // account (would lock the organisation out of role management). Revert
-    // only the role and continue, so unrelated name/bio edits are kept.
-    if (me != null && _role != me.role && me.role == AppRole.admin) {
-      setState(() => _role = me.role);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'You cannot demote your own account. '
-              'Your role was kept; other changes were saved.',
-            ),
-          ),
-        );
-      }
-    }
+    // NOTE: no role is ever written from here. Roles are admin-managed only
+    // (Users screen); the profile editor updates name/bio/avatar alone, so a
+    // user has no self-service path to change their own role.
     setState(() => _saving = true);
     try {
       await AuthRepository.instance.updateProfile(
         displayName: _name.text.trim(),
         bio: _bio.text.trim(),
-        role: _role,
       );
       await ref.read(authProvider.notifier).refreshProfile();
       if (mounted) {
@@ -116,7 +99,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final auth = ref.watch(authProvider);
     final user = auth.user;
     final scheme = Theme.of(context).colorScheme;
-    final canEditRole = auth.canManageUsers;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Profile')),
@@ -204,27 +186,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     prefixIcon: Icon(Icons.notes),
                   ),
                 ),
-                if (canEditRole) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  DropdownButtonFormField<AppRole>(
-                    initialValue: _role,
-                    decoration: const InputDecoration(
-                      labelText: 'Role',
-                      prefixIcon: Icon(Icons.admin_panel_settings_outlined),
-                    ),
-                    items: AppRole.values
-                        .map(
-                          (r) => DropdownMenuItem(
-                            value: r,
-                            enabled: !(user?.role == AppRole.admin &&
-                                r != AppRole.admin),
-                            child: Text(r.label),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (v) => setState(() => _role = v ?? _role),
-                  ),
-                ],
               ],
             ),
           ),

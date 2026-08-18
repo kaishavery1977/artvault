@@ -487,12 +487,17 @@ class AuthRepository {
   }
 
   /// Updates the local + cloud copy of the signed-in profile.
+  ///
+  /// Deliberately has NO role parameter: roles are admin-managed only — the
+  /// Firestore rules reject any self-service role change, and the admin panel
+  /// (Users screen) is the sole writer. Keeping role out of this method means
+  /// the profile editor can never even *attempt* an escalation the rules
+  /// would have to block.
   Future<void> updateProfile({
     String? displayName,
     String? bio,
     String? photoPath,
     String? photoUrl,
-    AppRole? role,
   }) async {
     final me = cachedUser;
     final updated = me.copyWith(
@@ -500,7 +505,6 @@ class AuthRepository {
       bio: bio,
       photoPath: photoPath,
       photoUrl: photoUrl,
-      role: role,
     );
     await LocalDatabase.instance.put(
       AppConstants.boxProfile,
@@ -512,7 +516,6 @@ class AuthRepository {
       'bio': ?bio,
       'photoPath': ?photoPath,
       'photoUrl': ?photoUrl,
-      if (role != null) 'role': role.wire,
     });
     CloudBackend.instance.setUser(me.uid, me.email);
   }

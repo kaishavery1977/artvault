@@ -380,12 +380,11 @@ class AuthController extends StateNotifier<AuthState> {
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 
-  Future<void> updateRole(AppRole role) async {
-    final user = state.user;
-    if (user == null) return;
-    await _repo.updateRole(user.uid, role);
-    state = state.copyWith(user: user.copyWith(role: role));
-  }
+  /// NOTE: there is deliberately NO `updateRole` here. Roles are changed
+  /// exclusively by an admin from the Users screen (which calls
+  /// AuthRepository.updateRole for the *target* account); a user must never
+  /// be able to change their own role from app code — the Firestore rules
+  /// enforce the same rule server-side.
 
   Future<void> updatePlan(AppPlan plan) async {
     final user = state.user;
