@@ -53,8 +53,11 @@ class _FaceScanScreenState extends State<FaceScanScreen>
   final FaceDetector _detector = FaceDetector(
     options: FaceDetectorOptions(
       performanceMode: FaceDetectorMode.fast,
+      // Classification is required for the blink-liveness challenge: the
+      // eye-open probabilities let verify mode demand an open→closed→open
+      // transition so a printed photo cannot unlock the vault.
       enableLandmarks: false,
-      enableClassification: false,
+      enableClassification: true,
       enableTracking: false,
     ),
   );
@@ -89,6 +92,19 @@ class _FaceScanScreenState extends State<FaceScanScreen>
 
   /// Verify mode: consecutive non-matching frames (drives the failure hint).
   int _failStreak = 0;
+
+  // --- Blink-liveness challenge (verify mode only) -------------------------
+  // After enough matching frames the scan demands one genuine blink (eyes
+  // open → closed transition) before unlocking, so a static photo of the
+  // owner — which can never blink — cannot pass.
+  bool _livenessArmed = false;
+  bool _eyesWereOpen = false;
+  DateTime? _livenessArmedAt;
+  int _livenessFails = 0;
+
+  static const double _eyeOpenProb = 0.45;
+  static const double _eyeClosedProb = 0.30;
+  static const Duration _livenessTimeout = Duration(seconds: 8);
 
   /// True once enrollment/verification finished, showing the success overlay
   /// before the screen pops with the result.
@@ -240,6 +256,7 @@ class _FaceScanScreenState extends State<FaceScanScreen>
           _matchHits = 0;
           _failStreak = 0;
           _samples.clear();
+          _livenessArmed = false;
         } else if (_hits == 0) {
           // Flicker: decay match momentum, keep already-captured samples.
           _matchHits = _matchHits > 0 ? _matchHits - 1 : 0;
@@ -366,21 +383,68 @@ class _FaceScanScreenState extends State<FaceScanScreen>
           _failStreak = 0;
           if (mounted) {
             setState(() {
-              _status = 'Matching… $_matchHits/$_matchFrames';
+              _status = _livenessArmed
+                  ? 'Now blink to confirm it is you'
+                  : 'Matching… $_matchHits/$_matchFrames';
             });
           }
           if (_matchHits >= _matchFrames) {
-            await FaceDebugLog.instance.log('verify UNLOCKED');
-            await _finishWithSuccess(
-              true,
-              message: 'Face recognized — unlocking…',
-            );
+            if (!_livenessArmed) {
+              // Identity confirmed — now demand a live blink before unlock.
+              _livenessArmed = true;
+              _livenessArmedAt = DateTime.now();
+              _eyesWereOpen = _eyesOpen(face);
+              await FaceDebugLog.instance.log('liveness armed');
+              if (mounted) {
+                setState(() {
+                  _status = 'Now blink to confirm it is you';
+                });
+              }
+            } else {
+              // Look for an open→closed transition while the face keeps
+              // matching. A static photo never blinks, so it stalls here
+              // until the timeout resets the scan.
+              final closed = _eyesClosed(face);
+              if (closed) {
+                if (_eyesWereOpen) {
+                  await FaceDebugLog.instance.log('liveness blink seen');
+                  await _finishWithSuccess(
+                    true,
+                    message: 'Face recognized — unlocking…',
+                  );
+                  return;
+                }
+                // Eyes still closed from the start: wait until they open
+                // first so a closed-eyes photo can't pass either.
+              } else if (_eyesOpen(face)) {
+                _eyesWereOpen = true;
+              }
+              final armedAt = _livenessArmedAt;
+              if (armedAt != null &&
+                  DateTime.now().difference(armedAt) > _livenessTimeout) {
+                _livenessArmed = false;
+                _matchHits = 0;
+                _livenessFails++;
+                await FaceDebugLog.instance.log('liveness timeout');
+                if (mounted) {
+                  setState(() {
+                    _status = _livenessFails >= 2
+                        ? 'No blink seen — open and close your eyes once, slowly'
+                        : 'No blink detected — look at the camera and try again';
+                  });
+                }
+              }
+            }
           }
         } else {
           // Decay rather than reset: one stray non-matching frame must not
           // erase 5 good matches.
           _matchHits = _matchHits > 0 ? _matchHits - 1 : 0;
           _failStreak++;
+          if (_matchHits <= 0) {
+            // Identity was lost — the blink challenge (if armed) is moot.
+            _livenessArmed = false;
+          }
           if (_failStreak == 8 && mounted) {
             await FaceDebugLog.instance.log('verify mismatch streak=8');
             setState(() {
@@ -485,6 +549,27 @@ class _FaceScanScreenState extends State<FaceScanScreen>
       offset += plane.bytes.length;
     }
     return bytes;
+  }
+
+  /// Average eye-open probability from ML Kit's classification, or null
+  /// when the model could not score the eyes on this frame.
+  double? _eyeProb(Face face) {
+    final left = face.leftEyeOpenProbability;
+    final right = face.rightEyeOpenProbability;
+    if (left == null || right == null) return null;
+    return (left + right) / 2;
+  }
+
+  bool _eyesOpen(Face face) {
+    final p = _eyeProb(face);
+    return p != null && p >= _eyeOpenProb;
+  }
+
+  bool _eyesClosed(Face face) {
+    final left = face.leftEyeOpenProbability;
+    final right = face.rightEyeOpenProbability;
+    return left != null && right != null &&
+        left < _eyeClosedProb && right < _eyeClosedProb;
   }
 
   /// ML Kit's rotationDegrees, per the official google_mlkit sample formula:
@@ -631,6 +716,7 @@ class _FaceScanScreenState extends State<FaceScanScreen>
               top: 12,
               left: 12,
               child: IconButton(
+                tooltip: 'Cancel',
                 icon: const Icon(Icons.close, color: Colors.white, size: 28),
                 onPressed: _done ? null : _cancel,
               ),
@@ -662,7 +748,9 @@ class _FaceScanScreenState extends State<FaceScanScreen>
                     ),
                   ),
                 ),
-              ).animate().fadeIn(duration: 450.ms).slideY(begin: -0.25),
+              ).animate(
+                  onPlay: (c) => MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
+                ).fadeIn(duration: 450.ms).slideY(begin: -0.25),
             ),
             // Scan frame: pulsing oval, sweeping scan line, progress ring.
             Center(child: _buildScanFrame(isEnroll)),
@@ -682,7 +770,9 @@ class _FaceScanScreenState extends State<FaceScanScreen>
                         color: Colors.white.withValues(alpha: 0.9),
                         fontSize: 14,
                       ),
-                    ).animate().fadeIn(duration: 300.ms),
+                    ).animate(
+                      onPlay: (c) => MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
+                    ).fadeIn(duration: 300.ms),
                     if (_ready) ...[
                       const SizedBox(height: 12),
                       const SizedBox(
@@ -843,7 +933,9 @@ class _FaceScanScreenState extends State<FaceScanScreen>
                                     fontSize: 22,
                                     fontWeight: FontWeight.w700,
                                   ),
-                                ).animate().scale(
+                                ).animate(
+                                  onPlay: (c) => MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
+                                ).scale(
                                   begin: const Offset(1.35, 1.35),
                                   curve: Curves.easeOutBack,
                                   duration: 260.ms,

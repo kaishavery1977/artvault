@@ -13,6 +13,7 @@ import 'package:artvault/data/models/app_user.dart';
 import 'package:artvault/features/home/home_screen.dart';
 
 import 'helpers.dart';
+import 'package:artvault/core/theme/adaptive_layout.dart';
 
 AppUser _user() => AppUser(
       uid: 'u1',
@@ -45,13 +46,16 @@ Widget _homeApp(RestoreProgress? progress) {
       if (progress != null)
         restoreProgressProvider.overrideWith((ref) => progress),
     ],
-    child: MaterialApp.router(
-      routerConfig: GoRouter(
-        initialLocation: '/home',
-        routes: [
-          GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
-          GoRoute(path: '/repair-images', builder: (_, _) => const SizedBox()),
-        ],
+    child: AdaptiveLayout(
+      profile: testProfile,
+      child: MaterialApp.router(
+        routerConfig: GoRouter(
+          initialLocation: '/home',
+          routes: [
+            GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
+            GoRoute(path: '/repair-images', builder: (_, _) => const SizedBox()),
+          ],
+        ),
       ),
     ),
   );

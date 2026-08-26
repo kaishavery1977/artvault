@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_spacing.dart';
+import '../../core/services/device_resolution_service.dart';
 import '../../core/providers/providers.dart';
 
 /// Responsive application shell.
@@ -91,6 +92,14 @@ class _AppShellState extends ConsumerState<AppShell>
     final shell = widget.navigationShell;
     final isDesktop = AppBreakpoints.isDesktop(context);
     final canEdit = ref.watch(authProvider).canEdit;
+    // Adaptive nav bar height: compact phones get 56dp, standard 60dp,
+    // tablets and larger get 68dp.
+    final deviceSize = DeviceResolutionService.instance.current?.size;
+    final navBarHeight = switch (deviceSize) {
+      DeviceSize.compact => 56.0,
+      DeviceSize.standard || DeviceSize.large => 60.0,
+      _ => 68.0,
+    };
 
     final content = SafeArea(
       top: false,
@@ -130,6 +139,7 @@ class _AppShellState extends ConsumerState<AppShell>
           ? null
           : _GlassNavBar(
               child: NavigationBar(
+                height: navBarHeight,
                 selectedIndex: shell.currentIndex,
                 onDestinationSelected: _go,
                 destinations: [

@@ -17,17 +17,48 @@ service cloud.firestore {
 
     // Vault collections: every document belongs to exactly one user and can
     // only be read/written by that user. Queries must filter by ownerUid.
+    // Field-level limits prevent resource exhaustion (arrays capped, strings
+    // length-checked) — Firestore enforces 1 MiB per document server-side.
     match /paintings/{id} {
       allow read, delete: if isOwner();
-      allow create: if incomingOwnedByMe();
-      allow update: if isOwner() && request.resource.data.ownerUid == request.auth.uid;
+      allow create: if incomingOwnedByMe()
+        && request.resource.data.title is string
+        && request.resource.data.title.size() <= 500
+        && request.resource.data.description.size() <= 5000
+        && request.resource.data.tags.size() <= 50
+        && request.resource.data.images.size() <= 20
+        && request.resource.data.imageUrls.size() <= 20
+        && request.resource.data.aiTags.size() <= 50
+        && request.resource.data.dominantColors.size() <= 10;
+      allow update: if isOwner()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.title.size() <= 500
+        && request.resource.data.description.size() <= 5000
+        && request.resource.data.tags.size() <= 50
+        && request.resource.data.images.size() <= 20
+        && request.resource.data.imageUrls.size() <= 20;
     }
     match /artists/{id} {
       allow read, delete: if isOwner();
-      allow create: if incomingOwnedByMe();
-      allow update: if isOwner() && request.resource.data.ownerUid == request.auth.uid;
+      allow create: if incomingOwnedByMe()
+        && request.resource.data.name.size() <= 300
+        && request.resource.data.biography.size() <= 5000
+        && request.resource.data.awards.size() <= 20
+        && request.resource.data.exhibitions.size() <= 20;
+      allow update: if isOwner()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.name.size() <= 300
+        && request.resource.data.biography.size() <= 5000;
     }
     match /documents/{id} {
+      allow read, delete: if isOwner();
+      allow create: if incomingOwnedByMe()
+        && request.resource.data.name.size() <= 300;
+      allow update: if isOwner()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.name.size() <= 300;
+    }
+    match /condition_reports/{id} {
       allow read, delete: if isOwner();
       allow create: if incomingOwnedByMe();
       allow update: if isOwner() && request.resource.data.ownerUid == request.auth.uid;
@@ -39,8 +70,12 @@ service cloud.firestore {
     }
 
     // Backups are keyed by the owning user's uid.
+    // Limit backup size to prevent unbounded growth on the free plan.
     match /backups/{uid} {
-      allow read, write: if isSignedIn() && uid == request.auth.uid;
+      allow read, write: if isSignedIn() && uid == request.auth.uid
+        && request.resource.data.paintings.size() <= 500
+        && request.resource.data.artists.size() <= 200
+        && request.resource.data.documents.size() <= 200;
     }
 
     // Public-gallery link documents (keyed by the owner's uid) hold the
@@ -102,9 +137,10 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && uid == request.auth.uid
-        && request.resource.data.plan == 'free'
         && !exists(/databases/$(database)/documents/revoked/$(uid))
+        && request.resource.data.plan in ['free', 'pro']
         && (request.resource.data.role == 'curator'
+            || request.resource.data.role == 'viewer'
             || (request.resource.data.role == 'admin'
                 && request.resource.data.bootstrapCode
                    == get(/databases/$(database)/documents/bootstrap/config).data.adminCode));

@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:artvault/core/providers/providers.dart';
+import 'package:artvault/core/theme/adaptive_layout.dart';
 import 'package:artvault/data/models/app_user.dart';
 import 'package:artvault/data/remote/cloud_backend.dart';
 import 'package:artvault/features/home/home_screen.dart';
@@ -54,13 +55,16 @@ Widget _homeApp(int failedUploads) {
         () => _FakeCloudSyncHealth(failedUploads),
       ),
     ],
-    child: MaterialApp.router(
-      routerConfig: GoRouter(
-        initialLocation: '/home',
-        routes: [
-          GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
-          GoRoute(path: '/repair-images', builder: (_, _) => const SizedBox()),
-        ],
+    child: AdaptiveLayout(
+      profile: testProfile,
+      child: MaterialApp.router(
+        routerConfig: GoRouter(
+          initialLocation: '/home',
+          routes: [
+            GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
+            GoRoute(path: '/repair-images', builder: (_, _) => const SizedBox()),
+          ],
+        ),
       ),
     ),
   );

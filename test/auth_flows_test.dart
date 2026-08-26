@@ -19,6 +19,9 @@ import 'package:artvault/features/auth/login_screen.dart';
 import 'package:artvault/features/auth/register_screen.dart';
 import 'package:artvault/features/auth/forgot_password_screen.dart';
 import 'package:artvault/features/settings/security_screen.dart';
+import 'package:artvault/core/widgets/premium/premium_button.dart';
+import 'package:artvault/core/widgets/app_button.dart';
+import 'package:artvault/core/theme/adaptive_layout.dart';
 
 import 'helpers.dart';
 import 'hive_test_harness.dart';
@@ -77,12 +80,12 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: appOverrides(introShown: true),
-          child: const MaterialApp(home: LoginScreen()),
+          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: LoginScreen())),
         ),
       );
       await _drainLoginMotion(tester);
 
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Sign In'));
+      await tester.tap(find.widgetWithText(PremiumButton, 'Sign In'));
       await tester.pump();
 
       expect(find.text('Email is required'), findsOneWidget);
@@ -94,14 +97,14 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: appOverrides(introShown: true),
-          child: const MaterialApp(home: LoginScreen()),
+          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: LoginScreen())),
         ),
       );
       await _drainLoginMotion(tester);
 
       await tester.enterText(find.byType(TextFormField).at(0), 'not-an-email');
       await tester.enterText(find.byType(TextFormField).at(1), 'password123');
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Sign In'));
+      await tester.tap(find.widgetWithText(PremiumButton, 'Sign In'));
       await tester.pump();
 
       expect(find.text('Enter a valid email address'), findsOneWidget);
@@ -114,7 +117,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: appOverrides(introShown: true),
-          child: const MaterialApp(home: LoginScreen()),
+          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: LoginScreen())),
         ),
       );
       await _drainLoginMotion(tester);
@@ -136,7 +139,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: appOverrides(introShown: true),
-          child: const MaterialApp(home: RegisterScreen()),
+          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: RegisterScreen())),
         ),
       );
       await _drainAuthLayoutMotion(tester);
@@ -145,9 +148,9 @@ void main() {
       await tester.enterText(find.byType(TextFormField).at(1), 'kais@example.com');
       await tester.enterText(find.byType(TextFormField).at(2), 'password123');
       await tester.enterText(find.byType(TextFormField).at(3), 'password456');
-      await tester.ensureVisible(find.widgetWithText(ElevatedButton, 'Create Account'));
+      await tester.ensureVisible(find.widgetWithText(PremiumButton, 'Create Account'));
       await tester.pump();
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Create Account'));
+      await tester.tap(find.widgetWithText(PremiumButton, 'Create Account'));
       await tester.pump();
 
       expect(find.text('Passwords do not match'), findsOneWidget);
@@ -158,14 +161,14 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: appOverrides(introShown: true),
-          child: const MaterialApp(home: RegisterScreen()),
+          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: RegisterScreen())),
         ),
       );
       await _drainAuthLayoutMotion(tester);
 
-      await tester.ensureVisible(find.widgetWithText(ElevatedButton, 'Create Account'));
+      await tester.ensureVisible(find.widgetWithText(PremiumButton, 'Create Account'));
       await tester.pump();
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Create Account'));
+      await tester.tap(find.widgetWithText(PremiumButton, 'Create Account'));
       await tester.pump();
 
       expect(find.text('Name is required'), findsOneWidget);
@@ -180,7 +183,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: appOverrides(introShown: true),
-          child: const MaterialApp(home: RegisterScreen()),
+          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: RegisterScreen())),
         ),
       );
       await _drainAuthLayoutMotion(tester);
@@ -231,13 +234,13 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: appOverrides(introShown: true),
-          child: const MaterialApp(home: ForgotPasswordScreen()),
+          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: ForgotPasswordScreen())),
         ),
       );
       await _drainAuthLayoutMotion(tester);
 
       await tester.enterText(find.byType(TextFormField), 'nope');
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Send reset link'));
+      await tester.tap(find.widgetWithText(AppButton, 'Send reset link'));
       await tester.pump();
 
       expect(find.text('Enter a valid email address'), findsOneWidget);
@@ -249,7 +252,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: appOverrides(introShown: true),
-          child: const MaterialApp(home: ForgotPasswordScreen()),
+          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: ForgotPasswordScreen())),
         ),
       );
       await _drainAuthLayoutMotion(tester);
@@ -258,7 +261,7 @@ void main() {
         find.byType(TextFormField),
         'kais@example.com',
       );
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Send reset link'));
+      await tester.tap(find.widgetWithText(AppButton, 'Send reset link'));
       // Let the busy state render, then settle the failed Future.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
@@ -266,7 +269,7 @@ void main() {
       // Cloud is not connected (no Firebase in tests) — the screen must
       // surface the reason and stay on the form.
       expect(find.text('Check your inbox'), findsNothing);
-      expect(find.widgetWithText(ElevatedButton, 'Send reset link'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Send reset link'), findsOneWidget);
     });
   });
 
@@ -277,7 +280,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: appOverrides(introShown: true),
-          child: const MaterialApp(home: LoginScreen()),
+          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: LoginScreen())),
         ),
       );
       await _drainLoginMotion(tester);
@@ -299,7 +302,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: appOverrides(introShown: true),
-          child: const MaterialApp(home: LoginScreen()),
+          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: LoginScreen())),
         ),
       );
       await _drainLoginMotion(tester);

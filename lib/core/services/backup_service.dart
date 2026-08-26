@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
 import '../../data/local/local_database.dart';
@@ -104,15 +105,29 @@ class BackupService {
   /// Pulls the cloud snapshot and merges into the local vault.
   Future<bool> restoreCloudBackup() async {
     final cloud = CloudBackend.instance;
-    if (!cloud.isReady) return false;
+    if (!cloud.isReady) {
+      debugPrint('BackupService.restoreCloudBackup: cloud not ready');
+      return false;
+    }
     final uid = cloud.currentUser?.uid;
-    if (uid == null) return false;
+    if (uid == null) {
+      debugPrint('BackupService.restoreCloudBackup: no uid');
+      return false;
+    }
 
     // Backups are keyed by the owner's uid, so fetch exactly this user's doc.
+    debugPrint('BackupService.restoreCloudBackup: fetching backups/$uid');
     final data = await cloud.fetchDoc('backups', uid);
-    if (data == null) return false;
+    if (data == null) {
+      debugPrint('BackupService.restoreCloudBackup: no backup doc found');
+      return false;
+    }
 
     final db = LocalDatabase.instance;
+    final paintingCount = (data['paintings'] as List?)?.length ?? 0;
+    final artistCount = (data['artists'] as List?)?.length ?? 0;
+    final docCount = (data['documents'] as List?)?.length ?? 0;
+    debugPrint('BackupService.restoreCloudBackup: paintings=$paintingCount artists=$artistCount docs=$docCount');
     if (data['paintings'] is List) {
       await db.putAll(
         AppConstants.boxPaintings,

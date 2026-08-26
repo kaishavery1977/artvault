@@ -221,7 +221,7 @@ class _CelebrationDialogState extends State<_CelebrationDialog> {
                 const SizedBox(height: AppSpacing.lg),
                 GradientShimmerText(
                   text: widget.title,
-                  style: AppTheme.display(context, size: 24),
+                  style: AppTheme.display(context, size: context.adaptiveFont(24)),
                   colors: [scheme.primary, scheme.secondary, scheme.tertiary],
                   duration: const Duration(milliseconds: 1300),
                 ),

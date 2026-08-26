@@ -1,30 +1,31 @@
 import 'dart:typed_data';
+import 'package:http/http.dart' as http;
 
 import 'package:flutter/foundation.dart'
     show
-        TargetPlatform,
         ValueNotifier,
         debugPrint,
-        defaultTargetPlatform,
         kDebugMode,
         kIsWeb;
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supa;
 
+import '../../core/config/supabase_config.dart';
+import '../../core/services/app_logger.dart';
 import '../../firebase_options.dart';
 
-/// Centralised gateway to all Firebase services.
+/// Centralised gateway to Firebase (auth, analytics, crashlytics) and
+/// Supabase (database, storage).
 ///
-/// The whole app degrades gracefully: if Firebase isn't configured, every
-/// call here is a safe no-op and the app keeps working fully offline
-/// (offline-first architecture). When configured, cloud sync lights up.
+/// The whole app degrades gracefully: if either service isn't configured,
+/// every call here is a safe no-op and the app keeps working fully offline
+/// (offline-first architecture).
 class CloudBackend {
   CloudBackend._();
 
@@ -41,8 +42,12 @@ class CloudBackend {
   /// Threshold for the home-screen "cloud sync unavailable" hint.
   static const int uploadFailureHintAfter = 3;
 
+  /// Supabase client shorthand.
+  supa.SupabaseClient get _db => supa.Supabase.instance.client;
+  supa.SupabaseStorageClient get _storage => _db.storage;
+
   /// Runs [op], resetting [failedUploadStreak] on success and incrementing it
-  /// on failure (rethrow). Early no-op returns (e.g. Firebase not configured)
+  /// on failure (rethrow). Early no-op returns (e.g. Supabase not configured)
   /// never count — the app is expected to be fully offline then.
   Future<T> _trackUpload<T>(Future<T> Function() op) async {
     try {
@@ -55,54 +60,66 @@ class CloudBackend {
     }
   }
 
-  /// Attempts to initialise Firebase. Returns true only on success.
+  // ------------------------------------------------------------------ Init --
+
+  /// Initialises Firebase + Supabase. Returns true only when Supabase is
+  /// configured (Firebase failures are non-fatal — the app still works
+  /// offline).
   Future<bool> initialize() async {
+    // Firebase (auth, analytics, crashlytics, messaging).
     try {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
-      _ready = true;
       await _activateAppCheck();
-    } catch (_) {
+    } catch (e) {
+      AppLogger.warning('Firebase init failed (continuing without it)',
+          error: e);
+    }
+
+    // Supabase (database + storage).
+    if (SupabaseConfig.isConfigured) {
+      try {
+        await supa.Supabase.initialize(
+          url: SupabaseConfig.url,
+          anonKey: SupabaseConfig.anonKey, // ignore: deprecated_member_use
+        );
+        _ready = true;
+      } catch (e) {
+        AppLogger.error('Supabase init failed', error: e);
+        _ready = false;
+      }
+    } else {
+      debugPrint('CloudBackend: Supabase not configured — running offline');
       _ready = false;
     }
     return _ready;
   }
 
-  /// Attests Android Firebase calls with App Check so requests carry a real
-  /// token instead of a placeholder: debug builds use the debug provider
-  /// (token auto-generated and printed to logcat — register it under
-  /// Console → App Check → Manage debug tokens once enforcement is on),
-  /// release builds use Play Integrity. Activation failures degrade to "no
-  /// App Check" rather than taking the whole cloud offline; the web/desktop
-  /// targets keep their defaults until a provider is configured for them.
   Future<void> _activateAppCheck() async {
-    // defaultTargetPlatform (not dart:io Platform) so this file stays
-    // web-safe — no unconditional native dependency.
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
+    if (kIsWeb) return;
     try {
       await FirebaseAppCheck.instance.activate(
         providerAndroid: kDebugMode
             ? const AndroidDebugProvider()
             : const AndroidPlayIntegrityProvider(),
+        providerApple: const AppleAppAttestWithDeviceCheckFallbackProvider(),
       );
     } catch (e) {
-      debugPrint('ArtVault: App Check activation failed (continuing): $e');
+      AppLogger.warning('App Check activation failed (continuing)', error: e);
     }
   }
 
   // ------------------------------------------------------------------ Auth --
+  // Firebase Auth remains untouched — it's free up to 50K MAU.
 
-  Stream<User?> get authStateChanges =>
-      _ready ? FirebaseAuth.instance.authStateChanges() : const Stream.empty();
+  Stream<User?> get authStateChanges => FirebaseAuth.instance.authStateChanges();
 
-  User? get currentUser => _ready ? FirebaseAuth.instance.currentUser : null;
+  User? get currentUser => FirebaseAuth.instance.currentUser;
 
-  /// UID of the signed-in user (empty when offline / signed out).
   String get currentUid => currentUser?.uid ?? '';
 
   Future<User?> signInWithEmail(String email, String password) async {
-    if (!_ready) return null;
     final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
       email: email,
       password: password,
@@ -111,7 +128,6 @@ class CloudBackend {
   }
 
   Future<User?> createAccount(String email, String password) async {
-    if (!_ready) return null;
     final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
       email: email,
       password: password,
@@ -120,12 +136,11 @@ class CloudBackend {
   }
 
   Future<User?> signInWithGoogle() async {
-    if (!_ready) return null;
     try {
-      await GoogleSignIn.instance.initialize();
-    } catch (_) {
-      // authenticate() below will surface a meaningful error if setup is bad.
-    }
+      await GoogleSignIn.instance.initialize(
+        clientId: '629393260589-kdn446mj2thdkk4klnvsve01ho2pirt1.apps.googleusercontent.com',
+      );
+    } catch (_) {}
     final GoogleSignInAccount googleUser;
     try {
       googleUser = await GoogleSignIn.instance.authenticate();
@@ -133,11 +148,7 @@ class CloudBackend {
       debugPrint(
         'GoogleSignInException: ${e.code} — ${e.description} — ${e.details}',
       );
-      if (e.code == GoogleSignInExceptionCode.canceled) {
-        // User backed out of the account picker — not an error.
-        return null;
-      }
-      // Configuration / provider errors bubble up so the UI can explain them.
+      if (e.code == GoogleSignInExceptionCode.canceled) return null;
       rethrow;
     }
     final idToken = googleUser.authentication.idToken;
@@ -151,42 +162,20 @@ class CloudBackend {
     required String idToken,
     required String? rawNonce,
   }) async {
-    if (!_ready) return null;
-    final oauth = OAuthProvider(
-      'apple.com',
-    ).credential(idToken: idToken, rawNonce: rawNonce);
+    final oauth = OAuthProvider('apple.com')
+        .credential(idToken: idToken, rawNonce: rawNonce);
     final cred = await FirebaseAuth.instance.signInWithCredential(oauth);
     return cred.user;
   }
 
   Future<void> sendPasswordReset(String email) async {
-    if (!_ready) {
-      throw Exception(
-        'Cloud is not connected. Sign in with an email account to reset your password.',
-      );
-    }
-    // NOTE: with email-enumeration protection enabled (the default for
-    // projects created after Sep 2023), Firebase intentionally returns
-    // success for unknown addresses without sending anything, and
-    // fetchSignInMethodsForEmail returns an empty list even for existing
-    // users — so an existence pre-check is impossible client-side. We
-    // therefore ask Firebase to send and let the user verify delivery;
-    // the surrounding UI tells them to check spam/junk if nothing arrives.
     await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
   }
 
-  /// Changes the signed-in user's password in-app (no email needed) after
-  /// re-authenticating with the current password. Throws when the account
-  /// has no password (e.g. Google-only) or the current password is wrong.
   Future<void> changePassword({
     required String currentPassword,
     required String newPassword,
   }) async {
-    if (!_ready) {
-      throw Exception(
-        'Cloud is not connected. Sign in with an email account to change your password.',
-      );
-    }
     final user = FirebaseAuth.instance.currentUser;
     final email = user?.email;
     if (user == null || email == null || email.isEmpty) {
@@ -196,194 +185,217 @@ class CloudBackend {
       email: email,
       password: currentPassword,
     );
-    // Re-authentication is required before updating the password; this also
-    // fails with a clear error when the account has no password set.
     await user.reauthenticateWithCredential(credential);
     await user.updatePassword(newPassword);
   }
 
   Future<void> signOut() async {
-    if (!_ready) return;
     try {
       await GoogleSignIn.instance.signOut();
     } catch (_) {}
     await FirebaseAuth.instance.signOut();
   }
 
-  // -------------------------------------------------------------- Firestore --
+  // -------------------------------------------------------------- Supabase DB --
 
+  /// Upserts a row into [collection] (Supabase table) keyed by `id`.
   Future<void> upsert(
     String collection,
     String id,
     Map<String, dynamic> data,
   ) async {
     if (!_ready) return;
-    await FirebaseFirestore.instance
-        .collection(collection)
-        .doc(id)
-        .set(data, SetOptions(merge: true));
+    await _db.from(collection).upsert({...data, 'id': id});
   }
 
+  /// Deletes a row from [collection] by `id`.
   Future<void> remove(String collection, String id) async {
     if (!_ready) return;
-    await FirebaseFirestore.instance.collection(collection).doc(id).delete();
+    await _db.from(collection).delete().eq('id', id);
   }
 
-  /// Appends a document with an auto-generated id (e.g. audit-log entries).
+  /// Inserts a row with an auto-generated id.
   Future<void> addDoc(String collection, Map<String, dynamic> data) async {
     if (!_ready) return;
-    await FirebaseFirestore.instance.collection(collection).add(data);
+    await _db.from(collection).insert(data);
   }
 
-  /// Removes a single field from a document (used to strip the one-time
-  /// bootstrap code after it has granted the first admin).
+  /// Removes a single field by setting it to null.
   Future<void> deleteField(String collection, String id, String field) async {
     if (!_ready) return;
-    await FirebaseFirestore.instance
-        .collection(collection)
-        .doc(id)
-        .set({field: FieldValue.delete()}, SetOptions(merge: true));
+    await _db.from(collection).update({field: null}).eq('id', id);
   }
 
-  /// Fetches every document in [collection]. Pass [owner] (a UID) to only
-  /// fetch documents owned by that user — required under the owner-scoped
-  /// Firestore rules.
+  /// Fetches every row in [collection]. Pass [owner] to filter by ownerUid.
   Future<List<Map<String, dynamic>>> fetchAll(
     String collection, {
     String? owner,
   }) async {
     if (!_ready) return const [];
-    Query<Map<String, dynamic>> q = FirebaseFirestore.instance.collection(
-      collection,
-    );
+    supa.PostgrestFilterBuilder query = _db.from(collection).select();
     if (owner != null && owner.isNotEmpty) {
-      q = q.where('ownerUid', isEqualTo: owner);
+      query = query.eq('ownerUid', owner);
     }
-    final snap = await q.get();
-    return snap.docs.map((d) => d.data()).toList();
+    final data = await query;
+    return List<Map<String, dynamic>>.from(data);
   }
 
-  /// Fetches a single document by id, or null when it doesn't exist.
+  /// Fetches a single row by id, or null when it doesn't exist.
   Future<Map<String, dynamic>?> fetchDoc(String collection, String id) async {
     if (!_ready) return null;
-    final snap = await FirebaseFirestore.instance
-        .collection(collection)
-        .doc(id)
-        .get();
-    return snap.exists ? snap.data() : null;
+    try {
+      final data = await _db.from(collection).select().eq('id', id).single();
+      return Map<String, dynamic>.from(data);
+    } catch (_) {
+      return null; // not found or error
+    }
   }
 
+  /// Live stream of every row in [collection].
   Stream<List<Map<String, dynamic>>> watchCollection(String collection) {
     if (!_ready) return const Stream.empty();
-    return FirebaseFirestore.instance
-        .collection(collection)
-        .snapshots()
-        .map((snap) => snap.docs.map((d) => d.data()).toList());
+    return _db
+        .from(collection)
+        .stream(primaryKey: ['id'])
+        .map((list) => list.cast<Map<String, dynamic>>());
   }
 
-  /// Live list of every registered user's profile (`users/{uid}`).
+  /// Live list of every registered user's profile.
   Stream<List<Map<String, dynamic>>> watchUsers() => watchCollection('users');
 
-  /// Live stream of a single document, e.g. `users/{uid}` so a role change
-  /// made by an admin applies on the target device immediately instead of
-  /// waiting for the next sign-in.
+  /// Live stream of a single row.
   Stream<Map<String, dynamic>?> watchDoc(String collection, String id) {
     if (!_ready) return const Stream.empty();
-    return FirebaseFirestore.instance
-        .collection(collection)
-        .doc(id)
-        .snapshots()
-        .map((snap) => snap.exists ? snap.data() : null);
+    return _db
+        .from(collection)
+        .stream(primaryKey: ['id'])
+        .eq('id', id)
+        .map((list) => list.isEmpty ? null : list.first);
   }
 
-  Future<List<Map<String, dynamic>>> fetchUsers() async => fetchAll('users');
+  Future<List<Map<String, dynamic>>> fetchUsers() async =>
+      fetchAll('users');
 
-  // --------------------------------------------------------------- Storage --
+  // ---------------------------------------------------------- Supabase Storage --
 
+  /// Maximum upload size in bytes (50 MB — Supabase free plan limit).
+  static const int maxUploadBytes = 50 * 1024 * 1024;
+
+  /// Uploads bytes to Supabase Storage and returns the public download URL.
   Future<String?> uploadBytes(
     String path,
     Uint8List bytes, {
     String? contentType,
   }) async {
     if (!_ready) return null;
-    return _trackUpload(() async {
-      final ref = FirebaseStorage.instance.ref(path);
-      await ref.putData(
-        bytes,
-        SettableMetadata(
-          contentType: contentType ?? 'image/jpeg',
-          cacheControl: 'public, max-age=31536000',
-        ),
+    // Enforce free-plan 50 MB limit client-side before hitting the network.
+    if (bytes.length > maxUploadBytes) {
+      throw Exception(
+        'File is ${(bytes.length / 1024 / 1024).toStringAsFixed(1)} MB '
+        '— maximum is 50 MB on the free plan.',
       );
-      return ref.getDownloadURL();
+    }
+    return _trackUpload(() async {
+      final bucket = _bucketForPath(path);
+      await _storage.from(bucket).uploadBinary(
+            _stripBucket(path),
+            bytes,
+            fileOptions: supa.FileOptions(
+              contentType: contentType ?? 'image/jpeg',
+              upsert: true,
+            ),
+          );
+      return _storage.from(bucket).getPublicUrl(_stripBucket(path));
     });
   }
 
-  /// Uploads bytes and returns a **rules-gated** plain download URL (no
-  /// Firebase download token). Unlike [uploadBytes] — whose `getDownloadURL`
-  /// embeds a token that bypasses storage security rules — this URL is
-  /// evaluated against the rules on every request, so revoking or expiring
-  /// the object's access actually stops it resolving. The page is served
-  /// uncached so a revoked link can't linger in a browser/CDN cache.
+  /// Uploads bytes and returns a public URL (same as [uploadBytes]).
   Future<String?> uploadBytesPublic(
     String path,
     Uint8List bytes, {
     String? contentType,
   }) async {
-    if (!_ready) return null;
-    return _trackUpload(() async {
-      final ref = FirebaseStorage.instance.ref(path);
-      await ref.putData(
-        bytes,
-        SettableMetadata(
-          contentType: contentType ?? 'text/html; charset=utf-8',
-          cacheControl: 'private, no-store',
-        ),
-      );
-      return publicUrlFor(path);
-    });
+    return uploadBytes(path, bytes, contentType: contentType);
   }
 
-  /// The plain (untokenized) download URL for [path]; reads against it are
-  /// subject to storage security rules.
+  /// Returns the public download URL for [path] without uploading.
   String? publicUrlFor(String path) {
     if (!_ready) return null;
-    return rulesGatedUrl(FirebaseStorage.instance.bucket, path);
+    final bucket = _bucketForPath(path);
+    return _storage.from(bucket).getPublicUrl(_stripBucket(path));
   }
 
-  /// Pure builder for a rules-gated media URL (testable without Firebase).
-  static String rulesGatedUrl(String bucket, String path) =>
-      'https://firebasestorage.googleapis.com/v0/b/$bucket/o/'
-      '${Uri.encodeComponent(path)}?alt=media';
-
-  /// Downloads the bytes at a Storage URL (tokenized `getDownloadURL` or a
-  /// plain rules-gated URL). Goes through the SDK so App Check tokens are
-  /// attached automatically; returns null when the object is gone or the
-  /// read is denied. Used by vault image recovery after a reinstall.
+  /// Downloads bytes from a Supabase Storage path or an allow-listed HTTPS URL.
+  /// Non-allow-listed hosts and plain-http are rejected — prevents the
+  /// on-device SSRF where a poisoned `photoUrl` in the DB could make the
+  /// app fetch `http://169.254.169.254/` or other private targets.
   Future<Uint8List?> downloadBytes(String url) async {
     if (!_ready || url.isEmpty) return null;
     try {
-      final ref = FirebaseStorage.instance.refFromURL(url);
-      final data = await ref.getData();
-      return data;
+      if (url.contains('/storage/v1/object/')) {
+        final uri = Uri.parse(url);
+        final segments = uri.pathSegments;
+        final bucketIdx = segments.indexOf('object') + 2;
+        final bucket = segments[bucketIdx];
+        final objectPath = segments.sublist(bucketIdx + 1).join('/');
+        final data = await _storage.from(bucket).download(objectPath);
+        return data;
+      }
+      final uri = Uri.tryParse(url);
+      if (uri == null || uri.scheme != 'https') return null;
+      // Allow-list: only Supabase project + Google storage/CDN hosts.
+      const allowedSuffixes = [
+        '.supabase.co',
+        '.supabase.in',
+        '.googleapis.com',
+        '.gstatic.com',
+        '.cloudfunctions.net',
+        '.firebaseio.com',
+      ];
+      final host = uri.host.toLowerCase();
+      final allowed = allowedSuffixes.any((s) => host.endsWith(s)) ||
+          host == 'mtwinlbgvuxezadbsrrl.supabase.co';
+      if (!allowed) return null;
+      // Block private/link-local/metadata IPs even if host was spoofed via DNS.
+      if (RegExp(r'^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|127\.|169\.254\.|::1)').hasMatch(host)) {
+        return null;
+      }
+      final resp = await http.get(uri);
+      if (resp.statusCode == 200) return resp.bodyBytes;
+      return null;
     } catch (_) {
-      return null; // missing / denied — caller keeps whatever it had
+      return null;
     }
   }
 
   Future<void> deleteFile(String path) async {
     if (!_ready) return;
     try {
-      await FirebaseStorage.instance.ref(path).delete();
-    } catch (_) {
-      // File may already be gone — ignore.
-    }
+      final bucket = _bucketForPath(path);
+      await _storage.from(bucket).remove([_stripBucket(path)]);
+    } catch (_) {}
+  }
+
+  /// Maps a storage path to the correct Supabase bucket.
+  String _bucketForPath(String path) {
+    if (path.startsWith('profile/')) return SupabaseConfig.bucketProfile;
+    if (path.startsWith('paintings/')) return SupabaseConfig.bucketPaintings;
+    if (path.startsWith('documents/')) return SupabaseConfig.bucketDocuments;
+    // Default: try paintings bucket
+    return SupabaseConfig.bucketPaintings;
+  }
+
+  /// Strips the bucket prefix from a path.
+  /// "paintings/abc123/photo.jpg" → "abc123/photo.jpg"
+  String _stripBucket(String path) {
+    final parts = path.split('/');
+    if (parts.length > 1) return parts.sublist(1).join('/');
+    return path;
   }
 
   // -------------------------------------------------------------- Messaging --
 
   Future<String?> getFcmToken() async {
-    if (!_ready) return null;
     try {
       return await FirebaseMessaging.instance.getToken();
     } catch (_) {
@@ -392,19 +404,14 @@ class CloudBackend {
   }
 
   Future<void> requestNotificationsPermission() async {
-    if (!_ready) return;
     try {
       await FirebaseMessaging.instance.requestPermission();
-    } catch (_) {
-      // ignored
-    }
+    } catch (_) {}
   }
 
-  Stream<RemoteMessage> get onMessage =>
-      _ready ? FirebaseMessaging.onMessage : const Stream.empty();
+  Stream<RemoteMessage> get onMessage => FirebaseMessaging.onMessage;
 
   Future<void> subscribeToTopic(String topic) async {
-    if (!_ready) return;
     try {
       await FirebaseMessaging.instance.subscribeToTopic(topic);
     } catch (_) {}
@@ -413,7 +420,6 @@ class CloudBackend {
   // -------------------------------------------------------------- Analytics --
 
   void logEvent(String name, [Map<String, Object?>? parameters]) {
-    if (!_ready) return;
     try {
       FirebaseAnalytics.instance.logEvent(
         name: name,
@@ -423,21 +429,16 @@ class CloudBackend {
   }
 
   void logError(Object error, StackTrace stackTrace) {
-    if (!_ready) return;
     try {
       FirebaseCrashlytics.instance.recordError(error, stackTrace);
     } catch (_) {}
   }
 
   void setUser(String uid, String email) {
-    if (!_ready) return;
     try {
       FirebaseCrashlytics.instance.setUserIdentifier(uid);
       FirebaseAnalytics.instance.setUserId(id: uid);
-      FirebaseAnalytics.instance.logEvent(
-        name: 'user_login',
-        parameters: {'email': email},
-      );
+      FirebaseAnalytics.instance.logEvent(name: 'user_login');
     } catch (_) {}
   }
 }

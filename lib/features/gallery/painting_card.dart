@@ -14,10 +14,10 @@ import '../../core/providers/providers.dart';
 import '../../data/models/painting.dart';
 import '../../data/repositories/painting_repository.dart';
 
-/// Best cover for a card: the stored cover, or the first image whose local
-/// file actually exists when the cover is empty or its file is gone. Mirrors
-/// the detail screen's images-first fallback, so a card never shows "no
-/// image" while the artwork has one.
+/// Best cover for a card: the stored cover, or the first existing local
+/// image when the cover is empty or its file is gone.
+/// Uses File.existsSync() — only runs once per card build (not per rebuild),
+/// so the cost is acceptable.
 ({String path, String url}) _effectiveCover(Painting p) {
   var path = p.coverImagePath;
   if (path.isEmpty || !File(path).existsSync()) {
@@ -58,7 +58,9 @@ class PaintingGridCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final canEdit = ref.watch(authProvider).canEdit;
+    // Only rebuild when canEdit changes, not on every auth state update
+    // (role change, plan change, login, etc.).
+    final canEdit = ref.watch(authProvider.select((a) => a.canEdit));
     final cover = _effectiveCover(painting);
     final image = ArtImage(
       path: cover.path,
@@ -171,6 +173,7 @@ class _FavoriteButton extends ConsumerWidget {
       color: Colors.black.withValues(alpha: 0.35),
       shape: const CircleBorder(),
       child: IconButton(
+        tooltip: isFav ? 'Remove from favorites' : 'Add to favorites',
         iconSize: 18,
         visualDensity: VisualDensity.compact,
         icon: Icon(
@@ -236,7 +239,7 @@ class PaintingListTile extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 12,
-                          color: scheme.onSurface.withValues(alpha: 0.55),
+                          color: scheme.onSurface.withValues(alpha: 0.65),
                         ),
                       ),
                       const SizedBox(height: 4),

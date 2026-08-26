@@ -58,7 +58,11 @@ class ArtImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasPath = path != null && path!.isNotEmpty && File(path!).existsSync();
+    // Avoid File.existsSync() in build() — it's a blocking disk I/O call
+    // that causes jank when many ArtImage widgets rebuild (e.g. gallery grid
+    // scroll). Instead, attempt to load the file and let errorBuilder handle
+    // missing files gracefully.
+    final hasPath = path != null && path!.isNotEmpty;
     final hasUrl = url != null && url!.isNotEmpty;
 
     Widget? child;
@@ -69,23 +73,29 @@ class ArtImage extends StatelessWidget {
         height: height,
         fit: fit,
         filterQuality: FilterQuality.low,
-        errorBuilder: (_, _, _) => _fallback(context),
+        // errorBuilder handles non-existent files, permission errors, etc.
+        errorBuilder: (_, _, _) =>
+            hasUrl ? _networkImage(context) : _fallback(context),
       );
     } else if (hasUrl) {
-      child = CachedNetworkImage(
-        imageUrl: url!,
-        width: width,
-        height: height,
-        fit: fit,
-        fadeInDuration: const Duration(milliseconds: 220),
-        placeholder: (_, _) => _fallback(context),
-        errorWidget: (_, _, _) => _fallback(context),
-      );
+      child = _networkImage(context);
     } else {
       child = _fallback(context);
     }
 
     return ClipRRect(borderRadius: borderRadius, child: child);
+  }
+
+  Widget _networkImage(BuildContext context) {
+    return CachedNetworkImage(
+      imageUrl: url!,
+      width: width,
+      height: height,
+      fit: fit,
+      fadeInDuration: const Duration(milliseconds: 220),
+      placeholder: (_, _) => _fallback(context),
+      errorWidget: (_, _, _) => _fallback(context),
+    );
   }
 }
 

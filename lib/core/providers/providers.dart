@@ -12,6 +12,7 @@ import '../../data/models/condition_report.dart';
 import '../../data/models/painting.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/artist_repository.dart';
+import '../services/backup_service.dart';
 import '../../data/repositories/condition_report_repository.dart';
 import '../../data/repositories/document_repository.dart';
 import '../../data/repositories/notification_repository.dart';
@@ -154,24 +155,49 @@ class AuthController extends StateNotifier<AuthState> {
     }
 
     try {
-      stage('Restoring paintings…');
-      await PaintingRepository.instance.syncNow();
-      restored += await PaintingRepository.instance.recoverImages();
+      // Each stage is wrapped in its own try-catch so a failure in one
+      // collection never blocks the rest — the user still gets partial
+      // restore instead of nothing.
+      try {
+        stage('Restoring paintings…');
+        await PaintingRepository.instance.syncNow();
+        restored += await PaintingRepository.instance.recoverImages();
+        // If syncNow pulled nothing from individual Firestore docs,
+        // try the cloud backup snapshot (full vault JSON in backups/{uid}).
+        if (restored == 0) {
+          await BackupService.instance.restoreCloudBackup();
+          restored += await PaintingRepository.instance.recoverImages();
+        }
+      } catch (_) {}
 
-      stage('Restoring artists…');
-      await ArtistRepository.instance.pullRemote();
-      restored += await ArtistRepository.instance.recoverPhotos();
+      try {
+        stage('Restoring artists…');
+        await ArtistRepository.instance.pullRemote();
+        restored += await ArtistRepository.instance.recoverPhotos();
+      } catch (_) {}
 
-      stage('Restoring documents…');
-      await DocumentRepository.instance.pullRemote();
-      restored += await DocumentRepository.instance.recoverDocuments();
+      try {
+        stage('Restoring documents…');
+        await DocumentRepository.instance.pullRemote();
+        restored += await DocumentRepository.instance.recoverDocuments();
+      } catch (_) {}
 
-      stage('Restoring condition reports…');
-      await ConditionReportRepository.instance.pullRemote();
-      restored += await ConditionReportRepository.instance.recoverPhotos();
+      try {
+        stage('Restoring condition reports…');
+        await ConditionReportRepository.instance.pullRemote();
+        restored += await ConditionReportRepository.instance.recoverPhotos();
+      } catch (_) {}
 
-      stage('Restoring profile photo…');
-      await AuthRepository.instance.recoverProfilePhoto();
+      // Profile photo: retry up to 3 times (network flakiness on cold start).
+      for (var attempt = 0; attempt < 3; attempt++) {
+        try {
+          stage('Restoring profile photo…');
+          await AuthRepository.instance.recoverProfilePhoto();
+          break;
+        } catch (_) {
+          if (attempt < 2) await Future<void>.delayed(const Duration(seconds: 2));
+        }
+      }
       // The avatar may have swapped from a network URL to a fresh local
       // file; pick it up so the UI shows it without a restart.
       await refreshProfile();
@@ -416,11 +442,11 @@ class AuthController extends StateNotifier<AuthState> {
   }
 
   static String _message(Object e) {
-    final msg = e.toString().replaceFirst('Exception: ', '');
-    if (msg.contains('firebase_auth')) {
-      return 'Sign-in failed. Check your credentials.';
-    }
-    return msg.isEmpty ? 'Something went wrong. Please try again.' : msg;
+    // AuthRepository already maps Firebase codes to friendly text (e.g.
+    // "Incorrect email or password", "No account found"), so pass it through.
+    final raw = e.toString().replaceFirst('Exception: ', '').trim();
+    if (raw.isEmpty) return 'Something went wrong. Please try again.';
+    return raw;
   }
 }
 

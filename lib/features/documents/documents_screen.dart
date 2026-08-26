@@ -52,12 +52,12 @@ class DocumentsScreen extends ConsumerWidget {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(
-                      AppSpacing.md,
+                      context.adaptiveSpace(AppSpacing.md),
                       AppSpacing.lg + MediaQuery.paddingOf(context).top * 0.4,
-                      AppSpacing.md,
+                      context.adaptiveSpace(AppSpacing.md),
                       AppSpacing.sm,
                     ),
-                    child: Text('Documents', style: AppTheme.display(context, size: 28)),
+                    child: Text('Documents', style: AppTheme.display(context, size: context.adaptiveFont(28))),
                   ),
                 ),
                 SliverPadding(

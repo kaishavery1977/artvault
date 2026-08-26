@@ -9,6 +9,9 @@ import 'package:artvault/features/gallery/gallery_screen.dart';
 import 'package:artvault/features/gallery/painting_card.dart';
 import 'package:artvault/features/gallery/search_screen.dart';
 import 'package:artvault/features/painting/painting_lightbox_screen.dart';
+import 'package:artvault/core/theme/adaptive_layout.dart';
+
+import 'helpers.dart';
 
 Painting _painting(String id, String title, {String artist = 'Ravi'}) {
   final now = DateTime(2026, 1, 1, 12);
@@ -28,7 +31,7 @@ Widget _searchApp(List<Painting> paintings) {
       paintingsProvider.overrideWith((ref) => Stream.value(paintings)),
       artistsProvider.overrideWith((ref) => Stream.value(const [])),
     ],
-    child: const MaterialApp(home: SearchScreen()),
+    child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: SearchScreen())),
   );
 }
 

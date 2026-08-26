@@ -9,8 +9,8 @@ environment:
 dependencies:
   cached_network_image: ^3.4.1
   camera: ^0.12.0
-  cloud_firestore: ^6.8.0
   cloud_functions: ^6.3.6
+  supabase_flutter: ^2.8.0
   confetti: ^0.8.0
   crypto: ^3.0.7
   csv: ^8.0.0
@@ -25,7 +25,6 @@ dependencies:
   firebase_core: ^4.13.0
   firebase_crashlytics: ^5.2.7
   firebase_messaging: ^16.5.0
-  firebase_storage: ^13.4.6
   flutter:
     sdk: flutter
   flutter_animate: ^4.5.2
@@ -74,3 +73,15 @@ flutter:
   uses-material-design: true
   assets:
     - assets/models/mobilefacenet.tflite
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
+    - family: PlayfairDisplay
+      fonts:
+        - asset: assets/fonts/PlayfairDisplay-Bold.ttf
+          weight: 700

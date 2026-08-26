@@ -5,9 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../core/services/biometric_service.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/validators.dart';
-import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_fields.dart';
 import '../../core/widgets/motion.dart';
+import '../../core/widgets/premium/premium_button.dart';
 import '../../core/providers/providers.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/remote/cloud_backend.dart';
@@ -54,14 +54,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _google() async {
-    // Social sign-in goes through Firebase — explain instead of firing a
-    // doomed request when the device is offline.
     if (!CloudBackend.instance.isReady) {
       _showOfflineSocial('Google');
       return;
     }
     final ok = await ref.read(authProvider.notifier).signInWithGoogle();
-    if (ok && mounted) context.go('/home');
+    if (ok && mounted) context.go('/admin-gate');
   }
 
   Future<void> _apple() async {
@@ -70,7 +68,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
     final ok = await ref.read(authProvider.notifier).signInWithApple();
-    if (ok && mounted) context.go('/home');
+    if (ok && mounted) context.go('/admin-gate');
   }
 
   void _showOfflineSocial(String provider) {
@@ -193,6 +191,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 textInputAction: TextInputAction.done,
                 onChanged: (_) {},
                 suffixIcon: IconButton(
+                  tooltip: _obscure ? 'Show password' : 'Hide password',
                   icon: Icon(
                     _obscure
                         ? Icons.visibility_outlined
@@ -231,7 +230,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),
-              AppButton(
+              // Premium 3D button with glow effect
+              PremiumButton(
                 label: 'Sign In',
                 loading: auth.busy,
                 onPressed: _submit,

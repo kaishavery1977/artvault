@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:path/path.dart' as p;
 
 import '../../data/models/painting.dart';
@@ -274,10 +273,10 @@ $beacon
     final token = doc['token'] as String? ?? '';
     final rawExpiry = doc['expiresAt'];
     DateTime? expiresAt;
-    if (rawExpiry is Timestamp) {
-      expiresAt = rawExpiry.toDate();
-    } else if (rawExpiry is DateTime) {
+    if (rawExpiry is DateTime) {
       expiresAt = rawExpiry;
+    } else if (rawExpiry is String) {
+      expiresAt = DateTime.tryParse(rawExpiry);
     }
     int? views;
     try {

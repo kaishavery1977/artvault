@@ -17,6 +17,7 @@ import 'package:artvault/features/home/home_screen.dart';
 import 'package:artvault/features/settings/repair_images_screen.dart';
 
 import 'helpers.dart';
+import 'package:artvault/core/theme/adaptive_layout.dart';
 
 AppUser _user(AppRole role, {AppPlan plan = AppPlan.free}) => AppUser(
       uid: 'u1',
@@ -173,7 +174,7 @@ void main() {
             deviceStorageProvider.overrideWith((ref) async => null),
             currencyProvider.overrideWith((ref) => 'USD'),
           ],
-          child: const MaterialApp(home: HomeScreen()),
+          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: HomeScreen())),
         ),
       );
       await tester.pump();
@@ -225,7 +226,7 @@ void main() {
             deviceStorageProvider.overrideWith((ref) async => null),
             currencyProvider.overrideWith((ref) => 'USD'),
           ],
-          child: const MaterialApp(home: HomeScreen()),
+          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: HomeScreen())),
         ),
       );
       await tester.pump();

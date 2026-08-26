@@ -29,9 +29,13 @@ abstract final class AppConstants {
   static const String kFaceLockEnabled = 'face_lock_enabled';
   static const String kAppLockEnabled = 'app_lock_enabled';
 
-  /// Secure-storage key holding the salted SHA-256 digest of the App Lock
-  /// passcode (the raw PIN is never persisted).
+  /// Secure-storage key holding the App Lock passcode hash (a salted
+  /// PBKDF2-HMAC-SHA256 digest; the raw PIN is never persisted).
   static const String kPasscodeHash = 'passcode_hash';
+
+  /// Settings keys for the passcode brute-force throttle.
+  static const String kPasscodeFailures = 'passcode_failures';
+  static const String kPasscodeLockedUntil = 'passcode_locked_until';
 
   /// Secure-storage key holding the enrolled face embedding (JSON float list)
   /// used by Face lock to match the owner instead of accepting any face.
@@ -39,6 +43,14 @@ abstract final class AppConstants {
 
   /// Number of digits in the App Lock passcode.
   static const int kPasscodeLength = 4;
+
+  /// Wrong passcode attempts allowed before throttling starts.
+  static const int kPasscodeMaxAttempts = 5;
+
+  /// Lockout after the first throttle threshold is crossed; each further
+  /// failure doubles the wait until [kPasscodeLockoutMax].
+  static const Duration kPasscodeLockoutStart = Duration(seconds: 30);
+  static const Duration kPasscodeLockoutMax = Duration(minutes: 10);
   static const String kNotificationsEnabled = 'notifications_enabled';
   static const String kAutoBackup = 'auto_backup_enabled';
 
@@ -48,6 +60,9 @@ abstract final class AppConstants {
   static const String kRole = 'user_role';
   static const String kCurrency = 'preferred_currency';
   static const String kLibraryLocation = 'library_location';
+
+  /// Tracks the last app version the user saw the changelog for.
+  static const String kLastSeenVersion = 'last_seen_version';
 
   // Storage box names
   static const String boxSettings = 'av_settings_v2';

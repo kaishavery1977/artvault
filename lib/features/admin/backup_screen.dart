@@ -302,7 +302,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                     'No backups created yet. Tap “Back up now” to create your first one.',
                     style: TextStyle(
                       fontSize: 13,
-                      color: scheme.onSurface.withValues(alpha: 0.55),
+                      color: scheme.onSurface.withValues(alpha: 0.65),
                     ),
                   )
                 else

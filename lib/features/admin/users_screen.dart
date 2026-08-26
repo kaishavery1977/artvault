@@ -483,7 +483,7 @@ class _RoleHistoryCard extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 12.5,
                   height: 1.45,
-                  color: scheme.onSurface.withValues(alpha: 0.55),
+                  color: scheme.onSurface.withValues(alpha: 0.65),
                 ),
               ),
             )
@@ -517,7 +517,7 @@ class _RoleHistoryCard extends ConsumerWidget {
                             '· ${_when(entry.at)}',
                             style: TextStyle(
                               fontSize: 11.5,
-                              color: scheme.onSurface.withValues(alpha: 0.5),
+                              color: scheme.onSurface.withValues(alpha: 0.6),
                             ),
                           ),
                         ],
@@ -630,7 +630,7 @@ class _RevokedCard extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 11.5,
-                            color: scheme.onSurface.withValues(alpha: 0.5),
+                            color: scheme.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
                       ],
@@ -712,7 +712,7 @@ class _UserRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 12,
-                    color: scheme.onSurface.withValues(alpha: 0.55),
+                    color: scheme.onSurface.withValues(alpha: 0.65),
                   ),
                 ),
               ],

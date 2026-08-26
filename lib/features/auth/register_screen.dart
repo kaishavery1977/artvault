@@ -4,9 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/validators.dart';
-import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_fields.dart';
 import '../../core/widgets/motion.dart';
+import '../../core/widgets/premium/premium_button.dart';
 import '../../core/providers/providers.dart';
 import 'auth_layout.dart';
 
@@ -125,6 +125,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 validator: Validators.password,
                 textInputAction: TextInputAction.next,
                 suffixIcon: IconButton(
+                  tooltip: _obscure ? 'Show password' : 'Hide password',
                   icon: Icon(
                     _obscure
                         ? Icons.visibility_outlined
@@ -143,6 +144,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 validator: (v) => Validators.passwordConfirm(v, _password.text),
                 textInputAction: TextInputAction.done,
                 suffixIcon: IconButton(
+                  tooltip: _confirmObscure ? 'Show password' : 'Hide password',
                   icon: Icon(
                     _confirmObscure
                         ? Icons.visibility_outlined
@@ -179,6 +181,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   obscureText: _adminCodeObscure,
                   textInputAction: TextInputAction.done,
                   suffixIcon: IconButton(
+                    tooltip: _adminCodeObscure ? 'Show code' : 'Hide code',
                     icon: Icon(
                       _adminCodeObscure
                           ? Icons.visibility_outlined
@@ -192,7 +195,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
               ],
               const SizedBox(height: AppSpacing.md),
-              AppButton(
+              // Premium 3D button with glow effect
+              PremiumButton(
                 label: 'Create Account',
                 loading: auth.busy,
                 onPressed: _submit,

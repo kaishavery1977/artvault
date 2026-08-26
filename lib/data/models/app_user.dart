@@ -60,6 +60,10 @@ extension AppPlanX on AppPlan {
 }
 
 /// A user profile stored locally + in Firestore (`users/{uid}`).
+///
+/// The real email lives only in the local Hive profile and Firebase Auth.
+/// The Firestore document stores a privacy-masked version so other signed-in
+/// users cannot enumerate email addresses.
 class AppUser {
   final String uid;
   final String email;
@@ -109,6 +113,19 @@ class AppUser {
     );
   }
 
+  /// Privacy-masked email safe to store in Firestore (e.g. "k***@gmail.com").
+  /// Returns the raw email when it is already too short to mask.
+  static String maskedEmail(String email) {
+    if (email.length < 3) return email;
+    final at = email.indexOf('@');
+    if (at < 1) return '${email[0]}***';
+    final local = email.substring(0, at);
+    final domain = email.substring(at);
+    if (local.length <= 1) return '${local[0]}***$domain';
+    return '${local[0]}***$domain';
+  }
+
+  /// Serialise for local Hive storage — preserves the real email.
   Map<String, dynamic> toJson() => {
         'uid': uid,
         'email': email,
@@ -120,6 +137,12 @@ class AppUser {
         'plan': plan.wire,
         'createdAt': createdAt.toIso8601String(),
         'lastLogin': lastLogin.toIso8601String(),
+      };
+
+  /// Serialise for Firestore upload — stores masked email to protect PII.
+  Map<String, dynamic> toFirestoreJson() => {
+        ...toJson(),
+        'email': maskedEmail(email),
       };
 
   factory AppUser.fromJson(Map<String, dynamic> json) => AppUser(

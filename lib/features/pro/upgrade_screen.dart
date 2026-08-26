@@ -331,7 +331,7 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
             children: [
               GradientShimmerText(
                 text: 'ArtVault Pro',
-                style: AppTheme.display(context, size: 22),
+                style: AppTheme.display(context, size: context.adaptiveFont(22)),
                 colors: [scheme.primary, scheme.secondary, scheme.tertiary],
                 duration: const Duration(milliseconds: 1400),
                 loop: true,
@@ -466,7 +466,7 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
       body: ListView(
         padding: AppSpacing.screenPadding,
         children: [
-          Text('Why go Pro?', style: AppTheme.display(context, size: 24)),
+          Text('Why go Pro?', style: AppTheme.display(context, size: context.adaptiveFont(24))),
           const SizedBox(height: AppSpacing.md),
           ...rows,
           const SizedBox(height: AppSpacing.xl),

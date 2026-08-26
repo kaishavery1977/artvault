@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/a11y.dart';
 import '../../core/widgets/motion.dart';
 
 /// Shared visual scaffold for auth screens — brand mark on top, frosted card
@@ -30,7 +31,7 @@ class AuthLayout extends StatelessWidget {
         children: [
           // Ambient drifting aurora glow.
           const Positioned.fill(
-            child: IgnorePointer(child: AuroraBackground()),
+            child: SemanticHidden(child: IgnorePointer(child: AuroraBackground())),
           ),
           SafeArea(
             child: Center(
@@ -46,7 +47,9 @@ class AuthLayout extends StatelessWidget {
                         Icons.palette,
                         size: 48,
                         color: scheme.primary,
-                      ).animate().scale(
+                      ).animate(
+                        onPlay: (c) => MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
+                      ).scale(
                         begin: const Offset(0.7, 0.7),
                         curve: Curves.easeOutBack,
                       ),
@@ -54,7 +57,7 @@ class AuthLayout extends StatelessWidget {
                       Center(
                         child: GradientShimmerText(
                           text: 'ArtVault',
-                          style: AppTheme.display(context, size: 32),
+                          style: AppTheme.display(context, size: context.adaptiveFont(32)),
                           colors: [
                             scheme.primary,
                             scheme.secondary,
@@ -68,7 +71,7 @@ class AuthLayout extends StatelessWidget {
                         subtitle,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: scheme.onSurface.withValues(alpha: 0.55),
+                          color: scheme.onSurface.withValues(alpha: 0.65),
                         ),
                       ),
                       const SizedBox(height: AppSpacing.xl),
@@ -113,7 +116,9 @@ class AuthLayout extends StatelessWidget {
                             ...children,
                           ],
                         ),
-                      ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.06),
+                      ).animate(
+                        onPlay: (c) => MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
+                      ).fadeIn(duration: 500.ms).slideY(begin: 0.06),
                       if (footer != null) ...[
                         const SizedBox(height: AppSpacing.lg),
                         footer!,

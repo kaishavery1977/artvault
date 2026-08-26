@@ -53,6 +53,10 @@ analyze_avatar.txt
 analyze_out.txt
 run_android.txt
 run_final.txt
+strix_runs/
+
+# Local device backups (contain plaintext vault data)
+backups/
 
 # Build artifacts
 *.apk

@@ -88,7 +88,7 @@ class AboutScreen extends ConsumerWidget {
         Center(
           child: GradientShimmerText(
             text: AppConstants.appName,
-            style: AppTheme.display(context, size: 26),
+            style: AppTheme.display(context, size: context.adaptiveFont(26)),
             colors: [scheme.primary, scheme.secondary, scheme.tertiary],
             duration: const Duration(milliseconds: 1300),
           ),
@@ -98,7 +98,7 @@ class AboutScreen extends ConsumerWidget {
             AppConstants.appTagline,
             style: TextStyle(
               fontSize: 13,
-              color: scheme.onSurface.withValues(alpha: 0.5),
+              color: scheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
         ),
@@ -398,7 +398,8 @@ class AboutScreen extends ConsumerWidget {
             top: 0,
             left: 0,
             right: 0,
-            height: 340,
+            // In landscape, shrink the aurora since there's less vertical space.
+            height: MediaQuery.sizeOf(context).width > MediaQuery.sizeOf(context).height ? 200 : 340,
             child: const IgnorePointer(child: AuroraBackground()),
           ),
           ListView(
@@ -464,7 +465,7 @@ class AboutScreen extends ConsumerWidget {
               label,
               style: TextStyle(
                 fontSize: 13,
-                color: scheme.onSurface.withValues(alpha: 0.55),
+                color: scheme.onSurface.withValues(alpha: 0.65),
               ),
             ),
           ),
@@ -543,7 +544,7 @@ class _StatTile extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontSize: 11,
-            color: scheme.onSurface.withValues(alpha: 0.5),
+            color: scheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
       ],
@@ -650,7 +651,7 @@ class _CelebrationRow extends StatelessWidget {
             ),
             style: TextStyle(
               fontSize: 12,
-              color: scheme.onSurface.withValues(alpha: 0.55),
+              color: scheme.onSurface.withValues(alpha: 0.65),
             ),
           ),
         ],

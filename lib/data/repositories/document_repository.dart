@@ -128,6 +128,14 @@ class DocumentRepository {
           );
         }
       }
+      // Catch docs that have a local file but no cloud URL.
+      for (final doc in readAll()) {
+        if (doc.isDeleted || doc.needsSync) continue;
+        if (doc.localPath.isNotEmpty && doc.remoteUrl.isEmpty
+            && File(doc.localPath).existsSync()) {
+          await _syncDocument(doc.copyWith(needsSync: true));
+        }
+      }
     } catch (_) {}
   }
 

@@ -6,6 +6,7 @@ import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/backup_service.dart';
+import '../../core/services/device_resolution_service.dart';
 import '../../core/widgets/bits.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/widgets/surfaces.dart';
@@ -17,11 +18,26 @@ import '../../data/models/painting.dart';
 import '../../data/repositories/settings_repository.dart';
 import 'repair_images_screen.dart';
 
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  int _versionTapCount = 0;
+  bool _debugVisible = false;
+
+  void _onVersionTap() {
+    _versionTapCount++;
+    if (_versionTapCount >= 5 && !_debugVisible) {
+      setState(() => _debugVisible = true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
     final user = auth.user;
     final settings = SettingsRepository.instance;
@@ -226,26 +242,37 @@ class SettingsScreen extends ConsumerWidget {
       context: context,
     );
 
+    final screenPad = context.adaptiveSpace(AppSpacing.md);
+
     return Scaffold(
       body: ListView(
         padding: EdgeInsets.fromLTRB(
-          AppSpacing.md,
+          screenPad,
           AppSpacing.lg + MediaQuery.paddingOf(context).top * 0.4,
-          AppSpacing.md,
+          screenPad,
           AppSpacing.xxl,
         ),
         children: [
-          Text('Settings', style: AppTheme.display(context, size: 28)),
+          Text('Settings', style: AppTheme.display(context, size: context.adaptiveFont(28))),
           const SizedBox(height: AppSpacing.md),
           ...sections,
+          if (_debugVisible) ...[
+            const SizedBox(height: AppSpacing.lg),
+            _DeviceProfileDebugCard(
+              onDismiss: () => setState(() => _debugVisible = false),
+            ),
+          ],
           Center(
-            child: Text(
-              'ArtVault v${AppConstants.appVersion} (${AppConstants.appBuild})',
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.35),
+            child: GestureDetector(
+              onTap: _onVersionTap,
+              child: Text(
+                'ArtVault v${AppConstants.appVersion} (${AppConstants.appBuild})',
+                style: TextStyle(
+                  fontSize: context.adaptiveFont(12),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.35),
+                ),
               ),
             ),
           ),
@@ -402,6 +429,94 @@ class SettingsScreen extends ConsumerWidget {
   }
 }
 
+/// Debug card — tap 5 times on the version label to reveal. Shows the
+/// current [DeviceProfile] so developers can verify resolution detection
+/// on different devices.
+class _DeviceProfileDebugCard extends StatelessWidget {
+  final VoidCallback onDismiss;
+
+  const _DeviceProfileDebugCard({required this.onDismiss});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final profile = DeviceResolutionService.instance.current;
+    if (profile == null) return const SizedBox.shrink();
+    return GlassCard(
+      padding: AppSpacing.cardPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.phone_android, size: 20, color: scheme.tertiary),
+              const SizedBox(width: AppSpacing.xs),
+              Text(
+                'Device Resolution Profile',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              IconButton(
+                tooltip: 'Hide',
+                icon: const Icon(Icons.close, size: 18),
+                visualDensity: VisualDensity.compact,
+                onPressed: onDismiss,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          _DebugRow('Size category', profile.size.name),
+          _DebugRow('Screen (dp)', '${profile.widthDp.round()} × ${profile.heightDp.round()}'),
+          _DebugRow('Screen (px)', '${profile.widthPx.round()} × ${profile.heightPx.round()}'),
+          _DebugRow('Pixel ratio', profile.devicePixelRatio.toStringAsFixed(2)),
+          _DebugRow('Shortest side', '${profile.shortestSide.round()} dp'),
+          _DebugRow('Scale factor', profile.scaleFactor.toStringAsFixed(3)),
+          _DebugRow('Font scale', profile.fontScale.toStringAsFixed(3)),
+          _DebugRow('High density', profile.isHighDensity ? 'Yes' : 'No'),
+          _DebugRow('Captured at', profile.capturedAt.toString().substring(0, 19)),
+        ],
+      ),
+    );
+  }
+}
+
+class _DebugRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _DebugRow(this.label, this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: scheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Edit-the-library-location dialog. Owns its [TextEditingController] and
 /// disposes it only when the route fully unmounts.
 class _LibraryLocationDialog extends StatefulWidget {
@@ -482,7 +597,7 @@ class _UserCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 12,
-                    color: scheme.onSurface.withValues(alpha: 0.55),
+                    color: scheme.onSurface.withValues(alpha: 0.65),
                   ),
                 ),
               ],

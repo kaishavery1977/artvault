@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:artvault/data/models/painting.dart';
 import 'package:artvault/features/gallery/painting_card.dart';
+import 'package:artvault/core/theme/adaptive_layout.dart';
 
 import 'helpers.dart';
 
@@ -63,10 +64,13 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [...appOverrides(introShown: true)],
-        child: MaterialApp(
-          home: Scaffold(
-            body: PaintingGridCard(
-              painting: _painting(cover: '', images: [img]),
+        child: AdaptiveLayout(
+          profile: testProfile,
+          child: MaterialApp(
+            home: Scaffold(
+              body: PaintingGridCard(
+                painting: _painting(cover: '', images: [img]),
+              ),
             ),
           ),
         ),
@@ -88,12 +92,15 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [...appOverrides(introShown: true)],
-        child: MaterialApp(
-          home: Scaffold(
-            body: PaintingGridCard(
-              painting: _painting(
-                cover: '/nonexistent/cover.png',
-                images: [img],
+        child: AdaptiveLayout(
+          profile: testProfile,
+          child: MaterialApp(
+            home: Scaffold(
+              body: PaintingGridCard(
+                painting: _painting(
+                  cover: '/nonexistent/cover.png',
+                  images: [img],
+                ),
               ),
             ),
           ),
@@ -112,10 +119,13 @@ void main() {
     final img = await _tempImage(tester);
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: PaintingListTile(
-            painting: _painting(cover: '', images: [img]),
+      AdaptiveLayout(
+        profile: testProfile,
+        child: MaterialApp(
+          home: Scaffold(
+            body: PaintingListTile(
+              painting: _painting(cover: '', images: [img]),
+            ),
           ),
         ),
       ),

@@ -147,7 +147,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const SizedBox(height: 4),
                 Text(
                   user?.email ?? '',
-                  style: TextStyle(fontSize: 13, color: scheme.onSurface.withValues(alpha: 0.55)),
+                  style: TextStyle(fontSize: 13, color: scheme.onSurface.withValues(alpha: 0.65)),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 TagChip(

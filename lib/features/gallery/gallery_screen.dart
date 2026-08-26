@@ -236,11 +236,15 @@ class _GalleryHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    // Adapt header padding based on device resolution.
+    final topPad = AppSpacing.lg + MediaQuery.paddingOf(context).top * 0.4;
+    final hPad = context.adaptiveSpace(AppSpacing.md);
+
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        AppSpacing.lg + MediaQuery.paddingOf(context).top * 0.4,
-        AppSpacing.md,
+        hPad,
+        topPad,
+        hPad,
         AppSpacing.xs,
       ),
       child: Column(
@@ -251,7 +255,7 @@ class _GalleryHeader extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Gallery',
-                  style: AppTheme.display(context, size: 28),
+                  style: AppTheme.display(context, size: context.adaptiveFont(28)),
                 ),
               ),
               IconButton(
@@ -330,13 +334,13 @@ class _GalleryHeader extends StatelessWidget {
                     Icon(
                       Icons.search,
                       size: 18,
-                      color: scheme.onSurface.withValues(alpha: 0.5),
+                      color: scheme.onSurface.withValues(alpha: 0.6),
                     ),
                     const SizedBox(width: AppSpacing.xs),
                     Text(
                       'Search paintings, artists, colors…',
                       style: TextStyle(
-                        color: scheme.onSurface.withValues(alpha: 0.5),
+                        color: scheme.onSurface.withValues(alpha: 0.6),
                         fontSize: 13,
                       ),
                     ),
@@ -350,7 +354,10 @@ class _GalleryHeader extends StatelessWidget {
     )
         // Header settles in as one unit, then the search bar follows — the
         // toolbar choreography every list screen in the app shares.
-        .animate(key: ValueKey('gallery-header'))
+        .animate(
+          key: ValueKey('gallery-header'),
+          onPlay: (c) => MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
+        )
         .fadeIn(duration: 420.ms, curve: Curves.easeOutCubic)
         .slideY(begin: 0.04, duration: 420.ms, curve: Curves.easeOutCubic);
   }

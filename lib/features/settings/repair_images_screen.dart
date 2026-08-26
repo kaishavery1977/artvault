@@ -280,6 +280,7 @@ class _RepairImagesScreenState extends ConsumerState<RepairImagesScreen> {
               child: Row(
                 children: [
                   IconButton(
+                    tooltip: 'Back',
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.arrow_back),
                   ),
@@ -287,7 +288,7 @@ class _RepairImagesScreenState extends ConsumerState<RepairImagesScreen> {
                   Expanded(
                     child: Text(
                       'Repair files',
-                      style: AppTheme.display(context, size: 26),
+                      style: AppTheme.display(context, size: context.adaptiveFont(26)),
                     ),
                   ),
                 ],
@@ -435,7 +436,7 @@ class _RepairCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 12,
-                    color: scheme.onSurface.withValues(alpha: 0.55),
+                    color: scheme.onSurface.withValues(alpha: 0.65),
                   ),
                 ),
               ],
@@ -506,7 +507,7 @@ class _ProfilePhotoCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 12,
-                    color: scheme.onSurface.withValues(alpha: 0.55),
+                    color: scheme.onSurface.withValues(alpha: 0.65),
                   ),
                 ),
               ],
@@ -552,7 +553,7 @@ class _EmptyState extends StatelessWidget {
             'Every image and document in your vault is present.',
             style: TextStyle(
               fontSize: 13,
-              color: scheme.onSurface.withValues(alpha: 0.55),
+              color: scheme.onSurface.withValues(alpha: 0.65),
             ),
           ),
         ],

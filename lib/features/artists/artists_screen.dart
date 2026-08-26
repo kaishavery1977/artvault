@@ -45,12 +45,12 @@ class ArtistsScreen extends ConsumerWidget {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(
-                      AppSpacing.md,
+                      context.adaptiveSpace(AppSpacing.md),
                       AppSpacing.lg + MediaQuery.paddingOf(context).top * 0.4,
-                      AppSpacing.md,
+                      context.adaptiveSpace(AppSpacing.md),
                       AppSpacing.md,
                     ),
-                    child: Text('Artists', style: AppTheme.display(context, size: 28)),
+                    child: Text('Artists', style: AppTheme.display(context, size: context.adaptiveFont(28))),
                   ),
                 ),
                 SliverPadding(
@@ -123,7 +123,7 @@ class _ArtistCard extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 11.5,
-              color: scheme.onSurface.withValues(alpha: 0.55),
+              color: scheme.onSurface.withValues(alpha: 0.65),
             ),
           ),
           const Spacer(),

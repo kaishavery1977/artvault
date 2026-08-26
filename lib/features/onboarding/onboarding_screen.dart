@@ -115,7 +115,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           cinematic: first,
                           animated: !reducedMotion,
                         ),
-                        const SizedBox(height: AppSpacing.xxl),
+                        SizedBox(height: context.adaptiveSpace(AppSpacing.xxl)),
                         // Title drifts up behind the emblem, then the body
                         // follows — the same cascade the splash uses.
                         _Reveal(

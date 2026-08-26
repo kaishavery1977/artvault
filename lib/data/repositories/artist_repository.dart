@@ -102,6 +102,14 @@ class ArtistRepository {
           );
         }
       }
+      // Catch artists that have a local photo but no cloud URL.
+      for (final artist in readAll()) {
+        if (artist.isDeleted || artist.needsSync) continue;
+        if (artist.photoPath.isNotEmpty && artist.photoUrl.isEmpty
+            && File(artist.photoPath).existsSync()) {
+          await _syncArtist(artist.copyWith(needsSync: true));
+        }
+      }
     } catch (_) {}
   }
 

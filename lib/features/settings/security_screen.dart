@@ -441,7 +441,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                       'Fingerprint uses the device sensor; Face lock scans with the front camera when the phone does not expose Face Unlock to apps.',
                       style: TextStyle(
                         fontSize: 12,
-                        color: scheme.onSurface.withValues(alpha: 0.5),
+                        color: scheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                   ),
@@ -525,7 +525,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
             'When cloud sync is enabled, your vault is protected with Firebase Authentication.',
             style: TextStyle(
               fontSize: 12,
-              color: scheme.onSurface.withValues(alpha: 0.5),
+              color: scheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
           ], context: context),

@@ -772,6 +772,7 @@ class _ImagePickerGrid extends StatelessWidget {
                     top: 2,
                     right: 2,
                     child: IconButton(
+                      tooltip: 'Remove image',
                       iconSize: 16,
                       visualDensity: VisualDensity.compact,
                       icon: const Icon(Icons.close, color: Colors.white),
@@ -796,6 +797,7 @@ class _ImagePickerGrid extends StatelessWidget {
                     top: 2,
                     right: 2,
                     child: IconButton(
+                      tooltip: 'Remove image',
                       iconSize: 16,
                       visualDensity: VisualDensity.compact,
                       icon: const Icon(Icons.close, color: Colors.white),
@@ -1055,6 +1057,7 @@ class _DocumentsPicker extends StatelessWidget {
                 title: Text(doc.name, maxLines: 1, overflow: TextOverflow.ellipsis),
                 subtitle: Text(doc.type, style: const TextStyle(fontSize: 11)),
                 trailing: IconButton(
+                  tooltip: 'Remove document',
                   icon: const Icon(Icons.close, size: 18),
                   onPressed: () => onRemove(doc),
                 ),

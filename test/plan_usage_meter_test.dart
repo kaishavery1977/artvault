@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:artvault/core/constants/app_colors.dart';
 import 'package:artvault/core/constants/pro_limits.dart';
 import 'package:artvault/core/providers/providers.dart';
+import 'package:artvault/core/theme/adaptive_layout.dart';
 import 'package:artvault/data/models/app_user.dart';
 import 'package:artvault/data/models/painting.dart';
 import 'package:artvault/features/home/home_screen.dart';
@@ -64,13 +65,16 @@ Widget _homeApp(
       deviceStorageProvider.overrideWith((ref) async => null),
       currencyProvider.overrideWith((ref) => 'USD'),
     ],
-    child: MaterialApp.router(
-      routerConfig: GoRouter(
-        initialLocation: '/home',
-        routes: [
-          GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
-          GoRoute(path: '/upgrade', builder: (_, _) => const SizedBox()),
-        ],
+    child: AdaptiveLayout(
+      profile: testProfile,
+      child: MaterialApp.router(
+        routerConfig: GoRouter(
+          initialLocation: '/home',
+          routes: [
+            GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
+            GoRoute(path: '/upgrade', builder: (_, _) => const SizedBox()),
+          ],
+        ),
       ),
     ),
   );

@@ -89,7 +89,7 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
                     'Connect Firebase (flutterfire configure) to enable cloud backup and sync.',
                     style: TextStyle(
                       fontSize: 12,
-                      color: scheme.onSurface.withValues(alpha: 0.5),
+                      color: scheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
               ],
@@ -201,7 +201,7 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
                   'your device until you enable cloud sync.',
                   style: TextStyle(
                     fontSize: 12,
-                    color: scheme.onSurface.withValues(alpha: 0.5),
+                    color: scheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ],
@@ -389,7 +389,7 @@ class _DeviceStorageRow extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: scheme.onSurface.withValues(alpha: 0.5),
+              color: scheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
         ],
@@ -437,7 +437,7 @@ class _DeviceStorageRow extends StatelessWidget {
           '$freeLabel free of $totalLabel phone storage',
           style: TextStyle(
             fontSize: 11.5,
-            color: scheme.onSurface.withValues(alpha: 0.5),
+            color: scheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
       ],

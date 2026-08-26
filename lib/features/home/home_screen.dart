@@ -8,16 +8,19 @@ import 'package:shimmer/shimmer.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/pro_limits.dart';
+import '../../core/theme/adaptive_layout.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/bits.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/widgets/surfaces.dart';
+import '../../core/widgets/premium/premium.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/painting.dart';
 import '../../data/repositories/painting_repository.dart';
 import '../../data/remote/cloud_backend.dart';
+import '../../core/widgets/a11y.dart';
 import '../gallery/painting_card.dart';
 import '../settings/repair_images_screen.dart';
 
@@ -55,6 +58,12 @@ class HomeScreen extends ConsumerWidget {
     final showLoading =
         paintingsAsync.isLoading && paintingsAsync.valueOrNull == null;
 
+    // Adapt the aurora background height and screen padding.
+    // In landscape, shrink the aurora since there's less vertical space.
+    final isLandscape = MediaQuery.sizeOf(context).width > MediaQuery.sizeOf(context).height;
+    final auroraHeight = context.scaled(isLandscape ? 200 : 340);
+    final screenPad = context.scaledPadding(AppSpacing.screenPadding);
+
     return Stack(
       children: [
         // Ambient drifting aurora glow behind the greeting header.
@@ -62,8 +71,8 @@ class HomeScreen extends ConsumerWidget {
           top: 0,
           left: 0,
           right: 0,
-          height: 340,
-          child: const IgnorePointer(child: AuroraBackground()),
+          height: auroraHeight,
+          child: const SemanticHidden(child: IgnorePointer(child: AuroraBackground())),
         ),
         CustomScrollView(
           slivers: [
@@ -71,7 +80,7 @@ class HomeScreen extends ConsumerWidget {
               child: _Header(userName: auth.user?.displayName ?? 'Guest'),
             ),
             SliverPadding(
-              padding: AppSpacing.screenPadding,
+              padding: screenPad,
               sliver: SliverList(
                 delegate: SliverChildListDelegate(
                   staggerReveal(
@@ -264,6 +273,7 @@ class _RestoreBanner extends ConsumerWidget {
             ),
             if (done)
               IconButton(
+                tooltip: 'Dismiss',
                 onPressed: () =>
                     ref.read(restoreProgressProvider.notifier).state = null,
                 icon: const Icon(Icons.close, size: 18),
@@ -305,7 +315,7 @@ class _CloudSyncUnavailableHint extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
-    final muted = scheme.onSurface.withValues(alpha: 0.55);
+    final muted = scheme.onSurface.withValues(alpha: 0.65);
     return Material(
       color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
@@ -401,7 +411,7 @@ class _MissingImagesBanner extends StatelessWidget {
               Icon(
                 Icons.chevron_right,
                 size: 20,
-                color: scheme.onSurface.withValues(alpha: 0.5),
+                color: scheme.onSurface.withValues(alpha: 0.6),
               ),
             ],
           ),
@@ -423,11 +433,15 @@ class _Header extends ConsumerWidget {
         .where((n) => !n.read)
         .length;
 
+    // Adapt header padding based on device resolution.
+    final topPad = AppSpacing.lg + MediaQuery.paddingOf(context).top * 0.4;
+    final hPad = context.adaptiveSpace(AppSpacing.md);
+
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        AppSpacing.lg + MediaQuery.paddingOf(context).top * 0.4,
-        AppSpacing.md,
+        hPad,
+        topPad,
+        hPad,
         AppSpacing.xs,
       ),
       child: Row(
@@ -439,14 +453,14 @@ class _Header extends ConsumerWidget {
                 Text(
                   'Good ${_greeting()}',
                   style: TextStyle(
-                    fontSize: 13,
-                    color: scheme.onSurface.withValues(alpha: 0.5),
+                    fontSize: context.adaptiveFont(13),
+                    color: scheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
                 const SizedBox(height: 2),
                 GradientShimmerText(
                   text: 'Hello, $userName',
-                  style: AppTheme.display(context, size: 24),
+                  style: AppTheme.display(context, size: context.adaptiveFont(24)),
                   colors: [scheme.primary, scheme.secondary, scheme.tertiary],
                   duration: const Duration(milliseconds: 1200),
                 ),
@@ -519,7 +533,7 @@ class _HeaderAction extends StatelessWidget {
     return Material(
       color: scheme.primary.withValues(alpha: 0.07),
       shape: const CircleBorder(),
-      child: IconButton(icon: Icon(icon), onPressed: onTap),
+      child: IconButton(icon: Icon(icon), onPressed: onTap, tooltip: icon == Icons.search ? 'Search' : icon == Icons.qr_code_scanner ? 'Scan QR code' : null),
     );
   }
 }
@@ -589,7 +603,9 @@ class _WelcomeHero extends StatelessWidget {
         // spotlight pass that makes the empty vault feel curated. The fade
         // + slide entrance completes first, then the shimmer sweeps the
         // settled hero (`.then()` makes the sweep wait for the entrance).
-        .animate()
+        .animate(
+          onPlay: (c) => MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
+        )
         .fadeIn(duration: 500.ms, curve: Curves.easeOutCubic)
         .slideY(begin: 0.08, duration: 500.ms, curve: Curves.easeOutCubic)
         .then()
@@ -608,11 +624,20 @@ class _StatsGrid extends ConsumerWidget {
     // Format with the user's preferred currency, not the hardcoded USD
     // default.
     final currency = ref.watch(currencyProvider);
+    // Adapt the number of columns based on device resolution.
+    // In landscape, the wider viewport allows one extra column.
+    final size = MediaQuery.sizeOf(context);
+    final isLandscape = size.width > size.height;
+    final width = size.width;
+    var cols = width >= 700 ? 4 : (width >= 480 ? 3 : 2);
+    if (isLandscape) cols = (cols + 1).clamp(2, 4);
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cols = constraints.maxWidth >= 700 ? 4 : 2;
+        // Use the pre-computed cols but allow override for very wide layouts.
+        final effectiveCols = constraints.maxWidth >= 700 ? 4 : cols;
         return GridView.count(
-          crossAxisCount: cols,
+          crossAxisCount: effectiveCols,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: AppSpacing.sm,
@@ -620,7 +645,8 @@ class _StatsGrid extends ConsumerWidget {
           // Fixed cell height (not aspect ratio): on narrow screens an
           // aspect-ratio cell gets too short for the card content and
           // overflows. 132dp = 32dp card padding + 96dp content + slack.
-          mainAxisExtent: 132,
+          // Adapt cell height based on device resolution.
+          mainAxisExtent: context.scaled(132),
           children: [
             StatCard(
               label: 'Paintings',
@@ -695,9 +721,11 @@ class _StorageCard extends ConsumerWidget {
               ? (usage.images + usage.documents) / usage.total
               : 0);
 
-    return GlassCard(
+    return Depth3DCard(
       onTap: () => context.push('/storage'),
       padding: AppSpacing.cardPadding,
+      depth: 6,
+      tiltEnabled: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -741,7 +769,7 @@ class _StorageCard extends ConsumerWidget {
                 : 'Images & documents live on-device first, synced to the cloud when connected.',
             style: TextStyle(
               fontSize: 11.5,
-              color: scheme.onSurface.withValues(alpha: 0.5),
+              color: scheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
         ],
@@ -945,9 +973,11 @@ class _PlanUsageCard extends ConsumerWidget {
       ('Documents', stats.documents, ProLimits.freeDocuments),      ('Storage', usage?.countedBytes ?? 0, ProLimits.freeStorageBytes),
     ];
 
-    return GlassCard(
+    return Depth3DCard(
       onTap: () => context.push('/upgrade'),
       padding: AppSpacing.cardPadding,
+      depth: 6,
+      tiltEnabled: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -987,7 +1017,7 @@ class _PlanUsageCard extends ConsumerWidget {
             'Tap to upgrade and unlock unlimited capacity.',
             style: TextStyle(
               fontSize: 11.5,
-              color: scheme.onSurface.withValues(alpha: 0.5),
+              color: scheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
         ],
@@ -1257,8 +1287,9 @@ class _AiInsights extends StatelessWidget {
     final avgW = widthN > 0 ? (widthSum / widthN).toStringAsFixed(1) : '—';
     final avgH = heightN > 0 ? (heightSum / heightN).toStringAsFixed(1) : '—';
 
-    return GlassCard(
+    return Depth3DCard(
       padding: AppSpacing.cardPadding,
+      depth: 6,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1352,7 +1383,7 @@ class _InsightRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: scheme.onSurface.withValues(alpha: 0.5)),
+          Icon(icon, size: 18, color: scheme.onSurface.withValues(alpha: 0.6)),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(

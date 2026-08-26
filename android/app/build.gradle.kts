@@ -56,16 +56,11 @@ android {
     }
 
     buildTypes {
-        debug {
-            // Sign debug builds with the release key when the keystore is
-            // present, so a debug APK installs in place over a release-signed
-            // sideload (the debug key would force an uninstall + data loss).
-            // The buildType stays debuggable and kDebugMode stays true, so
-            // the App Check debug provider still activates.
-            if (keystorePropertiesFile.exists()) {
-                signingConfig = signingConfigs.getByName("release")
-            }
-        }
+        // Debug builds always use the debug key: a debuggable APK must never
+        // be signed with the release keystore, or a leaked debug build could
+        // be installed in place of a release install and debugged against
+        // the live app data.
+        debug {}
         release {
             signingConfig = if (keystorePropertiesFile.exists()) {
                 signingConfigs.getByName("release")

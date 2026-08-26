@@ -119,6 +119,7 @@ class _PaintingLightboxScreenState extends State<PaintingLightboxScreen> {
                       color: Colors.black.withValues(alpha: 0.45),
                       shape: const CircleBorder(),
                       child: IconButton(
+                        tooltip: 'Close',
                         icon: const Icon(Icons.close, color: Colors.white),
                         onPressed: () => Navigator.of(context).pop(),
                       ),

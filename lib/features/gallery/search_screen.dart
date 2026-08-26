@@ -181,7 +181,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   ),
                 ],
               ),
-            ).animate().fadeIn(),
+            ).animate(
+              onPlay: (c) => MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
+            ).fadeIn(),
           if (_query == null)
             Expanded(
               child: _Suggestions(
@@ -210,7 +212,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       '${results.length} result${results.length == 1 ? '' : 's'} for "${_query.toString()}"',
                       style: TextStyle(
                         fontSize: 13,
-                        color: scheme.onSurface.withValues(alpha: 0.5),
+                        color: scheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                   ),
@@ -258,7 +260,7 @@ class _Suggestions extends StatelessWidget {
       children: [
         Text(
           'Smart search',
-          style: AppTheme.display(context, size: 22),
+          style: AppTheme.display(context, size: context.adaptiveFont(22)),
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
@@ -266,7 +268,7 @@ class _Suggestions extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             height: 1.5,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.55),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
           ),
         ),
         const SizedBox(height: AppSpacing.lg),

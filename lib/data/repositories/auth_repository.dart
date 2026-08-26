@@ -1,8 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
+
+import 'package:flutter/foundation.dart';
 
 import 'package:crypto/crypto.dart' as crypto;
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -71,7 +75,7 @@ class AuthRepository {
     bool remember = false,
   }) async {
     final cloud = CloudBackend.instance;
-    if (cloud.isReady) {
+    try {
       final user = await cloud.signInWithEmail(email, password);
       if (user != null) {
         final profile = await _loadOrCreateProfile(user);
@@ -79,6 +83,10 @@ class AuthRepository {
         await _persistUser(profile);
         return profile;
       }
+    } on AuthException {
+      rethrow;
+    } catch (e) {
+      throw AuthException(_friendlyAuthMessage(e));
     }
     throw AuthException('Unable to sign in. Please check your credentials.');
   }
@@ -90,100 +98,98 @@ class AuthRepository {
     String? adminCode,
   }) async {
     final cloud = CloudBackend.instance;
-    if (cloud.isReady) {
+    try {
       final user = await cloud.createAccount(email, password);
       if (user != null) {
         await user.updateDisplayName(name);
         final wantsAdmin = adminCode != null && adminCode.isNotEmpty;
-    final profile = AppUser(
-      uid: user.uid,
-      email: email,
-      displayName: name,
-      // With a valid bootstrap code the registering user becomes the very
-      // first admin of the organisation; otherwise a curator. The rules
-      // verify the code server-side, so a wrong/absent code can never
-      // self-promote.
-      role: wantsAdmin ? AppRole.admin : AppRole.curator,
-      createdAt: DateTime.now(),
-      lastLogin: DateTime.now(),
-    );
-    final data = Map<String, dynamic>.from(profile.toJson());
-    if (wantsAdmin) {
-      // The rules check this field against bootstrap/config.adminCode.
-      data['bootstrapCode'] = adminCode;
-    }
-    await cloud.upsert('users', user.uid, data);
-    if (wantsAdmin) {
-      // Strip the one-time code so it never lingers in the profile doc.
-      await cloud.deleteField('users', user.uid, 'bootstrapCode');
-    }
+        final profile = AppUser(
+          uid: user.uid,
+          email: email,
+          displayName: name,
+          role: wantsAdmin ? AppRole.admin : AppRole.curator,
+          createdAt: DateTime.now(),
+          lastLogin: DateTime.now(),
+        );
+        final data = Map<String, dynamic>.from(profile.toFirestoreJson());
+        if (wantsAdmin) {
+          data['bootstrapCode'] = adminCode;
+        }
+        await cloud.upsert('users', user.uid, data);
+        if (wantsAdmin) {
+          await cloud.deleteField('users', user.uid, 'bootstrapCode');
+        }
         await _persistUser(profile);
         return profile;
       }
+    } on AuthException {
+      rethrow;
+    } catch (e) {
+      throw AuthException(_friendlyAuthMessage(e));
     }
     throw AuthException(
-      'Registration is unavailable. Configure Firebase to enable accounts.',
+      'Registration failed. Please try a different email or check Firebase configuration.',
     );
   }
 
   Future<AppUser> signInWithGoogle() async {
     final cloud = CloudBackend.instance;
-    if (!cloud.isReady) {
-      throw AuthException('Google sign-in needs Firebase to be configured.');
-    }
     try {
       final user = await cloud.signInWithGoogle();
       if (user == null) throw AuthException('Google sign-in was cancelled.');
       final profile = await _loadOrCreateProfile(user);
       await _persistUser(profile);
-      // Keep the session across restarts, like email sign-in does.
       await saveRememberedSession(user.uid);
       return profile;
+    } on AuthException {
+      rethrow;
     } on GoogleSignInException catch (e) {
-      // Distinguish "user cancelled" from real configuration problems so the
-      // login screen can show the actual cause instead of a misleading one.
       throw AuthException(switch (e.code) {
         GoogleSignInExceptionCode.clientConfigurationError ||
         GoogleSignInExceptionCode.providerConfigurationError =>
           'Google sign-in is not configured for this app yet. The Android app is '
-              'missing its certificate fingerprint in the Firebase console, or a '
-              'web client ID is missing. Contact the developer to fix it.',
+              'missing its SHA-1/SHA-256 fingerprint in the Firebase console, or a '
+              'web client ID is missing. Add it under Project Settings → Your apps.',
+        GoogleSignInExceptionCode.canceled => 'Google sign-in was cancelled.',
         _ => 'Google sign-in failed. Please try again.',
       });
+    } catch (e) {
+      throw AuthException(_friendlyAuthMessage(e));
     }
   }
 
   Future<AppUser> signInWithApple() async {
     final cloud = CloudBackend.instance;
-    if (!cloud.isReady) {
-      throw AuthException('Apple sign-in needs Firebase to be configured.');
+    try {
+      final rawNonce = _generateNonce();
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: _sha256(rawNonce),
+      );
+      final idToken = credential.identityToken;
+      if (idToken == null) {
+        throw AuthException('Apple sign-in was cancelled.');
+      }
+      final user = await cloud.signInWithApple(
+        idToken: idToken,
+        rawNonce: rawNonce,
+      );
+      if (user == null) throw AuthException('Apple sign-in failed.');
+      final profile = await _loadOrCreateProfile(user);
+      await _persistUser(profile);
+      await saveRememberedSession(user.uid);
+      return profile;
+    } on AuthException {
+      rethrow;
+    } catch (e) {
+      if (e.toString().contains('AuthorizationErrorCode.canceled')) {
+        throw AuthException('Apple sign-in was cancelled.');
+      }
+      throw AuthException(_friendlyAuthMessage(e));
     }
-
-    // OAuth nonce: send the SHA-256 hash to Apple, keep the raw value for
-    // Firebase token exchange.
-    final rawNonce = _generateNonce();
-    final credential = await SignInWithApple.getAppleIDCredential(
-      scopes: [
-        AppleIDAuthorizationScopes.email,
-        AppleIDAuthorizationScopes.fullName,
-      ],
-      nonce: _sha256(rawNonce),
-    );
-    final idToken = credential.identityToken;
-    if (idToken == null) {
-      throw AuthException('Apple sign-in was cancelled.');
-    }
-
-    final user = await cloud.signInWithApple(
-      idToken: idToken,
-      rawNonce: rawNonce,
-    );
-    if (user == null) throw AuthException('Apple sign-in failed.');
-    final profile = await _loadOrCreateProfile(user);
-    await _persistUser(profile);
-    // Keep the session across restarts, like email sign-in does.
-    await saveRememberedSession(user.uid);
-    return profile;
   }
 
   /// Cryptographically secure random nonce for OAuth.
@@ -254,16 +260,22 @@ class AuthRepository {
       // Offline / rules hiccup — fall through and try the profile lookup.
     }
 
-    // Check Firestore for an existing profile (preserves assigned role).
+    // Check Firestore for an existing profile (preserves assigned role and
+    // plan). The profile is fetched by its own document id — an owner-scoped
+    // read the rules allow for every signed-in user — rather than by
+    // enumerating the `users` collection (which only admins may do) and
+    // never by re-creating the profile from defaults (which would clobber
+    // an existing role/plan and is rejected by the rules for Pro/admin).
     try {
-      final profiles = await CloudBackend.instance.fetchAll('users');
-      final match = profiles.where((m) => m['uid'] == uid).toList();
-      if (match.isNotEmpty) {
+      final doc = await CloudBackend.instance.fetchDoc('users', uid);
+      if (doc != null && doc['uid'] == uid) {
         return AppUser.fromJson(
-          match.first,
+          doc,
         ).copyWith(lastLogin: DateTime.now());
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('AuthRepository._loadOrCreateProfile: fetchDoc failed ($e), creating new profile');
+    }
 
     final profile = AppUser(
       uid: uid,
@@ -273,7 +285,7 @@ class AuthRepository {
       createdAt: DateTime.now(),
       lastLogin: DateTime.now(),
     );
-    await CloudBackend.instance.upsert('users', uid, profile.toJson());
+    await CloudBackend.instance.upsert('users', uid, profile.toFirestoreJson());
     return profile;
   }
 
@@ -475,9 +487,11 @@ class AuthRepository {
     if (!cloud.isReady) return;
     final me = cachedUser;
     if (me.photoUrl.isEmpty) return;
+    // Already have the file locally — nothing to do.
     if (me.photoPath.isNotEmpty && File(me.photoPath).existsSync()) return;
-    final bytes = await cloud.downloadBytes(me.photoUrl);
-    if (bytes == null) return;
+    // Try the cloud URL first (Supabase Storage or HTTP).
+    var bytes = await cloud.downloadBytes(me.photoUrl);
+    if (bytes == null || bytes.isEmpty) return;
     final path = await FileStorageService.instance.saveImageBytes(bytes);
     await LocalDatabase.instance.put(
       AppConstants.boxProfile,
@@ -489,7 +503,7 @@ class AuthRepository {
   /// Updates the local + cloud copy of the signed-in profile.
   ///
   /// Deliberately has NO role parameter: roles are admin-managed only — the
-  /// Firestore rules reject any self-service role change, and the admin panel
+  /// RLS policies reject any self-service role change, and the admin panel
   /// (Users screen) is the sole writer. Keeping role out of this method means
   /// the profile editor can never even *attempt* an escalation the rules
   /// would have to block.
@@ -500,11 +514,29 @@ class AuthRepository {
     String? photoUrl,
   }) async {
     final me = cachedUser;
+    // If a new local photoPath was provided, upload it to Supabase Storage
+    // so the image survives sign-in on a second device.
+    if (photoPath != null && photoPath.isNotEmpty) {
+      try {
+        final file = File(photoPath);
+        if (await file.exists()) {
+          final bytes = await file.readAsBytes();
+          final url = await CloudBackend.instance.uploadBytes(
+            'profile/${me.uid}/avatar.jpg',
+            bytes,
+            contentType: 'image/jpeg',
+          );
+          if (url != null) photoUrl = url;
+        }
+      } catch (_) {
+        // Upload failed — keep local-only avatar; next sync will retry.
+      }
+    }
     final updated = me.copyWith(
       displayName: displayName,
       bio: bio,
       photoPath: photoPath,
-      photoUrl: photoUrl,
+      photoUrl: photoUrl ?? me.photoUrl,
     );
     await LocalDatabase.instance.put(
       AppConstants.boxProfile,
@@ -512,10 +544,11 @@ class AuthRepository {
       updated.toJson(),
     );
     await CloudBackend.instance.upsert('users', me.uid, {
-      'displayName': ?displayName,
-      'bio': ?bio,
-      'photoPath': ?photoPath,
-      'photoUrl': ?photoUrl,
+      'displayName': updated.displayName,
+      'bio': updated.bio,
+      'photoPath': updated.photoPath,
+      'photoUrl': updated.photoUrl,
+      'email': AppUser.maskedEmail(updated.email),
     });
     CloudBackend.instance.setUser(me.uid, me.email);
   }
@@ -560,14 +593,24 @@ class AuthRepository {
   }
 
   /// The enrolled owner face-embedding, or null when Face lock isn't set up.
+  /// Verified against an HMAC-SHA256 to detect tampering by a root user.
   Future<List<double>?> get faceEmbedding async {
     final raw = await _secure.read(key: AppConstants.kFaceEmbedding);
+    final hmac = await _secure.read(key: '${AppConstants.kFaceEmbedding}_hmac');
     if (raw == null || raw.isEmpty) {
       await FaceDebugLog.instance.log('faceEmbedding read: null/empty');
       return null;
     }
     try {
       final list = jsonDecode(raw) as List<dynamic>;
+      // Integrity check: reject tampered embeddings.
+      if (hmac != null && hmac.isNotEmpty) {
+        final computed = _hmacSha256(raw);
+        if (!_constantTimeEquals(computed, hmac)) {
+          await FaceDebugLog.instance.log('faceEmbedding HMAC mismatch — tampered');
+          return null;
+        }
+      }
       return [for (final v in list) (v as num).toDouble()];
     } catch (_) {
       return null;
@@ -584,11 +627,31 @@ class AuthRepository {
       'nonZero=${clean.where((v) => v.abs() > 1e-4).length}',
     );
     await _secure.write(key: AppConstants.kFaceEmbedding, value: encoded);
+    // Store HMAC so root tampering is detectable on next read.
+    await _secure.write(
+      key: '${AppConstants.kFaceEmbedding}_hmac',
+      value: _hmacSha256(encoded),
+    );
     await FaceDebugLog.instance.log('saveFaceEmbedding write completed');
   }
 
   Future<void> clearFaceEmbedding() async {
     await _secure.delete(key: AppConstants.kFaceEmbedding);
+    await _secure.delete(key: '${AppConstants.kFaceEmbedding}_hmac');
+  }
+
+  /// HMAC-SHA256 of [data] using a device-derived key.
+  /// The key is the session UID (stable per install) so a different device
+  /// can't verify this device's embeddings, and a factory reset loses it.
+  String _hmacSha256(String data) {
+    // Use the persisted UID (set during _persistUser on every login) so the
+    // HMAC survives cold starts even when cachedUser hasn't loaded yet.
+    final uid = cachedUser.uid.isNotEmpty
+        ? cachedUser.uid
+        : (LocalDatabase.instance.getSetting(AppConstants.kSessionUid) ?? '');
+    final key = utf8.encode(uid.isNotEmpty ? uid : 'default');
+    final mac = crypto.Hmac(crypto.sha256, key);
+    return mac.convert(utf8.encode(data)).toString();
   }
 
   Future<bool> verifyBiometric() => BiometricService.instance.authenticate();
@@ -604,34 +667,105 @@ class AuthRepository {
 
   // ---------------------------------------------------------------- Passcode --
 
-  /// True when a passcode has been set. Only a salted SHA-256 digest is kept
+  /// True when a passcode has been set. Only a salted PBKDF2 digest is kept
   /// in secure storage; the raw PIN never touches disk.
   Future<bool> get passcodeSet async {
     final hash = await _secure.read(key: AppConstants.kPasscodeHash);
     return hash != null && hash.isNotEmpty;
   }
 
-  /// Stores a new passcode as a salted SHA-256 digest.
+  /// Stores a new passcode as a salted PBKDF2-HMAC-SHA256 digest.
   Future<void> setPasscode(String pin) async {
     final salt = _randomSalt();
+    final digest = _pbkdf2Sha256Hex(pin, _hexToBytes(salt), _pbkdf2Iterations);
     await _secure.write(
       key: AppConstants.kPasscodeHash,
-      value: '$salt:${_digestPin(salt, pin)}',
+      value: 'v2:$salt:$_pbkdf2Iterations:$digest',
     );
+    // A freshly set passcode starts from a clean attempt counter.
+    await resetPasscodeAttempts();
   }
 
-  /// Verifies [pin] against the stored digest.
+  /// Verifies [pin] against the stored digest. Legacy v1 digests (salted
+  /// SHA-256) are still accepted, but a successful legacy verify upgrades
+  /// the stored hash to the v2 PBKDF2 format in place.
   Future<bool> verifyPasscode(String pin) async {
     final stored = await _secure.read(key: AppConstants.kPasscodeHash);
     if (stored == null) return false;
     final parts = stored.split(':');
-    if (parts.length != 2) return false;
-    return _digestPin(parts[0], pin) == parts[1];
+    if (parts.length == 2) {
+      // Legacy v1: salt:sha256(salt|pin).
+      final ok = _constantTimeEquals(_digestPin(parts[0], pin), parts[1]);
+      if (ok) {
+        // Upgrade to the v2 format so the weak digest is replaced.
+        try {
+          await setPasscode(pin);
+        } catch (_) {
+          // Best-effort: a secure-storage hiccup must not fail the unlock.
+        }
+      }
+      return ok;
+    }
+    if (parts.length == 4 && parts[0] == 'v2') {
+      final salt = _hexToBytes(parts[1]);
+      final iterations = int.tryParse(parts[2]) ?? _pbkdf2Iterations;
+      final actual = _pbkdf2Sha256Hex(pin, salt, iterations);
+      return _constantTimeEquals(actual, parts[3]);
+    }
+    return false;
   }
 
   /// Removes the stored passcode.
   Future<void> clearPasscode() async {
     await _secure.delete(key: AppConstants.kPasscodeHash);
+    await resetPasscodeAttempts();
+  }
+
+  /// How long the passcode pad stays locked (zero = not throttled).
+  /// Stored in Flutter Secure Storage (OS keychain) so the lockout survives
+  /// app reinstalls — an attacker cannot brute-force by reinstalling.
+  Future<Duration> passcodeLockRemaining() async {
+    final untilStr = await _secure.read(key: AppConstants.kPasscodeLockedUntil);
+    final until = int.tryParse(untilStr ?? '') ?? 0;
+    if (until <= 0) return Duration.zero;
+    final remaining = DateTime.fromMillisecondsSinceEpoch(until).difference(
+      DateTime.now(),
+    );
+    return remaining.isNegative ? Duration.zero : remaining;
+  }
+
+  /// Records a wrong passcode attempt and returns the new lockout duration
+  /// (zero when still under the attempt threshold). Once the threshold is
+  /// crossed, each further failure doubles the wait up to a cap.
+  Future<Duration> registerPasscodeFailure() async {
+    final curStr = await _secure.read(key: AppConstants.kPasscodeFailures);
+    final failures = (int.tryParse(curStr ?? '') ?? 0) + 1;
+    await _secure.write(
+      key: AppConstants.kPasscodeFailures,
+      value: failures.toString(),
+    );
+    if (failures < AppConstants.kPasscodeMaxAttempts) return Duration.zero;
+    final steps = failures - AppConstants.kPasscodeMaxAttempts + 1;
+    var lockout = AppConstants.kPasscodeLockoutStart;
+    for (var i = 1; i < steps; i++) {
+      lockout *= 2;
+      if (lockout >= AppConstants.kPasscodeLockoutMax) break;
+    }
+    if (lockout > AppConstants.kPasscodeLockoutMax) {
+      lockout = AppConstants.kPasscodeLockoutMax;
+    }
+    await _secure.write(
+      key: AppConstants.kPasscodeLockedUntil,
+      value: DateTime.now().add(lockout).millisecondsSinceEpoch.toString(),
+    );
+    return lockout;
+  }
+
+  /// Clears the failure counter and any active lockout (successful unlock,
+  /// passcode change, or new passcode).
+  Future<void> resetPasscodeAttempts() async {
+    await _secure.write(key: AppConstants.kPasscodeFailures, value: '0');
+    await _secure.write(key: AppConstants.kPasscodeLockedUntil, value: '0');
   }
 
   static String _randomSalt() {
@@ -642,8 +776,54 @@ class AuthRepository {
     ).join();
   }
 
+  /// Legacy v1 digest (kept only to verify already-stored hashes).
   static String _digestPin(String salt, String pin) =>
       crypto.sha256.convert(utf8.encode('$salt:$pin')).toString();
+
+  /// PBKDF2-HMAC-SHA256 (RFC 2898), one 32-byte output block. Iterations are
+  /// chosen so a verify takes ~50-150ms on modern phones — fast enough for
+  /// an unlock, slow enough to make offline brute-force of a 4-digit PIN
+  /// impractical.
+  static const int _pbkdf2Iterations = 150000;
+
+  static String _pbkdf2Sha256Hex(
+    String password,
+    List<int> salt,
+    int iterations,
+  ) {
+    final mac = crypto.Hmac(crypto.sha256, utf8.encode(password));
+    final block = BytesBuilder()
+      ..add(salt)
+      ..addByte(0)
+      ..addByte(0)
+      ..addByte(0)
+      ..addByte(1); // INT_32_BE(1) — single block is enough for 32 bytes.
+    var u = mac.convert(block.takeBytes()).bytes;
+    final t = List<int>.from(u);
+    for (var i = 1; i < iterations; i++) {
+      u = mac.convert(u).bytes;
+      for (var j = 0; j < u.length; j++) {
+        t[j] ^= u[j];
+      }
+    }
+    return t.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  }
+
+  static List<int> _hexToBytes(String hex) => [
+        for (var i = 0; i + 1 < hex.length; i += 2)
+          int.parse(hex.substring(i, i + 2), radix: 16),
+      ];
+
+  /// Length-independent comparison so a timing side-channel can't leak how
+  /// many leading digest characters match.
+  static bool _constantTimeEquals(String a, String b) {
+    if (a.length != b.length) return false;
+    var diff = 0;
+    for (var i = 0; i < a.length; i++) {
+      diff |= a.codeUnitAt(i) ^ b.codeUnitAt(i);
+    }
+    return diff == 0;
+  }
 
   // ------------------------------------------------------------------ Misc --
 
@@ -654,6 +834,30 @@ class AuthRepository {
       type: 'system',
     );
   }
+}
+
+String _friendlyAuthMessage(Object e) {
+  final msg = e.toString().toLowerCase();
+  if (msg.contains('invalid-credential') || msg.contains('wrong-password')) {
+    return 'Incorrect email or password.';
+  }
+  if (msg.contains('user-not-found')) return 'No account found for that email.';
+  if (msg.contains('email-already-in-use')) {
+    return 'That email is already registered.';
+  }
+  if (msg.contains('weak-password')) {
+    return 'Password is too weak (min 6 characters).';
+  }
+  if (msg.contains('network-request-failed')) {
+    return 'Network error. Check your connection.';
+  }
+  if (msg.contains('too-many-requests')) {
+    return 'Too many attempts. Try again later.';
+  }
+  if (msg.contains('invalid-email')) return 'That email address is invalid.';
+  if (msg.contains('user-disabled')) return 'This account has been disabled.';
+  // Strip "Exception: " prefix for cleaner UI.
+  return e.toString().replaceAll('Exception: ', '').replaceAll('FirebaseAuthException', '').trim();
 }
 
 class AuthException implements Exception {

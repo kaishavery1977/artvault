@@ -12,6 +12,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/pro_limits.dart';
+import '../../core/theme/adaptive_layout.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/export_service.dart';
@@ -199,11 +200,15 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
         ? <String>[painting.coverImageUrl]
         : painting.imageUrls;
 
+    // In landscape, shrink the hero image area since vertical space is limited.
+    final mq = MediaQuery.of(context);
+    final heroHeight = mq.size.width > mq.size.height ? 220.0 : 360.0;
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 360,
+            expandedHeight: heroHeight,
             pinned: true,
             stretch: true,
             leading: const BackButton(),
@@ -407,7 +412,7 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
                     if (related.isNotEmpty) ...[
                       SectionHeader(title: 'Similar paintings'),
                       SizedBox(
-                        height: 190,
+                        height: context.scaled(190),
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           padding: EdgeInsets.zero,
@@ -613,7 +618,7 @@ class _ShareSheet extends StatelessWidget {
               fontSize: 12,
               color: Theme.of(
                 context,
-              ).colorScheme.onSurface.withValues(alpha: 0.5),
+              ).colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -676,7 +681,7 @@ class _TitleBlock extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(painting.title, style: AppTheme.display(context, size: 26)),
+              Text(painting.title, style: AppTheme.display(context, size: context.adaptiveFont(26))),
               const SizedBox(height: AppSpacing.xs),
               Text(
                 painting.artistName,
@@ -742,7 +747,7 @@ class _TitleBlock extends StatelessWidget {
                   painting.currency,
                   style: TextStyle(
                     fontSize: 11,
-                    color: scheme.onSurface.withValues(alpha: 0.5),
+                    color: scheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ],
@@ -835,7 +840,7 @@ class _InfoGrid extends StatelessWidget {
                               fontSize: 11,
                               color: Theme.of(
                                 context,
-                              ).colorScheme.onSurface.withValues(alpha: 0.5),
+                              ).colorScheme.onSurface.withValues(alpha: 0.6),
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -969,7 +974,7 @@ class _Metric extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: scheme.onSurface.withValues(alpha: 0.55),
+                color: scheme.onSurface.withValues(alpha: 0.65),
               ),
             ),
           ),
@@ -1025,6 +1030,7 @@ class _DocumentsSection extends ConsumerWidget {
             ),
             if (canEdit)
               IconButton(
+                tooltip: 'Add document',
                 icon: const Icon(Icons.add),
                 color: scheme.primary,
                 onPressed: onAdd,
@@ -1067,6 +1073,7 @@ class _DocumentsSection extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
+                    tooltip: 'Open document',
                     icon: const Icon(Icons.share_outlined, size: 18),
                     onPressed: () => onOpen(doc),
                   ),
@@ -1213,7 +1220,7 @@ class _QrCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     height: 1.4,
-                    color: scheme.onSurface.withValues(alpha: 0.55),
+                    color: scheme.onSurface.withValues(alpha: 0.65),
                   ),
                 ),
               ],
@@ -1422,6 +1429,7 @@ class _ConditionSection extends ConsumerWidget {
             ),
             if (canEdit)
               IconButton(
+                tooltip: 'Add condition report',
                 icon: const Icon(Icons.add),
                 color: scheme.primary,
                 onPressed: () => _openAddDialog(context),

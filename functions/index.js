@@ -48,6 +48,49 @@ const razorpay = new Razorpay({ key_id: KEY_ID, key_secret: KEY_SECRET });
 
 const db = admin.firestore();
 
+// ── Per-user rate limiter ────────────────────────────────────────────────
+// Sliding-window counter backed by Firestore.  Each callable that calls
+// checkRateLimit writes a timestamped doc under rate_limits/{uid}/{fn}; the
+// checker counts docs younger than [windowMs] and rejects when the count
+// reaches [maxCalls].  Docs older than the window are deleted opportunistically
+// to keep the collection tidy.
+const _RATE_LIMITS = {
+  verifyProSubscription: { maxCalls: 3, windowMs: 60_000 },   // 3 per minute
+  verifyPlayPurchase:    { maxCalls: 3, windowMs: 60_000 },   // 3 per minute
+  createProOrder:       { maxCalls: 5, windowMs: 60_000 },   // 5 per minute
+  createProSubscription:{ maxCalls: 5, windowMs: 60_000 },   // 5 per minute
+  verifyProPayment:     { maxCalls: 3, windowMs: 60_000 },   // 3 per minute
+};
+
+async function checkRateLimit(uid, fnName) {
+  const cfg = _RATE_LIMITS[fnName];
+  if (!cfg) return; // no limit configured
+  const now = Date.now();
+  const cutoff = new Date(now - cfg.windowMs);
+  const col = db.collection(`rate_limits/${uid}/${fnName}`);
+
+  // Use a Firestore transaction so the count + write are atomic — prevents
+  // a concurrency race where two requests both pass the count check.
+  await db.runTransaction(async (tx) => {
+    const recentSnap = await col.where("ts", ">=", cutoff).get();
+    if (recentSnap.size >= cfg.maxCalls) {
+      throw new functions.https.HttpsError(
+        "resource-exhausted",
+        "Too many requests. Please wait a moment and try again.",
+      );
+    }
+    // Record this call inside the transaction.
+    const ref = col.doc();
+    tx.set(ref, {
+      ts: admin.firestore.FieldValue.serverTimestamp(),
+      expiresAt: new Date(now + cfg.windowMs * 2),
+    });
+    // Opportunistic cleanup: delete stale docs (best-effort).
+    const staleSnap = await col.where("ts", "<", cutoff).limit(20).get();
+    staleSnap.docs.forEach((d) => tx.delete(d.ref));
+  });
+}
+
 function requireAuth(context) {
   if (!context.auth) {
     throw new functions.https.HttpsError(
@@ -107,6 +150,7 @@ async function ensureProPlan() {
 /** Creates a Razorpay order for a one-time Pro unlock. */
 exports.createProOrder = functions.https.onCall(async (data, context) => {
   requireAuth(context);
+  await checkRateLimit(context.auth.uid, "createProOrder");
   if (!KEY_ID || !KEY_SECRET) {
     throw new functions.https.HttpsError(
       "failed-precondition",
@@ -130,6 +174,7 @@ exports.createProOrder = functions.https.onCall(async (data, context) => {
 /** Verifies a one-time Razorpay payment signature, then grants Pro. */
 exports.verifyProPayment = functions.https.onCall(async (data, context) => {
   requireAuth(context);
+  await checkRateLimit(context.auth.uid, "verifyProPayment");
   const { orderId, paymentId, signature } = data || {};
   if (!orderId || !paymentId || !signature) {
     throw new functions.https.HttpsError(
@@ -165,6 +210,7 @@ exports.verifyProPayment = functions.https.onCall(async (data, context) => {
 /** Creates a Razorpay monthly subscription for Pro. */
 exports.createProSubscription = functions.https.onCall(async (data, context) => {
   requireAuth(context);
+  await checkRateLimit(context.auth.uid, "createProSubscription");
   if (!KEY_ID || !KEY_SECRET) {
     throw new functions.https.HttpsError(
       "failed-precondition",
@@ -197,6 +243,7 @@ exports.createProSubscription = functions.https.onCall(async (data, context) => 
 exports.verifyProSubscription = functions.https.onCall(
   async (data, context) => {
     requireAuth(context);
+    await checkRateLimit(context.auth.uid, "verifyProSubscription");
     const { subscriptionId, paymentId, signature } = data || {};
     if (!subscriptionId || !paymentId || !signature) {
       throw new functions.https.HttpsError(
@@ -225,11 +272,25 @@ exports.verifyProSubscription = functions.https.onCall(
         "This subscription does not belong to your account.",
       );
     }
+    // Only grant while the subscription is actually active — a cancelled,
+    // completed or halted subscription must not re-grant Pro.
+    if (sub.status !== "active" && sub.status !== "authenticated") {
+      throw new functions.https.HttpsError(
+        "failed-precondition",
+        "Subscription is not active.",
+      );
+    }
+    // Anchor the grant to the current billing period so the daily
+    // maintenance job revokes the plan if the subscription lapses.
+    const periodEnd = Number(sub.current_period_end || 0) * 1000;
+    const anchor =
+      periodEnd > 0 ? periodEnd : Date.now() + 30 * 864e5;
     await grantPro(context.auth.uid, {
       proMode: "monthly",
       proSubscriptionId: subscriptionId,
+      proExpiresAt: new Date(anchor),
     });
-    return { ok: true };
+    return { ok: true, expiresAt: new Date(anchor).toISOString() };
   },
 );
 
@@ -238,9 +299,15 @@ exports.verifyProSubscription = functions.https.onCall(
  * then grants Pro. Used for store purchases so the admin-only Firestore
  * rule ("users may not change their own plan") doesn't block legitimate
  * buyers: the grant comes from the server, not the client.
+ *
+ * Subscription products (artvault_pro_monthly) are validated against the
+ * Play Subscriptions API and the grant carries an expiry derived from
+ * `expiryTimeMillis`, so a lapsed or cancelled subscription is revoked by
+ * the daily maintenance job instead of keeping Pro forever.
  */
 exports.verifyPlayPurchase = functions.https.onCall(async (data, context) => {
   requireAuth(context);
+  await checkRateLimit(context.auth.uid, "verifyPlayPurchase");
   const { productId, purchaseToken } = data || {};
   if (!productId || !purchaseToken) {
     throw new functions.https.HttpsError(
@@ -259,26 +326,46 @@ exports.verifyPlayPurchase = functions.https.onCall(async (data, context) => {
       scopes: ["https://www.googleapis.com/auth/androidpublisher"],
     });
     const androidpublisher = google.androidpublisher({ version: "v3", auth });
-    const res = await androidpublisher.purchases.products.get({
+
+    // The Pro product is a monthly subscription, so validate it against the
+    // Subscriptions API (purchases.products.get only serves one-time items).
+    const res = await androidpublisher.purchases.subscriptions.get({
       packageName: PACKAGE_NAME,
-      productId,
+      subscriptionId: productId,
       token: purchaseToken,
     });
     const purchase = res.data;
-    // purchaseState: 0 = purchased, 1 = cancelled, 2 = pending.
-    if (purchase.purchaseState !== 0) {
+
+    // paymentState: 0 = payment pending, 1 = payment received, 2 = free trial,
+    // 3 = pending deferred upgrade/downgrade.
+    const paid =
+      purchase.paymentState === 1 ||
+      purchase.paymentState === 2 ||
+      purchase.paymentState === 3;
+    if (!paid) {
       throw new functions.https.HttpsError(
         "failed-precondition",
-        "Purchase is not in a purchased state.",
+        "Purchase is not in a paid state.",
       );
     }
-    // consumed: true would mean the item was consumed (irrelevant for a
-    // non-consumable) — accept otherwise as-is.
+
+    // expiryTimeMillis is the anchor for the grant: when it passes, the
+    // maintenance job revokes Pro. Only grant if the subscription is
+    // currently active (future expiry) — a lapsed token must not re-grant.
+    const expiryMs = Number(purchase.expiryTimeMillis || 0);
+    if (expiryMs <= Date.now()) {
+      throw new functions.https.HttpsError(
+        "failed-precondition",
+        "Subscription has expired.",
+      );
+    }
+
     await grantPro(context.auth.uid, {
       proMode: "play",
       proPurchaseToken: purchaseToken,
+      proExpiresAt: new Date(expiryMs),
     });
-    return { ok: true };
+    return { ok: true, expiresAt: new Date(expiryMs).toISOString() };
   } catch (e) {
     if (e instanceof functions.https.HttpsError) throw e;
     functions.logger.error("verifyPlayPurchase failed", e);
@@ -289,3 +376,97 @@ exports.verifyPlayPurchase = functions.https.onCall(async (data, context) => {
     );
   }
 });
+
+/**
+ * Daily maintenance: revokes Pro from subscriptions that have lapsed.
+ *
+ * - Play subscriptions: re-validates the stored purchase token against the
+ *   Play Subscriptions API and refreshes `proExpiresAt` while the
+ *   subscription is still active, or revokes when `expiryTimeMillis` has
+ *   passed.
+ * - Razorpay subscriptions: re-fetches the subscription from Razorpay and
+ *   revokes when it is no longer active.
+ *
+ * One-time unlocks (proMode: "one-time") are never revoked — that is the
+ * point of a one-time purchase.
+ */
+exports.maintainProPlans = functions.pubsub
+  .schedule("every 24 hours")
+  .onRun(async () => {
+    // Single-field query on `plan` (no composite index to deploy); filter
+    // the recurring modes in code. One-time unlocks are left untouched.
+    const snap = await db
+      .collection("users")
+      .where("plan", "==", "pro")
+      .get();
+
+    let revoked = 0;
+    let refreshed = 0;
+
+    for (const doc of snap.docs) {
+      const u = doc.data();
+      const uid = doc.id;
+      // Skip one-time unlocks and any grant without a recurring mode —
+      // those are permanent by design.
+      if (u.proMode !== "play" && u.proMode !== "monthly") continue;
+      try {
+        if (u.proMode === "play") {
+          if (!u.proPurchaseToken) {
+            // No token to re-validate — treat as lapsed.
+            await db.doc(`users/${uid}`).update({ plan: "free" });
+            revoked++;
+            continue;
+          }
+          const auth = await google.auth.getClient({
+            scopes: ["https://www.googleapis.com/auth/androidpublisher"],
+          });
+          const androidpublisher = google.androidpublisher({ version: "v3", auth });
+          const res = await androidpublisher.purchases.subscriptions.get({
+            packageName: PACKAGE_NAME,
+            subscriptionId: PRO_PRODUCT_ID,
+            token: u.proPurchaseToken,
+          });
+          const expiryMs = Number(res.data.expiryTimeMillis || 0);
+          if (expiryMs > Date.now()) {
+            await db
+              .doc(`users/${uid}`)
+              .update({ proExpiresAt: new Date(expiryMs) });
+            refreshed++;
+          } else {
+            await db.doc(`users/${uid}`).update({ plan: "free" });
+            revoked++;
+          }
+        } else if (u.proMode === "monthly") {
+          if (!u.proSubscriptionId) {
+            await db.doc(`users/${uid}`).update({ plan: "free" });
+            revoked++;
+            continue;
+          }
+          const sub = await razorpay.subscriptions.fetch(u.proSubscriptionId);
+          // Active/authenticated = paid and recurring; anything else
+          // (cancelled, completed, expired, halted, pending) = revoke.
+          if (sub.status === "active" || sub.status === "authenticated") {
+            // Refresh the expiry anchor from the subscription's current
+            // period end, or keep a rolling +30d if the API omits it.
+            const periodEnd = Number(sub.current_period_end || 0) * 1000;
+            const anchor = periodEnd > 0 ? periodEnd : Date.now() + 30 * 864e5;
+            await db.doc(`users/${uid}`).update({ proExpiresAt: new Date(anchor) });
+            refreshed++;
+          } else {
+            await db.doc(`users/${uid}`).update({ plan: "free" });
+            revoked++;
+          }
+        }
+      } catch (e) {
+        functions.logger.warn(
+          `maintainProPlans: could not process ${uid} (${u.proMode})`,
+          e,
+        );
+      }
+    }
+
+    functions.logger.info(
+      `maintainProPlans: refreshed ${refreshed}, revoked ${revoked}`,
+    );
+    return null;
+  });

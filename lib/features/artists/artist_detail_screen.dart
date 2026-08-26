@@ -107,7 +107,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                           radius: 48,
                         ),
                         const SizedBox(height: AppSpacing.sm),
-                        Text(artist.name, style: AppTheme.display(context, size: 26)),
+                        Text(artist.name, style: AppTheme.display(context, size: context.adaptiveFont(26))),
                         if (artist.nationality.isNotEmpty)
                           Text(
                             artist.nationality,

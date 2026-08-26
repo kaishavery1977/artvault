@@ -39,35 +39,35 @@ class _AmbientPainter extends CustomPainter {
     final base = isDark ? AppColors.darkBackground : AppColors.lightBackground;
     canvas.drawRect(Offset.zero & size, Paint()..color = base);
 
-    // Soft color blobs in the brand palette (navy, gold, teal). Alphas are
-    // deliberately low so surfaces and text keep their contrast.
+    // Soft color blobs in the new violet-cyan-rose palette.
+    // Alphas are deliberately low so surfaces and text keep their contrast.
     final radius = size.shortestSide * 0.55;
     final blobs = isDark
         ? [
             (
-              AppColors.brand700.withValues(alpha: 0.42),
-              Offset(size.width * 0.88, size.height * 0.10),
+              AppColors.violet700.withValues(alpha: 0.35),
+              Offset(size.width * 0.85, size.height * 0.12),
             ),
             (
-              AppColors.gold500.withValues(alpha: 0.14),
-              Offset(size.width * 0.06, size.height * 0.42),
+              AppColors.cyan800.withValues(alpha: 0.18),
+              Offset(size.width * 0.08, size.height * 0.40),
             ),
             (
-              AppColors.teal600.withValues(alpha: 0.16),
-              Offset(size.width * 0.62, size.height * 0.88),
+              AppColors.rose900.withValues(alpha: 0.12),
+              Offset(size.width * 0.60, size.height * 0.85),
             ),
           ]
         : [
             (
-              AppColors.brand300.withValues(alpha: 0.28),
+              AppColors.violet200.withValues(alpha: 0.30),
               Offset(size.width * 0.88, size.height * 0.10),
             ),
             (
-              AppColors.gold200.withValues(alpha: 0.40),
+              AppColors.cyan200.withValues(alpha: 0.35),
               Offset(size.width * 0.04, size.height * 0.45),
             ),
             (
-              AppColors.teal200.withValues(alpha: 0.40),
+              AppColors.rose200.withValues(alpha: 0.25),
               Offset(size.width * 0.66, size.height * 0.90),
             ),
           ];

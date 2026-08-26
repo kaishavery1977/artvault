@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/services/ai_service.dart';
+import '../../core/services/app_logger.dart';
 import '../../core/services/backup_service.dart';
 import '../../core/services/file_storage_service.dart';
 import '../../core/services/notification_service.dart';
@@ -209,10 +211,26 @@ class PaintingRepository {
 
   /// Pushes every dirty painting to the cloud, then pulls remote changes.
   Future<int> syncNow() async {
-    if (!CloudBackend.instance.isReady) return 0;
+    if (!CloudBackend.instance.isReady) {
+      debugPrint('PaintingRepository.syncNow: cloud not ready');
+      return 0;
+    }
+    debugPrint('PaintingRepository.syncNow: starting…');
     final dirty = readAll().where((p) => p.needsSync).toList();
+    debugPrint('PaintingRepository.syncNow: ${dirty.length} dirty paintings');
     for (final painting in dirty) {
       await _syncPainting(painting);
+    }
+    // Catch paintings that have local images but no cloud URLs yet.
+    // These were created before the sync system or had a failed upload.
+    for (final painting in readAll()) {
+      if (painting.isDeleted || painting.needsSync) continue;
+      final hasLocal = painting.images.any((p) => File(p).existsSync());
+      final hasUrls = painting.imageUrls.any((u) => u.isNotEmpty);
+      if (hasLocal && !hasUrls) {
+        debugPrint('PaintingRepository.syncNow: uploading images for ${painting.title}');
+        await _syncPainting(painting.copyWith(needsSync: true));
+      }
     }
     // Retry removals for paintings purged while offline (the tombstone
     // queue keeps them from being re-created by _pullRemote below).
@@ -366,6 +384,7 @@ class PaintingRepository {
       if (uid.isEmpty) return;
       final tombstones = _tombstones();
       final remote = await cloud.fetchAll(_collection, owner: uid);
+      debugPrint('PaintingRepository._pullRemote: fetched ${remote.length} paintings from Firestore');
       for (final data in remote) {
         final painting = Painting.fromJson(data);
         // Never resurrect a painting purged locally (offline purge).
@@ -375,7 +394,9 @@ class PaintingRepository {
           await _db.put(AppConstants.boxPaintings, painting.id, painting.toJson());
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.error('PaintingRepository._pullRemote', error: e);
+    }
   }
 
   /// Generates a fresh id for a new painting.

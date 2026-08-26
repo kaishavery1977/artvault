@@ -74,14 +74,14 @@ class ReportsScreen extends ConsumerWidget {
           SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.fromLTRB(
-                AppSpacing.md,
+                context.adaptiveSpace(AppSpacing.md),
                 AppSpacing.lg + MediaQuery.paddingOf(context).top * 0.4,
-                AppSpacing.md,
+                context.adaptiveSpace(AppSpacing.md),
                 AppSpacing.sm,
               ),
               child: Text(
                 'Reports & Analytics',
-                style: AppTheme.display(context, size: 28),
+                style: AppTheme.display(context, size: context.adaptiveFont(28)),
               ),
             ),
           ),

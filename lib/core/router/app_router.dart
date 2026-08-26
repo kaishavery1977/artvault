@@ -11,6 +11,7 @@ import '../../features/auth/login_screen.dart';
 import '../../features/auth/face_scan_screen.dart';
 import '../../features/auth/register_screen.dart';
 import '../../features/auth/forgot_password_screen.dart';
+import '../../features/auth/admin_code_gate_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/gallery/gallery_screen.dart';
 import '../../features/gallery/search_screen.dart';
@@ -28,6 +29,7 @@ import '../../features/settings/profile_screen.dart';
 import '../../features/settings/security_screen.dart';
 import '../../features/settings/storage_screen.dart';
 import '../../features/settings/about_screen.dart';
+import '../../features/settings/changelog_screen.dart';
 import '../../features/settings/repair_images_screen.dart';
 import '../../features/qr/qr_scan_screen.dart';
 import '../../features/notifications/notifications_screen.dart';
@@ -49,28 +51,78 @@ const List<String> _adminRoutes = ['/users'];
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
-/// Shared route transition — a subtle fade with a gentle upward drift that
-/// makes every screen change feel cohesive and premium.
+/// Shared route transition — 3D depth push effect.
+/// The outgoing page recedes (scale down + fade) while the incoming page
+/// advances (scale up from smaller + fade in), with perspective tilt.
 Page<void> _page(Widget child) {
   return CustomTransitionPage<void>(
     child: child,
-    transitionDuration: const Duration(milliseconds: 280),
-    reverseTransitionDuration: const Duration(milliseconds: 220),
+    transitionDuration: const Duration(milliseconds: 400),
+    reverseTransitionDuration: const Duration(milliseconds: 320),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       final curved = CurvedAnimation(
         parent: animation,
         curve: Curves.easeOutCubic,
         reverseCurve: Curves.easeInCubic,
       );
-      return FadeTransition(
-        opacity: curved,
-        child: SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, 0.02),
-            end: Offset.zero,
-          ).animate(curved),
-          child: child,
-        ),
+      final reverseCurved = CurvedAnimation(
+        parent: secondaryAnimation,
+        curve: Curves.easeOutCubic,
+      );
+
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Outgoing page recedes into the background.
+          // IgnorePointer so it never blocks taps on the incoming page.
+          IgnorePointer(
+            child: AnimatedBuilder(
+              animation: reverseCurved,
+              builder: (context, _) {
+                final t = reverseCurved.value;
+                // ignore: deprecated_member_use
+                final transform = Matrix4.identity()
+                  ..setEntry(3, 2, 0.001)
+                  // ignore: deprecated_member_use
+                  ..translate(0.0, 0.0, -80 * t)
+                  // ignore: deprecated_member_use
+                  ..scale(1.0 - 0.08 * t);
+                return Transform(
+                  alignment: Alignment.center,
+                  transform: transform,
+                  child: Opacity(
+                    opacity: 1.0 - t * 0.6,
+                    child: Container(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          // Incoming page advances from the foreground
+          AnimatedBuilder(
+            animation: curved,
+            builder: (context, _) {
+              final t = curved.value;
+              // ignore: deprecated_member_use
+              final transform = Matrix4.identity()
+                ..setEntry(3, 2, 0.001)
+                // ignore: deprecated_member_use
+                ..translate(0.0, 40 * (1 - t), 60 * (1 - t))
+                // ignore: deprecated_member_use
+                ..scale(0.93 + 0.07 * t);
+              return Transform(
+                alignment: Alignment.center,
+                transform: transform,
+                child: Opacity(
+                  opacity: t,
+                  child: child,
+                ),
+              );
+            },
+          ),
+        ],
       );
     },
   );
@@ -105,6 +157,11 @@ String? rbacRedirect({
       path.startsWith('/login') ||
       path.startsWith('/register') ||
       path.startsWith('/forgot');
+  // Admin gate is reachable only after a social sign-in; let logged-in users
+  // see it without bouncing to /home, and unauthenticated users go to /login.
+  if (path.startsWith('/admin-gate')) {
+    return loggedIn ? null : '/login';
+  }
   if (!loggedIn) {
     return isAuthPage ? null : '/login';
   }
@@ -168,6 +225,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/forgot',
         pageBuilder: (_, _) => _page(const ForgotPasswordScreen()),
+      ),
+      GoRoute(
+        path: '/admin-gate',
+        pageBuilder: (_, _) => _page(const AdminCodeGateScreen()),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
@@ -288,6 +349,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/about',
         pageBuilder: (_, _) => _page(const AboutScreen()),
+      ),
+      GoRoute(
+        path: '/changelog',
+        pageBuilder: (_, _) => _page(const ChangelogScreen()),
       ),
       GoRoute(
         path: '/users',

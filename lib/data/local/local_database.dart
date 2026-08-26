@@ -1,8 +1,15 @@
+import 'dart:convert';
+
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../core/constants/app_constants.dart';
 
-/// Thin typed wrapper around Hive boxes.
+/// Thin typed wrapper around Hive boxes with AES-256 encryption at rest.
+///
+/// The encryption key is a random 256-bit value generated on first launch and
+/// stored in Flutter Secure Storage (OS-level keychain).  Subsequent launches
+/// retrieve the same key so existing boxes stay decryptable.
 ///
 /// Entities are stored as `Map<String, dynamic>` JSON so no codegen/build
 /// step is required and the schema stays transparent and versionable.
@@ -11,13 +18,17 @@ class LocalDatabase {
 
   static final LocalDatabase instance = LocalDatabase._();
 
+  static const _secureKey = 'hive_aes_encryption_key';
+
   final Map<String, Box<dynamic>> _boxes = {};
   final Set<String> _opened = {};
+  HiveAesCipher? _cipher;
 
   bool get isInitialized => _opened.isNotEmpty;
 
   Future<void> init() async {
     await Hive.initFlutter();
+    _cipher = await _getCipher();
     const names = [
       AppConstants.boxSettings,
       AppConstants.boxPaintings,
@@ -33,9 +44,44 @@ class LocalDatabase {
     }
   }
 
+  /// Retrieves the existing AES key from secure storage, or generates a new
+  /// one and persists it.  The key is a raw 32-byte (256-bit) value stored
+  /// as a base64 string.
+  static Future<HiveAesCipher> _getCipher() async {
+    const secure = FlutterSecureStorage();
+    final existing = await secure.read(key: _secureKey);
+    List<int> keyBytes;
+    if (existing != null && existing.isNotEmpty) {
+      keyBytes = base64Url.decode(existing);
+    } else {
+      keyBytes = Hive.generateSecureKey();
+      await secure.write(key: _secureKey, value: base64Url.encode(keyBytes));
+    }
+    return HiveAesCipher(keyBytes);
+  }
+
   Future<Box<dynamic>> _open(String name) async {
     if (_boxes.containsKey(name)) return _boxes[name]!;
-    final box = await Hive.openBox<dynamic>(name);
+    Box<dynamic> box;
+    try {
+      // Try opening with encryption (normal path for new & existing encrypted
+      // installations).
+      box = await Hive.openBox<dynamic>(name, encryptionCipher: _cipher);
+    } on HiveError catch (_) {
+      // The box was written without encryption before this version shipped.
+      // We can't re-encrypt in place, so we clear the unencrypted data and
+      // re-open with encryption.  Vault data is re-synced from Firestore on
+      // next launch; settings are lightweight and easily re-configured.
+      box = await Hive.openBox<dynamic>(name);
+      await box.clear();
+      await box.close();
+      box = await Hive.openBox<dynamic>(name, encryptionCipher: _cipher);
+      // ignore: avoid_print
+      print(
+        'LocalDatabase: cleared unencrypted box "$name" '
+        'and reopened with AES encryption.',
+      );
+    }
     _boxes[name] = box;
     _opened.add(name);
     return box;

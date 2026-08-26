@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_colors.dart';
@@ -10,6 +13,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/services/biometric_service.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/widgets/success_overlay.dart';
+import '../../core/providers/providers.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../auth/face_scan_screen.dart';
 
@@ -18,14 +22,14 @@ import '../auth/face_scan_screen.dart';
 /// Offers distinct unlock methods — fingerprint (strong biometrics), Face
 /// lock (weak biometrics / genuine face scan) and a 4-digit passcode — so the
 /// vault stays reachable even when one method fails or is unavailable.
-class AppLockScreen extends StatefulWidget {
+class AppLockScreen extends ConsumerStatefulWidget {
   const AppLockScreen({super.key});
 
   @override
-  State<AppLockScreen> createState() => _AppLockScreenState();
+  ConsumerState<AppLockScreen> createState() => _AppLockScreenState();
 }
 
-class _AppLockScreenState extends State<AppLockScreen>
+class _AppLockScreenState extends ConsumerState<AppLockScreen>
     with SingleTickerProviderStateMixin {
   bool _checking = true;
 
@@ -63,6 +67,11 @@ class _AppLockScreenState extends State<AppLockScreen>
   /// color rather than muted, and the PIN dots turn red).
   bool _statusError = false;
 
+  /// Active passcode lockout (persisted across restarts). While non-zero
+  /// the PIN pad is disabled and a countdown is shown.
+  Duration _lockoutRemaining = Duration.zero;
+  Timer? _lockTimer;
+
   /// Increments on every wrong passcode so the pad shakes in place.
   int _shakeTick = 0;
 
@@ -77,6 +86,8 @@ class _AppLockScreenState extends State<AppLockScreen>
     final faceOn = await AuthRepository.instance.faceLockEnabled;
     final faceAvail = await BiometricService.instance.hasFaceId;
     final passcode = await AuthRepository.instance.passcodeSet;
+    // A lockout set before a restart must still throttle the pad.
+    final lockRemaining = await AuthRepository.instance.passcodeLockRemaining();
     if (!mounted) return;
     setState(() {
       _fingerprintOn = fpOn;
@@ -87,7 +98,9 @@ class _AppLockScreenState extends State<AppLockScreen>
       _checking = false;
       _status = '';
     });
-    if (_fingerprintMethod) {
+    if (lockRemaining > Duration.zero) {
+      _startLockout(lockRemaining);
+    } else if (_fingerprintMethod) {
       _verifyFingerprint();
     } else if (_faceMethod) {
       _verifyFace();
@@ -191,7 +204,11 @@ class _AppLockScreenState extends State<AppLockScreen>
   }
 
   void _onDigit(String digit) {
-    if (_checking || _pin.length >= AppConstants.kPasscodeLength) return;
+    if (_checking ||
+        _lockoutRemaining > Duration.zero ||
+        _pin.length >= AppConstants.kPasscodeLength) {
+      return;
+    }
     HapticFeedback.selectionClick();
     // A fresh digit after a wrong attempt clears the error state (message
     // and red dots) so the user retypes against a clean pad.
@@ -216,17 +233,59 @@ class _AppLockScreenState extends State<AppLockScreen>
     final ok = await AuthRepository.instance.verifyPasscode(pin);
     if (!mounted) return;
     if (ok) {
+      await AuthRepository.instance.resetPasscodeAttempts();
       await _showUnlockSuccess(message: 'Passcode accepted — unlocking…');
       return;
     }
     HapticFeedback.vibrate();
+    // Throttle brute-force attempts: wrong tries register a lockout that
+    // grows with every further failure and survives app restarts.
+    final lockout = await AuthRepository.instance.registerPasscodeFailure();
+    if (!mounted) return;
     setState(() {
       _checking = false;
       _pin = '';
-      _status = 'Incorrect passcode. Try again.';
       _statusError = true;
       _shakeTick++;
     });
+    if (lockout > Duration.zero) {
+      _startLockout(lockout);
+    } else {
+      setState(() => _status = 'Incorrect passcode. Try again.');
+    }
+  }
+
+  /// Disables the PIN pad and shows a live countdown for [duration].
+  void _startLockout(Duration duration) {
+    _lockTimer?.cancel();
+    setState(() {
+      _lockoutRemaining = duration;
+      _status = 'Too many attempts — try again in ${_formatLock(duration)}';
+    });
+    _lockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      final remaining = _lockoutRemaining - const Duration(seconds: 1);
+      if (remaining <= Duration.zero) {
+        _lockTimer?.cancel();
+        setState(() {
+          _lockoutRemaining = Duration.zero;
+          _status = '';
+          _statusError = false;
+        });
+      } else {
+        setState(() {
+          _lockoutRemaining = remaining;
+          _status = 'Too many attempts — try again in ${_formatLock(remaining)}';
+        });
+      }
+    });
+  }
+
+  static String _formatLock(Duration d) {
+    final s = d.inSeconds % 60;
+    return d.inMinutes > 0
+        ? '${d.inMinutes}:${s.toString().padLeft(2, '0')}'
+        : '${s}s';
   }
 
   /// Plays the shared success confirmation for every unlock method, then
@@ -249,6 +308,7 @@ class _AppLockScreenState extends State<AppLockScreen>
 
   @override
   void dispose() {
+    _lockTimer?.cancel();
     _unlock.dispose();
     super.dispose();
   }
@@ -298,7 +358,9 @@ class _AppLockScreenState extends State<AppLockScreen>
                         size: 44,
                         color: Colors.white,
                       ),
-                    ).animate().scale(
+                    ).animate(
+                      onPlay: (c) => MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
+                    ).scale(
                       begin: const Offset(0.6, 0.6),
                       curve: Curves.easeOutBack,
                     ),
@@ -309,7 +371,9 @@ class _AppLockScreenState extends State<AppLockScreen>
                         context,
                         size: 26,
                       ).copyWith(color: fg),
-                    ).animate().fadeIn(duration: 400.ms, delay: 150.ms),
+                    ).animate(
+                      onPlay: (c) => MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
+                    ).fadeIn(duration: 400.ms, delay: 150.ms),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       showPinPad
@@ -325,7 +389,7 @@ class _AppLockScreenState extends State<AppLockScreen>
                           length: AppConstants.kPasscodeLength,
                           entered: _pin.length,
                           error: _statusError,
-                          enabled: !_checking,
+                          enabled: !_checking && _lockoutRemaining == Duration.zero,
                           onDigit: _onDigit,
                           onBackspace: _onBackspace,
                         ),
@@ -373,7 +437,7 @@ class _AppLockScreenState extends State<AppLockScreen>
                     const SizedBox(height: AppSpacing.xl),
                     TextButton(
                       onPressed: () async {
-                        await AuthRepository.instance.signOut();
+                        await ref.read(authProvider.notifier).signOut();
                         if (context.mounted) context.go('/login');
                       },
                       child: const Text('Sign out instead'),

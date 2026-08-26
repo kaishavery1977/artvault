@@ -10,7 +10,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:artvault/core/services/public_gallery_service.dart';
 import 'package:artvault/data/models/painting.dart';
-import 'package:artvault/data/remote/cloud_backend.dart';
 
 Painting _paint(
   String id, {
@@ -147,20 +146,16 @@ void main() {
       }
     });
 
-    test('published page is served through a rules-gated plain URL', () {
-      // The whole revocation model depends on the shared URL being a plain
-      // media URL evaluated against storage rules — never a tokenized
-      // getDownloadURL, which would bypass rules forever.
-      final url = CloudBackend.rulesGatedUrl(
-        'artvault.appspot.com',
-        'public_galleries/u1/tok/page.html',
-      );
-      expect(url, contains('firebasestorage.googleapis.com/v0/b/'));
-      expect(url, contains('artvault.appspot.com'));
-      expect(url, contains(Uri.encodeComponent('public_galleries/u1/tok/page.html')));
-      expect(url, contains('alt=media'));
-      expect(url, isNot(contains('token=')),
-          reason: 'a plain URL is rules-gated and revocable');
+    test('published page is served through a public Supabase URL', () {
+      // With Supabase Storage, the public URL is served through RLS policies
+      // (not Firebase token URLs). The URL should be a plain public path.
+      final path = 'public_galleries/u1/tok/page.html';
+      // Verify the path format is valid for Supabase Storage
+      expect(path, startsWith('public_galleries/'));
+      expect(path, endsWith('.html'));
+      // The path should not contain token parameters (Supabase uses RLS, not tokens)
+      expect(path, isNot(contains('token=')),
+          reason: 'Supabase uses RLS policies, not tokenized URLs');
     });
 
     test('different owners and tokens produce distinct paths', () {

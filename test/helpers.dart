@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:artvault/core/providers/providers.dart';
+import 'package:artvault/core/theme/adaptive_layout.dart';
+import 'package:artvault/core/services/device_resolution_service.dart';
 
 /// Stops google_fonts from fetching fonts over HTTP in tests (the test
 /// HttpClient returns 400 for every request); it falls back to the default
@@ -32,6 +34,30 @@ class FakeAuthController extends AuthController {
     await Future<void>.delayed(Duration.zero);
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
+}
+
+/// Default test device profile (standard phone, 393dp, portrait).
+final testProfile = DeviceProfile(
+  widthDp: 393,
+  heightDp: 852,
+  devicePixelRatio: 3.0,
+  widthPx: 1179,
+  heightPx: 2556,
+  shortestSide: 393,
+  size: DeviceSize.standard,
+  scaleFactor: 1.0,
+  fontScale: 1.0,
+  isHighDensity: true,
+  isLandscape: false,
+  capturedAt: DateTime(2026),
+);
+
+/// Wraps a widget with AdaptiveLayout so context.scaled() and friends work.
+Widget wrapWithAdaptiveLayout(Widget child) {
+  return AdaptiveLayout(
+    profile: testProfile,
+    child: MaterialApp(home: child),
+  );
 }
 
 /// Shared provider overrides: storage-backed providers are pinned to fixed

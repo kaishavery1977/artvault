@@ -173,6 +173,42 @@ extension SpacingExtensions on BuildContext {
     if (width < 900) return AppSpacing.screenPaddingLg;
     return EdgeInsets.symmetric(horizontal: 48, vertical: 24);
   }
+
+  /// Scale a spacing value by the device's resolution scale factor.
+  /// Uses the profile from [AdaptiveLayout] when available, otherwise
+  /// falls back to the older breakpoint logic.
+  double adaptiveSpace(double base) {
+    final width = MediaQuery.sizeOf(this).width;
+    // Simple adaptive scale based on width
+    if (width < 360) return base * 0.85;
+    if (width < 400) return base * 0.92;
+    if (width < 500) return base;
+    if (width < 700) return base * 1.1;
+    if (width < 1000) return base * 1.25;
+    return base * 1.4;
+  }
+
+  /// Scale a font size by the device's resolution (dampened).
+  double adaptiveFont(double base) {
+    final width = MediaQuery.sizeOf(this).width;
+    if (width < 360) return base * 0.9;
+    if (width < 400) return base * 0.95;
+    if (width < 500) return base;
+    if (width < 700) return base * 1.05;
+    if (width < 1000) return base * 1.1;
+    return base * 1.15;
+  }
+
+  /// Scale a border radius by the device's resolution.
+  double adaptiveRadius(double base) {
+    final width = MediaQuery.sizeOf(this).width;
+    if (width < 360) return base * 0.85;
+    if (width < 400) return base * 0.92;
+    if (width < 500) return base;
+    if (width < 700) return base * 1.05;
+    if (width < 1000) return base * 1.15;
+    return base * 1.25;
+  }
 }
 
 /// Responsive helper based on the current screen size.
@@ -194,8 +230,26 @@ abstract final class AppBreakpoints {
       MediaQuery.sizeOf(context).shortestSide >= desktop;
 
   /// Columns count used by adaptive masonry/grid galleries.
+  ///
+  /// Returns more columns in landscape mode since the wider viewport can
+  /// comfortably fit an extra column without tiles becoming too narrow.
   static int galleryColumns(BuildContext context, {double minTile = 160}) {
-    final width = MediaQuery.sizeOf(context).width;
-    return (width / minTile).floor().clamp(2, 8);
+    final size = MediaQuery.sizeOf(context);
+    final isLandscape = size.width > size.height;
+    final width = size.width;
+    final cols = (width / minTile).floor().clamp(2, 8);
+    // In landscape on phones, allow one extra column — the wider viewport
+    // has room for it without shrinking tiles below the tap target.
+    return isLandscape ? (cols + 1).clamp(2, 8) : cols;
+  }
+
+  /// In-landscape gallery columns for screens that call galleryColumns
+  /// with a custom divisor (e.g. masonry views).
+  static int landscapeColumns(BuildContext context, {double minTile = 160}) {
+    final size = MediaQuery.sizeOf(context);
+    final isLandscape = size.width > size.height;
+    final width = size.width;
+    final cols = (width / minTile).floor().clamp(2, 8);
+    return isLandscape ? (cols + 2).clamp(2, 8) : cols;
   }
 }
