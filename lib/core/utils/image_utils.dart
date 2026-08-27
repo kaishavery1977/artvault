@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
@@ -18,47 +19,48 @@ abstract final class ImageUtils {
     int quality = 88,
   }) async {
     final bytes = await source.readAsBytes();
-    final decoded = img.decodeImage(bytes);
-    if (decoded == null) {
-      // Not an image we can decode — keep original as-is.
-      return source;
-    }
-
-    final scale = math.min(1.0, maxDimension / math.max(decoded.width, decoded.height));
-    var working = decoded;
-    if (scale < 1.0) {
-      working = img.copyResize(
-        decoded,
-        width: (decoded.width * scale).round(),
-        height: (decoded.height * scale).round(),
-        interpolation: img.Interpolation.average,
-      );
-    }
-
-    final encoded = img.encodeJpg(working, quality: quality);
+    // Heavy decode/resize off the UI thread — 4K photos would jank the gallery scroll.
+    final result = await Isolate.run(() {
+      final decoded = img.decodeImage(bytes);
+      if (decoded == null) return null;
+      final scale = math.min(1.0, maxDimension / math.max(decoded.width, decoded.height));
+      var working = decoded;
+      if (scale < 1.0) {
+        working = img.copyResize(
+          decoded,
+          width: (decoded.width * scale).round(),
+          height: (decoded.height * scale).round(),
+          interpolation: img.Interpolation.average,
+        );
+      }
+      return img.encodeJpg(working, quality: quality);
+    });
+    if (result == null) return source;
     final out = File(
       '${source.parent.path}${Platform.pathSeparator}'
       '${_baseName(source.path)}_${DateTime.now().millisecondsSinceEpoch}.jpg',
     );
-    await out.writeAsBytes(encoded, flush: true);
+    await out.writeAsBytes(result, flush: true);
     return out;
   }
 
-  /// Generates a square-ish thumbnail for grids.
+  /// Generates a square-ish thumbnail for grids — offloaded to avoid scroll jank.
   static Future<File> thumbnail(File source, {int size = 480}) async {
     final bytes = await source.readAsBytes();
-    final decoded = img.decodeImage(bytes);
-    if (decoded == null) return source;
-
-    final width = math.min(decoded.width, size);
-    final height = (decoded.height * width / decoded.width).round();
-    final resized = img.copyResize(
-      decoded,
-      width: width,
-      height: height,
-      interpolation: img.Interpolation.linear,
-    );
-    final encoded = img.encodeJpg(resized, quality: 80);
+    final encoded = await Isolate.run(() {
+      final decoded = img.decodeImage(bytes);
+      if (decoded == null) return null;
+      final width = math.min(decoded.width, size);
+      final height = (decoded.height * width / decoded.width).round();
+      final resized = img.copyResize(
+        decoded,
+        width: width,
+        height: height,
+        interpolation: img.Interpolation.linear,
+      );
+      return img.encodeJpg(resized, quality: 80);
+    });
+    if (encoded == null) return source;
     final out = File(
       '${source.parent.path}${Platform.pathSeparator}'
       '${_baseName(source.path)}_thumb.jpg',
