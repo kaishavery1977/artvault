@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../core/providers/providers.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/premium/premium_button.dart';
@@ -10,9 +12,9 @@ import '../../data/repositories/auth_repository.dart';
 import 'auth_layout.dart';
 
 /// Post-social-sign-in gate: lets a Google/Apple user enter the one-time
-/// admin code (`Havery02`) to become the first admin, or skip to continue
-/// as curator. Shown only after Google/Apple — email registration already
-/// has its own admin-code field.
+/// admin code (from Firestore `bootstrap/config.adminCode`) to become the
+/// first admin, or skip to continue as curator. Shown only after
+/// Google/Apple — email registration already has its own admin-code field.
 class AdminCodeGateScreen extends ConsumerStatefulWidget {
   const AdminCodeGateScreen({super.key});
 
@@ -42,10 +44,33 @@ class _AdminCodeGateScreenState extends ConsumerState<AdminCodeGateScreen> {
       _error = null;
     });
 
-    // The one-time code set in Firestore bootstrap/config (also Supabase).
-    // Keep in sync with the value you set via `bootstrap/config.adminCode`.
-    const expected = 'Havery02';
+    // Verify against Firestore bootstrap/config.adminCode server-side —
+    // never hardcode the secret in the APK (M4). Fetch live so rotation
+    // takes effect without an app update.
+    String? expected;
+    try {
+      final doc = await FirebaseFirestore.instance.doc('bootstrap/config').get();
+      expected = doc.data()?['adminCode'] as String?;
+    } catch (_) {
+      // Offline / not configured — surface a clear error, don't fall back to a
+      // hardcoded secret.
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = 'Could not verify admin code — check your connection and try again, or tap Skip.';
+      });
+      return;
+    }
+    if (expected == null || expected.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = 'Admin bootstrap not configured. Ask an existing admin to promote you.';
+      });
+      return;
+    }
     if (code != expected) {
+      if (!mounted) return;
       setState(() {
         _busy = false;
         _error = 'Incorrect admin code. Try again or tap Skip.';
@@ -67,11 +92,9 @@ class _AdminCodeGateScreenState extends ConsumerState<AdminCodeGateScreen> {
     }
 
     try {
-      // For a fresh Google/Apple curator this self-promotion succeeds when
-      // Firestore still has bootstrap/config.adminCode == Havery02 (first
-      // admin case). After an admin exists, promoting via Users screen is the
-      // intended path, but this gate keeps the easy Google flow the user asked
-      // for — anyone knowing Havery02 can become admin here.
+      // Self-promotion succeeds only while the server-side bootstrap code
+      // matches — after the first admin, prefer the Users-screen flow, but
+      // this gate keeps the easy Google flow for the initial bootstrap.
       await AuthRepository.instance.updateRole(user.uid, AppRole.admin);
       // Refresh local cache so isAdmin is true immediately.
       await ref.read(authProvider.notifier).refreshProfile();
@@ -142,7 +165,7 @@ class _AdminCodeGateScreenState extends ConsumerState<AdminCodeGateScreen> {
           autofillHints: const [AutofillHints.oneTimeCode],
           decoration: const InputDecoration(
             labelText: 'Admin code',
-            hintText: 'Havery02',
+            hintText: '••••••••',
             prefixIcon: Icon(Icons.admin_panel_settings_outlined),
             border: OutlineInputBorder(),
           ),
@@ -150,7 +173,7 @@ class _AdminCodeGateScreenState extends ConsumerState<AdminCodeGateScreen> {
         ),
         const SizedBox(height: AppSpacing.sm),
         Text(
-          'Only people who know Havery02 can become admin here. Everyone else can skip — you’ll be a curator and an existing admin can promote you later in Users & roles.',
+          'Only people with the one-time admin code can become admin here. Everyone else can skip — you’ll be a curator and an existing admin can promote you later in Users & roles.',
           style: TextStyle(fontSize: 12, height: 1.4, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
         ),
         const SizedBox(height: AppSpacing.lg),
