@@ -304,20 +304,26 @@ class AuthRepository {
 
   Future<void> updateRole(String uid, AppRole role) async {
     final me = cachedUser;
-    final oldRole = await _roleOf(uid);
-    await CloudBackend.instance.upsert('users', uid, {'role': role.wire});
-    // Audit the change: who did it, to whom, from what to what, when.
+    // Atomic RPC closes TOCTOU: read+write+audits in one transaction.
     try {
-      await CloudBackend.instance.addDoc('role_audit', {
-        'uid': uid,
-        'byUid': me.uid,
-        'byEmail': me.email,
-        'oldRole': oldRole,
-        'newRole': role.wire,
-        'at': DateTime.now().toIso8601String(),
+      await CloudBackend.instance.rpc('update_role_atomic', {
+        'target_uid': uid,
+        'new_role': role.wire,
       });
     } catch (_) {
-      // Best-effort: an audit write failure must never block a role change.
+      // Fallback for offline or pre-migration builds: old read-then-write
+      final oldRole = await _roleOf(uid);
+      await CloudBackend.instance.upsert('users', uid, {'role': role.wire});
+      try {
+        await CloudBackend.instance.addDoc('role_audit', {
+          'uid': uid,
+          'byUid': me.uid,
+          'byEmail': me.email,
+          'oldRole': oldRole,
+          'newRole': role.wire,
+          'at': DateTime.now().toIso8601String(),
+        });
+      } catch (_) {}
     }
     if (uid == cachedUser.uid) {
       await LocalDatabase.instance.put(
@@ -353,32 +359,34 @@ class AuthRepository {
   }) async {
     final me = cachedUser;
     final oldRole = await _roleOf(uid);
-    // Fail-closed ordering: write the revocation marker BEFORE deleting the
-    // profile. If the marker write fails, the profile stays and the revoke
-    // aborts — a partially revoked account (deleted profile, no marker)
-    // could otherwise slip back in as a fresh curator.
-    await CloudBackend.instance.upsert('revoked', uid, {
-      'uid': uid,
-      'email': email ?? '',
-      'displayName': displayName ?? '',
-      'role': oldRole,
-      'revokedAt': DateTime.now().toIso8601String(),
-      'byUid': me.uid,
-      'byEmail': me.email,
-    });
-    await CloudBackend.instance.remove('users', uid);
-    // Audit the revocation like a role change, so the history shows it.
     try {
-      await CloudBackend.instance.addDoc('role_audit', {
-        'uid': uid,
-        'byUid': me.uid,
-        'byEmail': me.email,
-        'oldRole': oldRole,
-        'newRole': 'revoked',
-        'at': DateTime.now().toIso8601String(),
+      await CloudBackend.instance.rpc('revoke_user_atomic', {
+        'target_uid': uid,
+        'target_email': email ?? '',
+        'target_name': displayName ?? '',
+        'old_role': oldRole,
       });
     } catch (_) {
-      // Best-effort audit.
+      await CloudBackend.instance.upsert('revoked', uid, {
+        'uid': uid,
+        'email': email ?? '',
+        'displayName': displayName ?? '',
+        'role': oldRole,
+        'revokedAt': DateTime.now().toIso8601String(),
+        'byUid': me.uid,
+        'byEmail': me.email,
+      });
+      await CloudBackend.instance.remove('users', uid);
+      try {
+        await CloudBackend.instance.addDoc('role_audit', {
+          'uid': uid,
+          'byUid': me.uid,
+          'byEmail': me.email,
+          'oldRole': oldRole,
+          'newRole': 'revoked',
+          'at': DateTime.now().toIso8601String(),
+        });
+      } catch (_) {}
     }
     // Drop the local copy if this device happened to be that account.
     if (uid == cachedUser.uid) {

@@ -60,10 +60,12 @@ class BiometricService {
       final enrolled = await _auth.getAvailableBiometrics();
 
       if (!hasHardware) return 'No biometric hardware on this device.';
-      if (!canCheck)
+      if (!canCheck) {
         return 'Biometrics not enrolled. Set up a screen lock and fingerprint/face.';
-      if (enrolled.isEmpty)
+      }
+      if (enrolled.isEmpty) {
         return 'No biometrics enrolled. Add fingerprint/face in phone settings.';
+      }
       return 'Available: ${enrolled.map((e) => e.name).join(', ')}';
     } catch (e) {
       return 'Error: $e';

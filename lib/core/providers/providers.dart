@@ -195,8 +195,9 @@ class AuthController extends StateNotifier<AuthState> {
           await AuthRepository.instance.recoverProfilePhoto();
           break;
         } catch (_) {
-          if (attempt < 2)
+          if (attempt < 2) {
             await Future<void>.delayed(const Duration(seconds: 2));
+          }
         }
       }
       // The avatar may have swapped from a network URL to a fresh local

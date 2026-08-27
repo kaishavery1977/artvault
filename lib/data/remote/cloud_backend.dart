@@ -228,6 +228,12 @@ class CloudBackend {
     await _db.from(collection).update({field: null}).eq('id', id);
   }
 
+  /// Calls a Postgres RPC (atomic DB function) — used for revoke/update_role.
+  Future<void> rpc(String fn, Map<String, dynamic> params) async {
+    if (!_ready) throw Exception('Supabase not ready');
+    await _db.rpc(fn, params: params);
+  }
+
   /// Fetches every row in [collection]. Pass [owner] to filter by ownerUid.
   Future<List<Map<String, dynamic>>> fetchAll(
     String collection, {

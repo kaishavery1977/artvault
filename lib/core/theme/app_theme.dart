@@ -365,10 +365,12 @@ abstract final class AppTheme {
               ),
             ).copyWith(
               overlayColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.hovered))
+                if (states.contains(WidgetState.hovered)) {
                   return onPrimary.withValues(alpha: 0.08);
-                if (states.contains(WidgetState.pressed))
+                }
+                if (states.contains(WidgetState.pressed)) {
                   return onPrimary.withValues(alpha: 0.12);
+                }
                 return null;
               }),
             ),
@@ -393,10 +395,12 @@ abstract final class AppTheme {
               ),
             ).copyWith(
               overlayColor: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.hovered))
+                if (states.contains(WidgetState.hovered)) {
                   return primary.withValues(alpha: 0.06);
-                if (states.contains(WidgetState.pressed))
+                }
+                if (states.contains(WidgetState.pressed)) {
                   return primary.withValues(alpha: 0.10);
+                }
                 return null;
               }),
             ),

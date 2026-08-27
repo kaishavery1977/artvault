@@ -230,8 +230,9 @@ class DocumentRepository {
     if (lower.endsWith('.pdf')) return 'application/pdf';
     if (lower.endsWith('.png')) return 'image/png';
     if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
-    if (lower.endsWith('.docx'))
+    if (lower.endsWith('.docx')) {
       return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    }
     if (lower.endsWith('.doc')) return 'application/msword';
     return 'application/octet-stream';
   }
