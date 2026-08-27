@@ -17,8 +17,8 @@
  * client cannot grant itself Pro or create a ₹0 order.
  *
  * Configure + deploy:
- *   firebase functions:config:set razorpay.key_id="rzp_..." \
- *     razorpay.key_secret="..." \
+ *   firebase functions:config:set getRazorpay().key_id="rzp_..." \
+ *     getRazorpay().key_secret="..." \
  *     pro.price_paise="19900" pro.monthly_paise="9900" \
  *     play.package_name="com.artvault.artvault" play.product_id="artvault_pro_monthly"
  *   firebase deploy --only functions
@@ -37,8 +37,8 @@ const { google } = require("googleapis");
 admin.initializeApp();
 
 const config = functions.config();
-const KEY_ID = config.razorpay.key_id || "";
-const KEY_SECRET = config.razorpay.key_secret || "";
+const KEY_ID = config.getRazorpay().key_id || "";
+const KEY_SECRET = config.getRazorpay().key_secret || "";
 const PRICE_PAISE = parseInt(config.pro.price_paise || "19900", 10); // ₹199
 const MONTHLY_PAISE = parseInt(config.pro.monthly_paise || "9900", 10); // ₹99
 const PACKAGE_NAME = config.play.package_name || "com.artvault.artvault";
@@ -62,33 +62,42 @@ const _RATE_LIMITS = {
   verifyProPayment:     { maxCalls: 3, windowMs: 60_000 },   // 3 per minute
 };
 
+function getRazorpay() {
+  if (!KEY_ID || !KEY_SECRET) {
+    throw new functions.https.HttpsError(
+      "failed-precondition",
+      "Razorpay is not configured on the server yet.",
+    );
+  }
+  return razorpay;
+}
+
 async function checkRateLimit(uid, fnName) {
   const cfg = _RATE_LIMITS[fnName];
-  if (!cfg) return; // no limit configured
+  if (!cfg) return;
   const now = Date.now();
   const cutoff = new Date(now - cfg.windowMs);
   const col = db.collection(`rate_limits/${uid}/${fnName}`);
 
-  // Use a Firestore transaction so the count + write are atomic — prevents
-  // a concurrency race where two requests both pass the count check.
+  const recentSnap = await col.where("ts", ">=", cutoff).get();
+  if (recentSnap.size >= cfg.maxCalls) {
+    throw new functions.https.HttpsError(
+      "resource-exhausted",
+      "Too many requests. Please wait a moment and try again.",
+    );
+  }
   await db.runTransaction(async (tx) => {
-    const recentSnap = await col.where("ts", ">=", cutoff).get();
-    if (recentSnap.size >= cfg.maxCalls) {
-      throw new functions.https.HttpsError(
-        "resource-exhausted",
-        "Too many requests. Please wait a moment and try again.",
-      );
-    }
-    // Record this call inside the transaction.
     const ref = col.doc();
     tx.set(ref, {
       ts: admin.firestore.FieldValue.serverTimestamp(),
       expiresAt: new Date(now + cfg.windowMs * 2),
     });
-    // Opportunistic cleanup: delete stale docs (best-effort).
-    const staleSnap = await col.where("ts", "<", cutoff).limit(20).get();
-    staleSnap.docs.forEach((d) => tx.delete(d.ref));
   });
+  // Best-effort cleanup outside transaction (non-transactional read inside tx is illegal).
+  try {
+    const staleSnap = await col.where("ts", "<", cutoff).limit(20).get();
+    await Promise.all(staleSnap.docs.map((d) => col.doc(d.id).delete()));
+  } catch (_) {}
 }
 
 function requireAuth(context) {
@@ -121,7 +130,7 @@ async function ensureProPlan() {
   // new plan on every checkout. `plans.all` is paginated; a small cache
   // avoids a second API call per request.
   if (ensureProPlan._planId) return ensureProPlan._planId;
-  const list = await razorpay.plans.all({ count: 100 });
+  const list = await getRazorpay().plans.all({ count: 100 });
   const match = list.items.find(
     (p) =>
       p.period === "monthly" &&
@@ -133,7 +142,7 @@ async function ensureProPlan() {
     ensureProPlan._planId = match.id;
     return match.id;
   }
-  const plan = await razorpay.plans.create({
+  const plan = await getRazorpay().plans.create({
     period: "monthly",
     interval: 1,
     item: {
@@ -158,7 +167,7 @@ exports.createProOrder = functions.https.onCall(async (data, context) => {
     );
   }
   try {
-    const order = await razorpay.orders.create({
+    const order = await getRazorpay().orders.create({
       amount: PRICE_PAISE,
       currency: "INR",
       receipt: `pro_${context.auth.uid}`,
@@ -196,7 +205,7 @@ exports.verifyProPayment = functions.https.onCall(async (data, context) => {
   }
   // The order must belong to this user — never grant a plan for an order
   // created by someone else.
-  const order = await razorpay.orders.fetch(orderId);
+  const order = await getRazorpay().orders.fetch(orderId);
   if (!order || order.notes.uid !== context.auth.uid) {
     throw new functions.https.HttpsError(
       "permission-denied",
@@ -219,7 +228,7 @@ exports.createProSubscription = functions.https.onCall(async (data, context) => 
   }
   try {
     const planId = await ensureProPlan();
-    const sub = await razorpay.subscriptions.create({
+    const sub = await getRazorpay().subscriptions.create({
       plan_id: planId,
       total_count: 12, // renew monthly for a year; Razorpay continues billing
       customer_notify: 1,
@@ -265,7 +274,7 @@ exports.verifyProSubscription = functions.https.onCall(
         "Payment signature verification failed.",
       );
     }
-    const sub = await razorpay.subscriptions.fetch(subscriptionId);
+    const sub = await getRazorpay().subscriptions.fetch(subscriptionId);
     if (!sub || !sub.notes || sub.notes.uid !== context.auth.uid) {
       throw new functions.https.HttpsError(
         "permission-denied",
@@ -442,7 +451,7 @@ exports.maintainProPlans = functions.pubsub
             revoked++;
             continue;
           }
-          const sub = await razorpay.subscriptions.fetch(u.proSubscriptionId);
+          const sub = await getRazorpay().subscriptions.fetch(u.proSubscriptionId);
           // Active/authenticated = paid and recurring; anything else
           // (cancelled, completed, expired, halted, pending) = revoke.
           if (sub.status === "active" || sub.status === "authenticated") {

@@ -223,11 +223,12 @@ class AuthController extends StateNotifier<AuthState> {
     try {
       _profileSub = CloudBackend.instance.watchDoc('users', user.uid).listen(
         _applyProfileSnapshot,
-        onError: (_) {
-          // Offline / not configured — keep the local profile.
+        onError: (e, _) {
+          debugPrint('watchMyProfile onError: $e');
         },
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('watchMyProfile failed: $e');
       _profileSub = null;
     }
   }
