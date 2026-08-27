@@ -388,9 +388,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ),
     ).then((locale) {
-      if (locale != null) {
-        SettingsRepository.instance.setLocale(locale);
-        ref.read(localeProvider.notifier).state = locale;
+      if (locale != null && context.mounted) {
+        try {
+          SettingsRepository.instance.setLocale(locale);
+          ref.read(localeProvider.notifier).state = locale;
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not change language: $e')));
+          }
+        }
       }
     });
   }
@@ -416,9 +422,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
       ),
     ).then((currency) {
-      if (currency != null) {
-        SettingsRepository.instance.setPreferredCurrency(currency);
-        ref.invalidate(currencyProvider);
+      if (currency != null && context.mounted) {
+        try {
+          SettingsRepository.instance.setPreferredCurrency(currency);
+          ref.invalidate(currencyProvider);
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not change currency: $e')));
+          }
+        }
       }
     });
   }

@@ -1,3 +1,4 @@
+// ignore_for_file: deprecated_member_use
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -209,9 +210,12 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
         if (file != null) await _onImagePicked(File(file.path));
       case _ImageSource.drive:
       case _ImageSource.dropbox:
-        // Google Drive & Dropbox surface through the OS document picker when
-        // the corresponding apps are installed (Android SAF / iOS Files).
-        final result = await FilePicker.pickFiles(type: FileType.image);
+        final result = await FilePicker.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: const ['jpg', 'jpeg', 'png', 'webp', 'heic'],
+          allowMultiple: true,
+          withData: false,
+        );
         if (result != null) {
           for (final f in result.files) {
             if (f.path != null) await _onImagePicked(File(f.path!));
@@ -221,11 +225,46 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
   }
 
   Future<void> _onImagePicked(File file) async {
+    const maxBytes = 5 * 1024 * 1024;
+    final len = await file.length();
+    if (len > maxBytes) {
+      if (!mounted) return;
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Large image'),
+          content: Text(
+            'This image is ${(len / 1024 / 1024).toStringAsFixed(1)} MB — over the 5 MB limit. '
+            'We can compress it to under 5 MB with high quality so you can add it now. Proceed?',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Compress & add')),
+          ],
+        ),
+      );
+      if (proceed != true) return;
+      // Compress on isolate, keep quality 85 and max 2400, loop reducing quality until <5MB
+      file = await _compressUnder5MB(file);
+      final newLen = await file.length();
+      if (newLen > maxBytes && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Still ${(newLen / 1024 / 1024).toStringAsFixed(1)} MB after compression — try a smaller image.')),
+        );
+        return;
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Compressed to ${(newLen / 1024 / 1024).toStringAsFixed(1)} MB — quality kept high.')),
+        );
+      }
+    }
     // Free-tier storage gate: originals beyond 100 MB need Pro.
-    if (!ref.read(authProvider).isPro) {
+    if (!ref.read(authProvider.select((a) => a.isPro))) {
       final usage = ref.read(storageUsageProvider).valueOrNull;
       final current = usage?.countedBytes ?? 0;
       if (current + file.lengthSync() > ProLimits.freeStorageBytes) {
+        if (!mounted) return;
         await showUpgradePrompt(
           context,
           feature:
@@ -243,6 +282,16 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
       await _analyze(file);
     }
     if (mounted) setState(() => _analyzing = false);
+  }
+
+  Future<File> _compressUnder5MB(File file) async {
+    for (final q in [85, 80, 75]) {
+      final out = await ImageUtils.compress(file, maxDimension: 2400, quality: q);
+      if (await out.length() < 5 * 1024 * 1024) return out;
+      file = out;
+      if (await file.length() < 5 * 1024 * 1024) return file;
+    }
+    return file;
   }
 
   /// Picks a certificate / invoice / provenance document and queues it to be
@@ -773,7 +822,6 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
                   onPressed: () {
                     final lat = _lat.text.trim();
                     final lng = _lng.text.trim();
-                    // ignore: deprecated_member_use
                     launchUrl(Uri.parse('https://www.openstreetmap.org/?mlat=$lat&mlon=$lng#map=15/$lat/$lng'));
                   },
                   icon: const Icon(Icons.open_in_new, size: 16),
@@ -856,6 +904,11 @@ class _ImagePickerGrid extends StatelessWidget {
           style: Theme.of(
             context,
           ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Only JPEG, PNG, WEBP, HEIC (max 5 MB each) — larger images will be compressed with high quality.',
+          style: TextStyle(fontSize: 11.5, color: Color(0xFF6B7280), height: 1.3),
         ),
         const SizedBox(height: AppSpacing.sm),
         GridView.count(

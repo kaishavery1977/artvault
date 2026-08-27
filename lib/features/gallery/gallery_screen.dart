@@ -139,6 +139,8 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
               padding: AppSpacing.screenPadding,
               sliver: SliverGrid(
                 delegate: SliverChildBuilderDelegate(
+                  addAutomaticKeepAlives: false,
+                  addRepaintBoundaries: true,
                   (context, i) => const _GallerySkeletonCard(),
                   childCount: 12,
                 ),
@@ -165,6 +167,8 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
                 padding: AppSpacing.screenPadding,
                 sliver: SliverGrid(
                   delegate: SliverChildBuilderDelegate(
+                  addAutomaticKeepAlives: false,
+                  addRepaintBoundaries: true,
                     (context, i) => PaintingGridCard(
                       painting: visible[i],
                       heroTag: 'painting-${visible[i].id}',
@@ -184,6 +188,8 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
                 padding: AppSpacing.screenPadding,
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
+                  addAutomaticKeepAlives: false,
+                  addRepaintBoundaries: true,
                     (context, i) => Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                       child: PaintingListTile(painting: visible[i]),
