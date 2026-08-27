@@ -193,7 +193,7 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
       );
     }
 
-    final canEdit = ref.watch(authProvider).canEdit;
+    final canEdit = ref.watch(authProvider.select((a) => a.canEdit));
     final images = painting.images.isEmpty
         ? <String>[painting.coverImagePath]
         : painting.images;

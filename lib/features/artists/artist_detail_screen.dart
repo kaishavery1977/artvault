@@ -66,7 +66,7 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
     final paintings = (ref.watch(paintingsProvider).valueOrNull ?? const [])
         .where((p) => p.artistId == widget.artistId && !p.isDeleted)
         .toList();
-    final canEdit = ref.watch(authProvider).canEdit;
+    final canEdit = ref.watch(authProvider.select((a) => a.canEdit));
 
     if (artist == null) {
       return const Scaffold(body: Center(child: Text('Artist not found')));

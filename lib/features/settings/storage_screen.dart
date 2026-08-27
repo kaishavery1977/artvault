@@ -48,7 +48,7 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final cloudReady = ref.watch(cloudReadyProvider);
-    final canBackup = ref.watch(authProvider).canManageBackups;
+    final canBackup = ref.watch(authProvider.select((a) => a.canManageBackups));
     final usage = ref.watch(storageUsageProvider).valueOrNull;
     final device = ref.watch(deviceStorageProvider).valueOrNull;
 

@@ -142,7 +142,7 @@ class _AdminCodeGateScreenState extends ConsumerState<AdminCodeGateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authProvider).user;
+    final user = ref.watch(authProvider.select((a) => a.user));
     final name = user?.displayName.isNotEmpty == true
         ? user!.displayName
         : 'there';

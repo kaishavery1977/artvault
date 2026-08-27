@@ -31,7 +31,7 @@ class DocumentsScreen extends ConsumerWidget {
         .where((d) => !d.isDeleted)
         .toList();
     final paintings = ref.watch(paintingsProvider).valueOrNull ?? const [];
-    final canEdit = ref.watch(authProvider).canEdit;
+    final canEdit = ref.watch(authProvider.select((a) => a.canEdit));
 
     String titleFor(String paintingId) {
       for (final p in paintings) {

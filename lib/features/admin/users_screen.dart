@@ -288,7 +288,7 @@ class UsersScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final usersAsync = ref.watch(usersProvider);
-    final me = ref.watch(authProvider).user;
+    final me = ref.watch(authProvider.select((a) => a.user));
     final cloudReady = ref.watch(cloudReadyProvider);
 
     return Scaffold(

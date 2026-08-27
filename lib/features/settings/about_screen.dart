@@ -47,7 +47,7 @@ class AboutScreen extends ConsumerWidget {
     final documents = ref.watch(documentsProvider).valueOrNull?.length ?? 0;
     final storedImages = active.fold<int>(0, (sum, p) => sum + p.images.length);
     final vaultBytes = ref.watch(storageUsageProvider).valueOrNull?.total ?? 0;
-    final plan = ref.watch(authProvider).user?.plan ?? AppPlan.free;
+    final plan = ref.watch(authProvider.select((a) => a.user))?.plan ?? AppPlan.free;
 
     final children = staggerReveal(
       [

@@ -90,7 +90,7 @@ class _AppShellState extends ConsumerState<AppShell>
   Widget build(BuildContext context) {
     final shell = widget.navigationShell;
     final isDesktop = AppBreakpoints.isDesktop(context);
-    final canEdit = ref.watch(authProvider).canEdit;
+    final canEdit = ref.watch(authProvider.select((a) => a.canEdit));
     // Adaptive nav bar height: compact phones get 56dp, standard 60dp,
     // tablets and larger get 68dp.
     final deviceSize = DeviceResolutionService.instance.current?.size;

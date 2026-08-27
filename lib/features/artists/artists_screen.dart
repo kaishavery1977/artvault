@@ -21,7 +21,7 @@ class ArtistsScreen extends ConsumerWidget {
         .where((a) => !a.isDeleted)
         .toList();
     final paintings = ref.watch(paintingsProvider).valueOrNull ?? const [];
-    final canEdit = ref.watch(authProvider).canEdit;
+    final canEdit = ref.watch(authProvider.select((a) => a.canEdit));
 
     int countFor(String artistId) =>
         paintings.where((p) => p.artistId == artistId && !p.isDeleted).length;

@@ -68,7 +68,7 @@ class ReportsScreen extends ConsumerWidget {
     final artists = (ref.watch(artistsProvider).valueOrNull ?? const [])
         .where((a) => !a.isDeleted)
         .toList();
-    final canSeeAnalytics = ref.watch(authProvider).canSeeAnalytics;
+    final canSeeAnalytics = ref.watch(authProvider.select((a) => a.canSeeAnalytics));
 
     return Scaffold(
       body: CustomScrollView(

@@ -509,7 +509,7 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final canEdit = ref.watch(authProvider).canEdit;
+    final canEdit = ref.watch(authProvider.select((a) => a.canEdit));
     if (!canEdit) {
       return const Scaffold(
         body: Center(child: Text('You have read-only access.')),

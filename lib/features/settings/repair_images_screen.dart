@@ -259,7 +259,7 @@ class _RepairImagesScreenState extends ConsumerState<RepairImagesScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final user = ref.watch(authProvider).user;
+    final user = ref.watch(authProvider.select((a) => a.user));
     final profileMissing = RepairImagesScreen.profilePhotoMissing(user);
 
     return Scaffold(

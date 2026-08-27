@@ -612,7 +612,7 @@ class StorageUsage {
   int get countedBytes => images + documents;
 }
 
-final storageUsageProvider = FutureProvider<StorageUsage>((ref) async {
+final storageUsageProvider = FutureProvider.autoDispose<StorageUsage>((ref) async {
   final breakdown = await FileStorageService.instance.storageBreakdown();
   return StorageUsage(
     images: breakdown.images,
@@ -639,7 +639,7 @@ class DeviceStorage {
 ///
 /// `disk_space_2` returns values in mebibytes (2^20 bytes) on Android and
 /// iOS, so convert to bytes with 1024*1024 — not 1024^3.
-final deviceStorageProvider = FutureProvider<DeviceStorage?>((ref) async {
+final deviceStorageProvider = FutureProvider.autoDispose<DeviceStorage?>((ref) async {
   try {
     final freeMiB = await DiskSpace.getFreeDiskSpace;
     final totalMiB = await DiskSpace.getTotalDiskSpace;
@@ -669,8 +669,9 @@ class RestoreProgress {
 }
 
 /// Emits restore progress while the vault re-downloads from the cloud;
-/// null when idle.
-final restoreProgressProvider = StateProvider<RestoreProgress?>((ref) => null);
+/// null when idle — autoDispose so the banner state doesn't linger after the
+/// screen is gone and memory is freed.
+final restoreProgressProvider = StateProvider.autoDispose<RestoreProgress?>((ref) => null);
 
 /// Mirrors [CloudBackend.failedUploadStreak] into Riverpod state so the UI
 /// rebuilds when the streak changes (a bare [ValueNotifier] wouldn't trigger
@@ -701,10 +702,10 @@ final cloudSyncHealthProvider = NotifierProvider<CloudSyncHealthNotifier, int>(
 /// session. Reset when the failed-upload streak drops back to 0 (a sync
 /// succeeded), so a recovered cloud brings the hint back only if failures
 /// start accumulating again.
-final cloudSyncHintDismissedProvider = StateProvider<bool>((ref) => false);
+final cloudSyncHintDismissedProvider = StateProvider.autoDispose<bool>((ref) => false);
 
 /// Single painting looked up by id.
-final paintingByIdProvider = Provider.family<Painting?, String>((ref, id) {
+final paintingByIdProvider = Provider.autoDispose.family<Painting?, String>((ref, id) {
   final paintings = ref.watch(paintingsProvider).valueOrNull ?? const [];
   for (final painting in paintings) {
     if (painting.id == id && !painting.isDeleted) return painting;
@@ -713,7 +714,7 @@ final paintingByIdProvider = Provider.family<Painting?, String>((ref, id) {
 });
 
 /// Documents attached to one painting.
-final documentsForPaintingProvider = Provider.family<List<ArtDocument>, String>(
+final documentsForPaintingProvider = Provider.autoDispose.family<List<ArtDocument>, String>(
   (ref, id) {
     final docs = ref.watch(documentsProvider).valueOrNull ?? const [];
     return docs.where((d) => d.paintingId == id && !d.isDeleted).toList();
@@ -726,8 +727,7 @@ final conditionReportsProvider = StreamProvider<List<ConditionReport>>((ref) {
 });
 
 /// Condition reports for one painting (newest first).
-final conditionReportsForPaintingProvider =
-    Provider.family<List<ConditionReport>, String>((ref, id) {
+final conditionReportsForPaintingProvider = Provider.autoDispose.family<List<ConditionReport>, String>((ref, id) {
       final reports =
           ref.watch(conditionReportsProvider).valueOrNull ?? const [];
       final list =
