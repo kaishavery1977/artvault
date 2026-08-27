@@ -17,8 +17,7 @@ import 'hive_test_harness.dart';
 void main() {
   setUpAll(() async {
     await initTestHive();
-    await LocalDatabase.instance
-        .clear(AppConstants.boxConditionReports);
+    await LocalDatabase.instance.clear(AppConstants.boxConditionReports);
   });
 
   setUp(() async {
@@ -72,8 +71,9 @@ void main() {
   });
 
   group('ConditionReportDialog', () {
-    testWidgets('renders chips, notes field, date tile and Save',
-        (tester) async {
+    testWidgets('renders chips, notes field, date tile and Save', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           child: MaterialApp(
@@ -108,8 +108,9 @@ void main() {
       expect(find.widgetWithText(TextButton, 'Cancel'), findsOneWidget);
     });
 
-    testWidgets('Save pops with the entered draft (no I/O in the dialog)',
-        (tester) async {
+    testWidgets('Save pops with the entered draft (no I/O in the dialog)', (
+      tester,
+    ) async {
       ConditionReportDraft? popped;
       await tester.pumpWidget(
         ProviderScope(

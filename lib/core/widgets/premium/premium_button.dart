@@ -38,9 +38,10 @@ class _PremiumButtonState extends State<PremiumButton>
       vsync: this,
       duration: const Duration(milliseconds: 200),
     );
-    _glowIntensity = Tween<double>(begin: 0.4, end: 0.8).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
-    );
+    _glowIntensity = Tween<double>(
+      begin: 0.4,
+      end: 0.8,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
   }
 
   @override
@@ -65,26 +66,21 @@ class _PremiumButtonState extends State<PremiumButton>
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
             gradient: LinearGradient(
-              colors: [
-                btnColor,
-                btnColor.withValues(alpha: 0.85),
-              ],
+              colors: [btnColor, btnColor.withValues(alpha: 0.85)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             boxShadow: [
               // 3D shadow
               BoxShadow(
-                color: btnColor.withValues(
-                    alpha: 0.3 * _glowIntensity.value),
+                color: btnColor.withValues(alpha: 0.3 * _glowIntensity.value),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
                 spreadRadius: -2,
               ),
               // Glow
               BoxShadow(
-                color:
-                    btnColor.withValues(alpha: 0.15 * _glowIntensity.value),
+                color: btnColor.withValues(alpha: 0.15 * _glowIntensity.value),
                 blurRadius: 24,
                 spreadRadius: 2,
               ),
@@ -93,8 +89,7 @@ class _PremiumButtonState extends State<PremiumButton>
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius:
-                  BorderRadius.circular(AppSpacing.radiusButton),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
               splashColor: fg.withValues(alpha: 0.15),
               highlightColor: fg.withValues(alpha: 0.05),
               onTapDown: enabled ? (_) => _controller.forward() : null,
@@ -144,12 +139,7 @@ class PremiumFAB extends StatefulWidget {
   final VoidCallback? onPressed;
   final Color? color;
 
-  const PremiumFAB({
-    super.key,
-    required this.icon,
-    this.onPressed,
-    this.color,
-  });
+  const PremiumFAB({super.key, required this.icon, this.onPressed, this.color});
 
   @override
   State<PremiumFAB> createState() => _PremiumFABState();
@@ -182,16 +172,12 @@ class _PremiumFABState extends State<PremiumFAB>
     return AnimatedBuilder(
       animation: _pulseController,
       builder: (context, child) {
-        final pulse =
-            reduced ? 0.5 : 0.3 + 0.2 * _pulseController.value;
+        final pulse = reduced ? 0.5 : 0.3 + 0.2 * _pulseController.value;
         return Container(
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: LinearGradient(
-              colors: [
-                color,
-                color.withValues(alpha: 0.8),
-              ],
+              colors: [color, color.withValues(alpha: 0.8)],
             ),
             boxShadow: [
               BoxShadow(

@@ -96,7 +96,9 @@ class _PremiumNavBarState extends State<PremiumNavBar>
                   HapticFeedback.selectionClick();
                   widget.onTap(i);
                 },
-                indicatorScale: i == widget.currentIndex ? _indicatorScale : null,
+                indicatorScale: i == widget.currentIndex
+                    ? _indicatorScale
+                    : null,
                 color: scheme.primary,
                 unselectedColor: scheme.onSurfaceVariant,
               ),

@@ -19,24 +19,24 @@ class AppNotification {
   });
 
   AppNotification copyWith({bool? read}) => AppNotification(
-        id: id,
-        title: title,
-        body: body,
-        type: type,
-        read: read ?? this.read,
-        paintingId: paintingId,
-        createdAt: createdAt,
-      );
+    id: id,
+    title: title,
+    body: body,
+    type: type,
+    read: read ?? this.read,
+    paintingId: paintingId,
+    createdAt: createdAt,
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'body': body,
-        'type': type,
-        'read': read,
-        'paintingId': paintingId,
-        'createdAt': createdAt.toIso8601String(),
-      };
+    'id': id,
+    'title': title,
+    'body': body,
+    'type': type,
+    'read': read,
+    'paintingId': paintingId,
+    'createdAt': createdAt.toIso8601String(),
+  };
 
   factory AppNotification.fromJson(Map<String, dynamic> json) =>
       AppNotification(
@@ -46,7 +46,8 @@ class AppNotification {
         type: (json['type'] as String?) ?? 'system',
         read: (json['read'] as bool?) ?? false,
         paintingId: json['paintingId'] as String?,
-        createdAt: DateTime.tryParse((json['createdAt'] as String?) ?? '') ??
+        createdAt:
+            DateTime.tryParse((json['createdAt'] as String?) ?? '') ??
             DateTime.now(),
       );
 }

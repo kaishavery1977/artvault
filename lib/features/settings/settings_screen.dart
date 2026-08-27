@@ -48,7 +48,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     // Header + each settings group cascade in one after another.
     final sections = staggerReveal(
       [
-        _UserCard(user: user, role: user?.role, plan: user?.plan ?? AppPlan.free),
+        _UserCard(
+          user: user,
+          role: user?.role,
+          plan: user?.plan ?? AppPlan.free,
+        ),
         const SizedBox(height: AppSpacing.md),
         _Group(
           title: 'Appearance',
@@ -155,7 +159,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   : 'Free plan — unlock unlimited capacity, analytics & watermarking',
               trailing: user?.plan.isPro == true
                   ? const _ProBadge()
-                  : TagChip(label: 'Free', color: Theme.of(context).colorScheme.onSurface),
+                  : TagChip(
+                      label: 'Free',
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
               onTap: () => context.push('/upgrade'),
             ),
             _SettingTile(
@@ -253,7 +260,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           AppSpacing.xxl,
         ),
         children: [
-          Text('Settings', style: AppTheme.display(context, size: context.adaptiveFont(28))),
+          Text(
+            'Settings',
+            style: AppTheme.display(context, size: context.adaptiveFont(28)),
+          ),
           const SizedBox(height: AppSpacing.md),
           ...sections,
           if (_debugVisible) ...[
@@ -296,7 +306,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         content: Text(
           restored > 0
               ? 'Restored $restored '
-                  '${restored == 1 ? 'file' : 'files'} from the cloud'
+                    '${restored == 1 ? 'file' : 'files'} from the cloud'
               : 'Your vault is already up to date',
         ),
       ),
@@ -329,11 +339,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   static String _repairSubtitle(WidgetRef ref) {
     final paintings =
         ref.watch(paintingsProvider).valueOrNull ?? const <Painting>[];
-    final artists =
-        ref.watch(artistsProvider).valueOrNull ?? const <Artist>[];
+    final artists = ref.watch(artistsProvider).valueOrNull ?? const <Artist>[];
     final docs =
         ref.watch(documentsProvider).valueOrNull ?? const <ArtDocument>[];
-    final missing = paintings
+    final missing =
+        paintings
             .where((p) => !p.isDeleted)
             .where(RepairImagesScreen.needsRepair)
             .length +
@@ -453,9 +463,9 @@ class _DeviceProfileDebugCard extends StatelessWidget {
               const SizedBox(width: AppSpacing.xs),
               Text(
                 'Device Resolution Profile',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
               ),
               const Spacer(),
               IconButton(
@@ -468,14 +478,23 @@ class _DeviceProfileDebugCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           _DebugRow('Size category', profile.size.name),
-          _DebugRow('Screen (dp)', '${profile.widthDp.round()} × ${profile.heightDp.round()}'),
-          _DebugRow('Screen (px)', '${profile.widthPx.round()} × ${profile.heightPx.round()}'),
+          _DebugRow(
+            'Screen (dp)',
+            '${profile.widthDp.round()} × ${profile.heightDp.round()}',
+          ),
+          _DebugRow(
+            'Screen (px)',
+            '${profile.widthPx.round()} × ${profile.heightPx.round()}',
+          ),
           _DebugRow('Pixel ratio', profile.devicePixelRatio.toStringAsFixed(2)),
           _DebugRow('Shortest side', '${profile.shortestSide.round()} dp'),
           _DebugRow('Scale factor', profile.scaleFactor.toStringAsFixed(3)),
           _DebugRow('Font scale', profile.fontScale.toStringAsFixed(3)),
           _DebugRow('High density', profile.isHighDensity ? 'Yes' : 'No'),
-          _DebugRow('Captured at', profile.capturedAt.toString().substring(0, 19)),
+          _DebugRow(
+            'Captured at',
+            profile.capturedAt.toString().substring(0, 19),
+          ),
         ],
       ),
     );

@@ -43,16 +43,16 @@ class SearchQuery {
 
   @override
   String toString() => [
-        if (artist != null) 'artist=$artist',
-        if (medium != null) 'medium=$medium',
-        if (category != null) 'category=$category',
-        if (style != null) 'style=$style',
-        if (colorHex != null) 'color=$colorHex',
-        if (minDimension != null) 'min=$minDimension',
-        if (maxDimension != null) 'max=$maxDimension',
-        if (latestOnly) 'latest',
-        if (freeText != null) 'text=$freeText',
-      ].join(' ');
+    if (artist != null) 'artist=$artist',
+    if (medium != null) 'medium=$medium',
+    if (category != null) 'category=$category',
+    if (style != null) 'style=$style',
+    if (colorHex != null) 'color=$colorHex',
+    if (minDimension != null) 'min=$minDimension',
+    if (maxDimension != null) 'max=$maxDimension',
+    if (latestOnly) 'latest',
+    if (freeText != null) 'text=$freeText',
+  ].join(' ');
 }
 
 /// Local AI features (offline-first):
@@ -83,7 +83,10 @@ class AiService {
     for (final other in collection) {
       if (other.id == painting.id) continue;
       if (other.aiHash.isEmpty) continue;
-      final distance = ImageUtils.hammingDistance(painting.aiHash, other.aiHash);
+      final distance = ImageUtils.hammingDistance(
+        painting.aiHash,
+        other.aiHash,
+      );
       final similarity = ImageUtils.similarityFromDistance(distance);
       if (similarity >= threshold) {
         result.add(DuplicateMatch(other, similarity));
@@ -164,7 +167,8 @@ class AiService {
     }
 
     // Tonal character: closeness of brightness + contrast.
-    final tonal = 1 -
+    final tonal =
+        1 -
         ((a.brightness - b.brightness).abs() +
                 (a.contrast - b.contrast).abs()) /
             2;
@@ -197,12 +201,8 @@ class AiService {
 
   /// Jaccard similarity of the two artworks' tag sets (lower-cased).
   static double _tagOverlap(Painting a, Painting b) {
-    final ta = {...a.aiTags, ...a.tags}
-        .map((t) => t.toLowerCase())
-        .toSet();
-    final tb = {...b.aiTags, ...b.tags}
-        .map((t) => t.toLowerCase())
-        .toSet();
+    final ta = {...a.aiTags, ...a.tags}.map((t) => t.toLowerCase()).toSet();
+    final tb = {...b.aiTags, ...b.tags}.map((t) => t.toLowerCase()).toSet();
     if (ta.isEmpty || tb.isEmpty) return 0;
     return ta.intersection(tb).length / ta.union(tb).length;
   }
@@ -305,7 +305,9 @@ class AiService {
     }
 
     // Latest upload.
-    if (text.contains('latest') || text.contains('newest') || text.contains('most recent')) {
+    if (text.contains('latest') ||
+        text.contains('newest') ||
+        text.contains('most recent')) {
       q.latestOnly = true;
     }
 
@@ -316,7 +318,8 @@ class AiService {
     final dimMatch = dimReg.firstMatch(text);
     if (dimMatch != null) {
       final value = double.tryParse(dimMatch.group(2)!) ?? 0;
-      final larger = dimMatch.group(1)!.startsWith('larger') ||
+      final larger =
+          dimMatch.group(1)!.startsWith('larger') ||
           dimMatch.group(1)!.startsWith('bigger') ||
           dimMatch.group(1)!.startsWith('greater') ||
           dimMatch.group(1)!.startsWith('taller') ||
@@ -331,10 +334,21 @@ class AiService {
 
     // Colors.
     const colorWords = {
-      'red': 'RED', 'orange': 'ORANGE', 'yellow': 'YELLOW', 'green': 'GREEN',
-      'blue': 'BLUE', 'purple': 'PURPLE', 'pink': 'MAGENTA', 'black': 'BLACK',
-      'white': 'WHITE', 'grey': 'GREY', 'gray': 'GREY', 'brown': 'BROWN',
-      'gold': 'GOLD', 'silver': 'SILVER', 'teal': 'TEAL',
+      'red': 'RED',
+      'orange': 'ORANGE',
+      'yellow': 'YELLOW',
+      'green': 'GREEN',
+      'blue': 'BLUE',
+      'purple': 'PURPLE',
+      'pink': 'MAGENTA',
+      'black': 'BLACK',
+      'white': 'WHITE',
+      'grey': 'GREY',
+      'gray': 'GREY',
+      'brown': 'BROWN',
+      'gold': 'GOLD',
+      'silver': 'SILVER',
+      'teal': 'TEAL',
     };
     for (final entry in colorWords.entries) {
       if (text.contains(entry.key)) {
@@ -370,7 +384,10 @@ class AiService {
     final stop = RegExp(
       r'\b(show|all|find|open|paintings|artworks|art|work|please|me|the|a|an|with|in)\b',
     );
-    final leftover = text.replaceAll(stop, ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+    final leftover = text
+        .replaceAll(stop, ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
     if (leftover.isNotEmpty && q.artist == null && q.medium == null) {
       q.freeText = leftover;
     }
@@ -378,22 +395,22 @@ class AiService {
   }
 
   static String _hexForName(String name) => switch (name) {
-        'RED' => '#EF4444',
-        'ORANGE' => '#F97316',
-        'YELLOW' => '#FACC15',
-        'GREEN' => '#22C55E',
-        'BLUE' => '#3B82F6',
-        'PURPLE' => '#8B5CF6',
-        'MAGENTA' => '#EC4899',
-        'BLACK' => '#0F172A',
-        'WHITE' => '#F8FAFC',
-        'GREY' => '#94A3B8',
-        'BROWN' => '#92400E',
-        'GOLD' => '#F59E0B',
-        'SILVER' => '#CBD5E1',
-        'TEAL' => '#14B8A6',
-        _ => '#3B82F6',
-      };
+    'RED' => '#EF4444',
+    'ORANGE' => '#F97316',
+    'YELLOW' => '#FACC15',
+    'GREEN' => '#22C55E',
+    'BLUE' => '#3B82F6',
+    'PURPLE' => '#8B5CF6',
+    'MAGENTA' => '#EC4899',
+    'BLACK' => '#0F172A',
+    'WHITE' => '#F8FAFC',
+    'GREY' => '#94A3B8',
+    'BROWN' => '#92400E',
+    'GOLD' => '#F59E0B',
+    'SILVER' => '#CBD5E1',
+    'TEAL' => '#14B8A6',
+    _ => '#3B82F6',
+  };
 
   /// Filters a painting list by a parsed [SearchQuery].
   List<Painting> applyQuery(List<Painting> all, SearchQuery q) {
@@ -401,17 +418,27 @@ class AiService {
 
     if (q.artist != null) {
       result = result
-          .where((p) => p.artistName.toLowerCase().contains(q.artist!.toLowerCase()))
+          .where(
+            (p) => p.artistName.toLowerCase().contains(q.artist!.toLowerCase()),
+          )
           .toList();
     }
     if (q.medium != null) {
-      result = result.where((p) => p.medium.toLowerCase().contains(q.medium!.toLowerCase())).toList();
+      result = result
+          .where(
+            (p) => p.medium.toLowerCase().contains(q.medium!.toLowerCase()),
+          )
+          .toList();
     }
     if (q.category != null) {
-      result = result.where((p) => p.category.toLowerCase() == q.category!.toLowerCase()).toList();
+      result = result
+          .where((p) => p.category.toLowerCase() == q.category!.toLowerCase())
+          .toList();
     }
     if (q.style != null) {
-      result = result.where((p) => p.style.toLowerCase().contains(q.style!.toLowerCase())).toList();
+      result = result
+          .where((p) => p.style.toLowerCase().contains(q.style!.toLowerCase()))
+          .toList();
     }
     if (q.colorHex != null) {
       final target = ImageUtils.colorFromHex(q.colorHex!);
@@ -421,17 +448,28 @@ class AiService {
             return true;
           }
         }
-        return p.tags.any((t) => _colorName(target).toLowerCase() == t.toLowerCase());
+        return p.tags.any(
+          (t) => _colorName(target).toLowerCase() == t.toLowerCase(),
+        );
       }).toList();
     }
     if (q.minDimension != null) {
-      result = result.where((p) =>
-          (p.width ?? 0) >= q.minDimension! || (p.height ?? 0) >= q.minDimension!).toList();
+      result = result
+          .where(
+            (p) =>
+                (p.width ?? 0) >= q.minDimension! ||
+                (p.height ?? 0) >= q.minDimension!,
+          )
+          .toList();
     }
     if (q.maxDimension != null) {
-      result = result.where((p) =>
-          ((p.width ?? double.infinity) <= q.maxDimension!) &&
-          ((p.height ?? double.infinity) <= q.maxDimension!)).toList();
+      result = result
+          .where(
+            (p) =>
+                ((p.width ?? double.infinity) <= q.maxDimension!) &&
+                ((p.height ?? double.infinity) <= q.maxDimension!),
+          )
+          .toList();
     }
     if (q.latestOnly && result.isNotEmpty) {
       result.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -441,7 +479,8 @@ class AiService {
       final terms = q.freeText!.split(' ');
       result = result.where((p) {
         final haystack =
-            '${p.title} ${p.description} ${p.tags.join(' ')} ${p.artistName}'.toLowerCase();
+            '${p.title} ${p.description} ${p.tags.join(' ')} ${p.artistName}'
+                .toLowerCase();
         return terms.every((t) => haystack.contains(t));
       }).toList();
     }

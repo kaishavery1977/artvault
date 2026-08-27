@@ -46,8 +46,7 @@ class FileStorageService {
   /// Copies a picked image into the vault and returns its local path.
   Future<String> importImage(File source) async {
     final dir = imagesDir;
-    final name =
-        'img_${DateTime.now().millisecondsSinceEpoch}.$imageExtension';
+    final name = 'img_${DateTime.now().millisecondsSinceEpoch}.$imageExtension';
     final target = File(p.join(dir.path, name));
     final compressed = await ImageUtils.compress(source);
     await compressed.copy(target.path);
@@ -72,8 +71,7 @@ class FileStorageService {
   /// bytes are assumed to be a final JPEG, so no re-compression happens.
   Future<String> saveImageBytes(Uint8List bytes) async {
     final dir = imagesDir;
-    final name =
-        'img_${DateTime.now().millisecondsSinceEpoch}.$imageExtension';
+    final name = 'img_${DateTime.now().millisecondsSinceEpoch}.$imageExtension';
     final target = File(p.join(dir.path, name));
     await target.writeAsBytes(bytes, flush: true);
     return target.path;
@@ -82,7 +80,12 @@ class FileStorageService {
   /// Imports a document (pdf/image/docx) into the vault.
   Future<String> importDocument(File source, String name) async {
     final safe = name.replaceAll(RegExp(r'[^\w.\- ]+'), '_');
-    final target = File(p.join(documentsDir.path, '${DateTime.now().millisecondsSinceEpoch}_$safe'));
+    final target = File(
+      p.join(
+        documentsDir.path,
+        '${DateTime.now().millisecondsSinceEpoch}_$safe',
+      ),
+    );
     await source.copy(target.path);
     return target.path;
   }
@@ -92,7 +95,10 @@ class FileStorageService {
   Future<String> saveDocumentBytes(Uint8List bytes, String name) async {
     final safe = name.replaceAll(RegExp(r'[^\w.\- ]+'), '_');
     final target = File(
-      p.join(documentsDir.path, '${DateTime.now().millisecondsSinceEpoch}_$safe'),
+      p.join(
+        documentsDir.path,
+        '${DateTime.now().millisecondsSinceEpoch}_$safe',
+      ),
     );
     await target.writeAsBytes(bytes, flush: true);
     return target.path;
@@ -124,7 +130,10 @@ class FileStorageService {
     Future<int> dirBytes(Directory dir) async {
       if (!dir.existsSync()) return 0;
       var total = 0;
-      await for (final entity in dir.list(recursive: true, followLinks: false)) {
+      await for (final entity in dir.list(
+        recursive: true,
+        followLinks: false,
+      )) {
         if (entity is File) {
           try {
             total += await entity.length();

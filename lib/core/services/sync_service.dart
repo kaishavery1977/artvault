@@ -28,19 +28,19 @@ class SyncService {
   static const String _boxQueue = 'av_sync_pending';
 
   /// Queues an operation for retry.
-  Future<void> enqueue(String id, String type, {Map<String, dynamic>? data}) async {
-    await LocalDatabase.instance.put(
-      _boxQueue,
-      id,
-      {
-        'id': id,
-        'type': type,
-        'data': data ?? {},
-        'attempts': 0,
-        'nextRetryAt': DateTime.now().millisecondsSinceEpoch,
-        'createdAt': DateTime.now().millisecondsSinceEpoch,
-      },
-    );
+  Future<void> enqueue(
+    String id,
+    String type, {
+    Map<String, dynamic>? data,
+  }) async {
+    await LocalDatabase.instance.put(_boxQueue, id, {
+      'id': id,
+      'type': type,
+      'data': data ?? {},
+      'attempts': 0,
+      'nextRetryAt': DateTime.now().millisecondsSinceEpoch,
+      'createdAt': DateTime.now().millisecondsSinceEpoch,
+    });
     AppLogger.info('SyncService: queued $type/$id');
   }
 
@@ -50,12 +50,17 @@ class SyncService {
   }
 
   /// Returns all pending operations.
-  List<Map<String, dynamic>> get pending =>
-      LocalDatabase.instance.getAll(_boxQueue).map((e) => Map<String, dynamic>.from(e)).toList();
+  List<Map<String, dynamic>> get pending => LocalDatabase.instance
+      .getAll(_boxQueue)
+      .map((e) => Map<String, dynamic>.from(e))
+      .toList();
 
   /// Starts the sync service: runs a periodic retry timer.
   void start() {
-    _periodicTimer = Timer.periodic(const Duration(seconds: 30), (_) => _processQueue());
+    _periodicTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _processQueue(),
+    );
     Future.microtask(_processQueue);
   }
 
@@ -106,20 +111,21 @@ class SyncService {
           await PaintingRepository.instance.syncNow();
       }
       await dequeue(id);
-      AppLogger.info('SyncService: $type/$id succeeded (attempt ${attempts + 1})');
+      AppLogger.info(
+        'SyncService: $type/$id succeeded (attempt ${attempts + 1})',
+      );
     } catch (e) {
       final nextDelay = _backoffDelay(attempts + 1);
-      AppLogger.warning('SyncService: $type/$id failed (attempt ${attempts + 1}), retry in ${nextDelay.inSeconds}s');
-      await LocalDatabase.instance.put(
-        _boxQueue,
-        id,
-        {
-          ...item,
-          'attempts': attempts + 1,
-          'nextRetryAt': DateTime.now().millisecondsSinceEpoch + nextDelay.inMilliseconds,
-          'lastError': e.toString(),
-        },
+      AppLogger.warning(
+        'SyncService: $type/$id failed (attempt ${attempts + 1}), retry in ${nextDelay.inSeconds}s',
       );
+      await LocalDatabase.instance.put(_boxQueue, id, {
+        ...item,
+        'attempts': attempts + 1,
+        'nextRetryAt':
+            DateTime.now().millisecondsSinceEpoch + nextDelay.inMilliseconds,
+        'lastError': e.toString(),
+      });
     }
   }
 

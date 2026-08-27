@@ -21,6 +21,7 @@ class AppTextField extends StatelessWidget {
   final VoidCallback? onTap;
   final String? prefixText;
   final TextCapitalization capitalization;
+
   /// When set, the leading [icon] becomes a tappable, highlighted button
   /// (e.g. the date field's calendar) instead of a plain static icon.
   final VoidCallback? onIconTap;

@@ -32,8 +32,9 @@ class DocumentRepository {
     return list;
   }
 
-  List<ArtDocument> forPainting(String paintingId) =>
-      readAll().where((d) => d.paintingId == paintingId && !d.isDeleted).toList();
+  List<ArtDocument> forPainting(String paintingId) => readAll()
+      .where((d) => d.paintingId == paintingId && !d.isDeleted)
+      .toList();
 
   ArtDocument? get(String id) {
     final raw = _db.getById(AppConstants.boxDocuments, id);
@@ -46,7 +47,10 @@ class DocumentRepository {
     required String name,
     required File file,
   }) async {
-    final localPath = await FileStorageService.instance.importDocument(file, name);
+    final localPath = await FileStorageService.instance.importDocument(
+      file,
+      name,
+    );
     final size = await file.length();
     final doc = ArtDocument(
       id: const Uuid().v4(),
@@ -131,8 +135,9 @@ class DocumentRepository {
       // Catch docs that have a local file but no cloud URL.
       for (final doc in readAll()) {
         if (doc.isDeleted || doc.needsSync) continue;
-        if (doc.localPath.isNotEmpty && doc.remoteUrl.isEmpty
-            && File(doc.localPath).existsSync()) {
+        if (doc.localPath.isNotEmpty &&
+            doc.remoteUrl.isEmpty &&
+            File(doc.localPath).existsSync()) {
           await _syncDocument(doc.copyWith(needsSync: true));
         }
       }
@@ -154,7 +159,9 @@ class DocumentRepository {
       id,
       doc.copyWith(localPath: localPath, needsSync: true).toJson(),
     );
-    unawaited(_syncDocument(doc.copyWith(localPath: localPath, needsSync: true)));
+    unawaited(
+      _syncDocument(doc.copyWith(localPath: localPath, needsSync: true)),
+    );
     BackupService.instance.scheduleAutoBackup();
   }
 
@@ -223,7 +230,8 @@ class DocumentRepository {
     if (lower.endsWith('.pdf')) return 'application/pdf';
     if (lower.endsWith('.png')) return 'image/png';
     if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
-    if (lower.endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    if (lower.endsWith('.docx'))
+      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
     if (lower.endsWith('.doc')) return 'application/msword';
     return 'application/octet-stream';
   }

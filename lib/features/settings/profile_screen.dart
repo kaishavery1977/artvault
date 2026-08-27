@@ -53,9 +53,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       );
       await ref.read(authProvider.notifier).refreshProfile();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Profile updated')));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -73,9 +73,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     await AuthRepository.instance.updateProfile(photoPath: path);
     await ref.read(authProvider.notifier).refreshProfile();
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Avatar updated')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Avatar updated')));
     }
   }
 
@@ -88,9 +88,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       await FileStorageService.instance.deleteFile(path);
     }
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Avatar removed')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Avatar removed')));
     }
   }
 
@@ -107,100 +107,113 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         children: [
           const SizedBox(height: AppSpacing.sm),
           ...staggerReveal([
-          Center(
-            child: Column(
-              children: [
-                InkWell(
-                  borderRadius: BorderRadius.circular(999),
-                  onTap: _pickAvatar,
-                  child: Stack(
-                    alignment: Alignment.bottomRight,
-                    children: [
-                      Avatar(
-                        name: user?.displayName ?? 'User',
-                        imagePath: user?.photoPath,
-                        imageUrl: user?.photoUrl,
-                        radius: 44,
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: scheme.primary,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Theme.of(context).cardColor, width: 2),
+            Center(
+              child: Column(
+                children: [
+                  InkWell(
+                    borderRadius: BorderRadius.circular(999),
+                    onTap: _pickAvatar,
+                    child: Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        Avatar(
+                          name: user?.displayName ?? 'User',
+                          imagePath: user?.photoPath,
+                          imageUrl: user?.photoUrl,
+                          radius: 44,
                         ),
-                        child: const Icon(Icons.edit, size: 14, color: Colors.white),
-                      ),
-                    ],
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: scheme.primary,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Theme.of(context).cardColor,
+                              width: 2,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.edit,
+                            size: 14,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                TextButton(
-                  onPressed: _removeAvatar,
-                  child: const Text('Remove avatar'),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  user?.displayName ?? 'User',
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  user?.email ?? '',
-                  style: TextStyle(fontSize: 13, color: scheme.onSurface.withValues(alpha: 0.65)),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                TagChip(
-                  label: user?.role.label ?? 'Viewer',
-                  color: switch (user?.role) {
-                    AppRole.admin => scheme.primary,
-                    AppRole.curator => const Color(0xFFF59E0B),
-                    _ => scheme.onSurface,
-                  },
-                ),
-              ],
+                  const SizedBox(height: AppSpacing.sm),
+                  TextButton(
+                    onPressed: _removeAvatar,
+                    child: const Text('Remove avatar'),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    user?.displayName ?? 'User',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 20,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    user?.email ?? '',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: scheme.onSurface.withValues(alpha: 0.65),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  TagChip(
+                    label: user?.role.label ?? 'Viewer',
+                    color: switch (user?.role) {
+                      AppRole.admin => scheme.primary,
+                      AppRole.curator => const Color(0xFFF59E0B),
+                      _ => scheme.onSurface,
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          GlassCard(
-            padding: AppSpacing.cardPadding,
-            child: Column(
-              children: [
-                TextField(
-                  controller: _name,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                    labelText: 'Display name',
-                    prefixIcon: Icon(Icons.badge_outlined),
+            const SizedBox(height: AppSpacing.lg),
+            GlassCard(
+              padding: AppSpacing.cardPadding,
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _name,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(
+                      labelText: 'Display name',
+                      prefixIcon: Icon(Icons.badge_outlined),
+                    ),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                TextField(
-                  controller: _bio,
-                  maxLines: 3,
-                  maxLength: 240,
-                  decoration: const InputDecoration(
-                    labelText: 'Bio',
-                    hintText: 'Collector, curator or gallery owner…',
-                    alignLabelWithHint: true,
-                    prefixIcon: Icon(Icons.notes),
+                  const SizedBox(height: AppSpacing.sm),
+                  TextField(
+                    controller: _bio,
+                    maxLines: 3,
+                    maxLength: 240,
+                    decoration: const InputDecoration(
+                      labelText: 'Bio',
+                      hintText: 'Collector, curator or gallery owner…',
+                      alignLabelWithHint: true,
+                      prefixIcon: Icon(Icons.notes),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          FilledButton.icon(
-            onPressed: _saving ? null : _save,
-            icon: _saving
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.save_outlined),
-            label: const Text('Save profile'),
-          ),
+            const SizedBox(height: AppSpacing.lg),
+            FilledButton.icon(
+              onPressed: _saving ? null : _save,
+              icon: _saving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.save_outlined),
+              label: const Text('Save profile'),
+            ),
           ], context: context),
         ],
       ),

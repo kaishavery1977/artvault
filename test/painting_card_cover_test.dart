@@ -85,8 +85,9 @@ void main() {
     expect((image.image as FileImage).file.path, img);
   });
 
-  testWidgets('grid card falls back when the cover file is gone',
-      (tester) async {
+  testWidgets('grid card falls back when the cover file is gone', (
+    tester,
+  ) async {
     final img = await _tempImage(tester);
 
     await tester.pumpWidget(
@@ -114,8 +115,9 @@ void main() {
     expect((image.image as FileImage).file.path, img);
   });
 
-  testWidgets('list tile falls back to the first existing image',
-      (tester) async {
+  testWidgets('list tile falls back to the first existing image', (
+    tester,
+  ) async {
     final img = await _tempImage(tester);
 
     await tester.pumpWidget(

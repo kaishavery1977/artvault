@@ -23,7 +23,10 @@ abstract final class ImageUtils {
     final result = await Isolate.run(() {
       final decoded = img.decodeImage(bytes);
       if (decoded == null) return null;
-      final scale = math.min(1.0, maxDimension / math.max(decoded.width, decoded.height));
+      final scale = math.min(
+        1.0,
+        maxDimension / math.max(decoded.width, decoded.height),
+      );
       var working = decoded;
       if (scale < 1.0) {
         working = img.copyResize(
@@ -161,7 +164,8 @@ abstract final class ImageUtils {
       final r = ((key >> 12) & 63) * bucket + bucket ~/ 2;
       final g = ((key >> 6) & 63) * bucket + bucket ~/ 2;
       final b = (key & 63) * bucket + bucket ~/ 2;
-      final hex = '#${r.toRadixString(16).padLeft(2, '0')}'
+      final hex =
+          '#${r.toRadixString(16).padLeft(2, '0')}'
           '${g.toRadixString(16).padLeft(2, '0')}'
           '${b.toRadixString(16).padLeft(2, '0')}';
       result.add(hex.toUpperCase());
@@ -178,11 +182,21 @@ abstract final class ImageUtils {
   }
 
   /// Extracts perceptual properties used by AI artwork analysis.
-  static ({double brightness, double contrast, String orientation, double complexity})
-      analyzePixelData(Uint8List bytes) {
+  static ({
+    double brightness,
+    double contrast,
+    String orientation,
+    double complexity,
+  })
+  analyzePixelData(Uint8List bytes) {
     final decoded = img.decodeImage(bytes);
     if (decoded == null) {
-      return (brightness: 0.5, contrast: 0.5, orientation: 'Landscape', complexity: 0.5);
+      return (
+        brightness: 0.5,
+        contrast: 0.5,
+        orientation: 'Landscape',
+        complexity: 0.5,
+      );
     }
 
     final small = img.copyResize(decoded, width: 96, height: 96);

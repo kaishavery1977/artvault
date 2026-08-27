@@ -40,7 +40,10 @@ void main() {
     });
 
     test('foreign codes are ignored by the parser', () {
-      expect(QrService.parsePayload('https://example.com/not-artvault'), isNull);
+      expect(
+        QrService.parsePayload('https://example.com/not-artvault'),
+        isNull,
+      );
       expect(QrService.parsePayload('tiny'), isNull); // < 8 chars, no scheme
     });
   });
@@ -59,8 +62,7 @@ void main() {
     });
 
     test('empty collection yields a PDF too', () async {
-      final bytes = await ExportService.instance
-          .buildQrLabelSheetPdf(const []);
+      final bytes = await ExportService.instance.buildQrLabelSheetPdf(const []);
       expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
     });
   });

@@ -290,10 +290,7 @@ class _GradientShimmerTextState extends State<GradientShimmerText>
     // Created eagerly so the reduced-motion path (which never touches the
     // controller during its life) still disposes it cleanly — a lazy `late`
     // initializer would create the ticker mid-dispose and crash.
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    );
+    _controller = AnimationController(vsync: this, duration: widget.duration);
   }
 
   @override
@@ -336,8 +333,7 @@ class _GradientShimmerTextState extends State<GradientShimmerText>
           end: Alignment(1, 0),
           colors: colors,
           stops: [
-            for (var i = 0; i < colors.length; i++)
-              i / (colors.length - 1),
+            for (var i = 0; i < colors.length; i++) i / (colors.length - 1),
           ],
         ).createShader(bounds);
       },
@@ -555,11 +551,7 @@ class _RevealEntranceState extends State<RevealEntrance>
     final startFrac = widget.delay.inMicroseconds / total.inMicroseconds;
     _progress = CurvedAnimation(
       parent: _controller,
-      curve: Interval(
-        startFrac,
-        1.0,
-        curve: Curves.easeOutCubic,
-      ),
+      curve: Interval(startFrac, 1.0, curve: Curves.easeOutCubic),
     );
     if (!widget.reducedMotion) _controller.forward();
   }

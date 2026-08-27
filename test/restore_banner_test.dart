@@ -16,14 +16,14 @@ import 'helpers.dart';
 import 'package:artvault/core/theme/adaptive_layout.dart';
 
 AppUser _user() => AppUser(
-      uid: 'u1',
-      email: 'a@b.com',
-      displayName: 'Tester',
-      role: AppRole.curator,
-      plan: AppPlan.free,
-      createdAt: DateTime(2026),
-      lastLogin: DateTime(2026),
-    );
+  uid: 'u1',
+  email: 'a@b.com',
+  displayName: 'Tester',
+  role: AppRole.curator,
+  plan: AppPlan.free,
+  createdAt: DateTime(2026),
+  lastLogin: DateTime(2026),
+);
 
 /// Pumps the home screen with a pinned restore-progress state.
 Widget _homeApp(RestoreProgress? progress) {
@@ -53,7 +53,10 @@ Widget _homeApp(RestoreProgress? progress) {
           initialLocation: '/home',
           routes: [
             GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
-            GoRoute(path: '/repair-images', builder: (_, _) => const SizedBox()),
+            GoRoute(
+              path: '/repair-images',
+              builder: (_, _) => const SizedBox(),
+            ),
           ],
         ),
       ),
@@ -64,8 +67,9 @@ Widget _homeApp(RestoreProgress? progress) {
 void main() {
   setUpAll(disableRuntimeFontFetching);
 
-  testWidgets('shows the current stage while the restore is running',
-      (tester) async {
+  testWidgets('shows the current stage while the restore is running', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _homeApp(
         const RestoreProgress(running: true, stage: 'Restoring paintings…'),
@@ -84,8 +88,9 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsWidgets);
   });
 
-  testWidgets('switches to a dismissible summary once files were restored',
-      (tester) async {
+  testWidgets('switches to a dismissible summary once files were restored', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _homeApp(
         const RestoreProgress(running: false, stage: 'done', itemsRestored: 3),
@@ -104,8 +109,9 @@ void main() {
     expect(find.textContaining('Restored'), findsNothing);
   });
 
-  testWidgets('stays hidden when nothing was restored or nothing is running',
-      (tester) async {
+  testWidgets('stays hidden when nothing was restored or nothing is running', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       _homeApp(
         const RestoreProgress(running: false, stage: 'done', itemsRestored: 0),

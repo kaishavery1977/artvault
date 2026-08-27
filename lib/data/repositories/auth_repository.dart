@@ -269,12 +269,12 @@ class AuthRepository {
     try {
       final doc = await CloudBackend.instance.fetchDoc('users', uid);
       if (doc != null && doc['uid'] == uid) {
-        return AppUser.fromJson(
-          doc,
-        ).copyWith(lastLogin: DateTime.now());
+        return AppUser.fromJson(doc).copyWith(lastLogin: DateTime.now());
       }
     } catch (e) {
-      debugPrint('AuthRepository._loadOrCreateProfile: fetchDoc failed ($e), creating new profile');
+      debugPrint(
+        'AuthRepository._loadOrCreateProfile: fetchDoc failed ($e), creating new profile',
+      );
     }
 
     final profile = AppUser(
@@ -346,7 +346,11 @@ class AuthRepository {
   ///
   /// The marker keeps the name/email/role so an admin can later restore the
   /// account from the Users screen.
-  Future<void> revokeUser(String uid, {String? email, String? displayName}) async {
+  Future<void> revokeUser(
+    String uid, {
+    String? email,
+    String? displayName,
+  }) async {
     final me = cachedUser;
     final oldRole = await _roleOf(uid);
     // Fail-closed ordering: write the revocation marker BEFORE deleting the
@@ -607,7 +611,9 @@ class AuthRepository {
       if (hmac != null && hmac.isNotEmpty) {
         final computed = _hmacSha256(raw);
         if (!_constantTimeEquals(computed, hmac)) {
-          await FaceDebugLog.instance.log('faceEmbedding HMAC mismatch — tampered');
+          await FaceDebugLog.instance.log(
+            'faceEmbedding HMAC mismatch — tampered',
+          );
           return null;
         }
       }
@@ -728,9 +734,9 @@ class AuthRepository {
     final untilStr = await _secure.read(key: AppConstants.kPasscodeLockedUntil);
     final until = int.tryParse(untilStr ?? '') ?? 0;
     if (until <= 0) return Duration.zero;
-    final remaining = DateTime.fromMillisecondsSinceEpoch(until).difference(
-      DateTime.now(),
-    );
+    final remaining = DateTime.fromMillisecondsSinceEpoch(
+      until,
+    ).difference(DateTime.now());
     return remaining.isNegative ? Duration.zero : remaining;
   }
 
@@ -810,9 +816,9 @@ class AuthRepository {
   }
 
   static List<int> _hexToBytes(String hex) => [
-        for (var i = 0; i + 1 < hex.length; i += 2)
-          int.parse(hex.substring(i, i + 2), radix: 16),
-      ];
+    for (var i = 0; i + 1 < hex.length; i += 2)
+      int.parse(hex.substring(i, i + 2), radix: 16),
+  ];
 
   /// Length-independent comparison so a timing side-channel can't leak how
   /// many leading digest characters match.
@@ -857,7 +863,11 @@ String _friendlyAuthMessage(Object e) {
   if (msg.contains('invalid-email')) return 'That email address is invalid.';
   if (msg.contains('user-disabled')) return 'This account has been disabled.';
   // Strip "Exception: " prefix for cleaner UI.
-  return e.toString().replaceAll('Exception: ', '').replaceAll('FirebaseAuthException', '').trim();
+  return e
+      .toString()
+      .replaceAll('Exception: ', '')
+      .replaceAll('FirebaseAuthException', '')
+      .trim();
 }
 
 class AuthException implements Exception {

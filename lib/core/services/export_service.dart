@@ -148,18 +148,27 @@ class ExportService {
                 pw.SizedBox(height: 2),
                 pw.Text(
                   painting.artistName,
-                  style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
+                  style: const pw.TextStyle(
+                    fontSize: 11,
+                    color: PdfColors.grey700,
+                  ),
                 ),
                 pw.SizedBox(height: 6),
                 pw.Text(
                   '${painting.medium} · ${painting.category}',
-                  style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                  style: const pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey600,
+                  ),
                 ),
                 if (painting.width != null || painting.price != null)
                   pw.Text(
                     '${Formatters.dimensions(width: painting.width, height: painting.height, unit: painting.dimensionUnit)}'
                     '${painting.price != null ? '  ·  ${Formatters.money(painting.price, currency: painting.currency)}' : ''}',
-                    style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+                    style: const pw.TextStyle(
+                      fontSize: 10,
+                      color: PdfColors.grey600,
+                    ),
                   ),
               ],
             ),
@@ -184,9 +193,22 @@ class ExportService {
     final sheet = excel['Collection'];
 
     final headers = <String>[
-      'Title', 'Artist', 'Category', 'Medium', 'Style', 'Width', 'Height',
-      'Depth', 'Unit', 'Price', 'Currency', 'Availability', 'Location',
-      'Tags', 'Date Created', 'Created At',
+      'Title',
+      'Artist',
+      'Category',
+      'Medium',
+      'Style',
+      'Width',
+      'Height',
+      'Depth',
+      'Unit',
+      'Price',
+      'Currency',
+      'Availability',
+      'Location',
+      'Tags',
+      'Date Created',
+      'Created At',
     ];
     sheet.appendRow(headers.map((h) => TextCellValue(h)).toList());
 
@@ -197,11 +219,23 @@ class ExportService {
         TextCellValue(painting.category),
         TextCellValue(painting.medium),
         TextCellValue(painting.style),
-        if (painting.width != null) DoubleCellValue(painting.width!) else TextCellValue(''),
-        if (painting.height != null) DoubleCellValue(painting.height!) else TextCellValue(''),
-        if (painting.depth != null) DoubleCellValue(painting.depth!) else TextCellValue(''),
+        if (painting.width != null)
+          DoubleCellValue(painting.width!)
+        else
+          TextCellValue(''),
+        if (painting.height != null)
+          DoubleCellValue(painting.height!)
+        else
+          TextCellValue(''),
+        if (painting.depth != null)
+          DoubleCellValue(painting.depth!)
+        else
+          TextCellValue(''),
         TextCellValue(painting.dimensionUnit),
-        if (painting.price != null) DoubleCellValue(painting.price!) else TextCellValue(''),
+        if (painting.price != null)
+          DoubleCellValue(painting.price!)
+        else
+          TextCellValue(''),
         TextCellValue(painting.currency),
         TextCellValue(painting.availability),
         TextCellValue(painting.location),
@@ -212,8 +246,12 @@ class ExportService {
     }
 
     final bytes = excel.encode() ?? <int>[];
-    final file = File(p.join(FileStorageService.instance.exportsDir.path,
-        'collection_${Formatters.fileStamp(DateTime.now())}.xlsx'));
+    final file = File(
+      p.join(
+        FileStorageService.instance.exportsDir.path,
+        'collection_${Formatters.fileStamp(DateTime.now())}.xlsx',
+      ),
+    );
     await file.writeAsBytes(bytes);
     return file;
   }
@@ -221,24 +259,51 @@ class ExportService {
   Future<File> exportCsv(List<Painting> paintings) async {
     final rows = <List<dynamic>>[
       [
-        'Title', 'Artist', 'Category', 'Medium', 'Style', 'Width', 'Height',
-        'Depth', 'Unit', 'Price', 'Currency', 'Availability', 'Location',
-        'Tags', 'Date Created', 'Created At',
+        'Title',
+        'Artist',
+        'Category',
+        'Medium',
+        'Style',
+        'Width',
+        'Height',
+        'Depth',
+        'Unit',
+        'Price',
+        'Currency',
+        'Availability',
+        'Location',
+        'Tags',
+        'Date Created',
+        'Created At',
       ],
     ];
     for (final painting in paintings) {
       rows.add([
-        painting.title, painting.artistName, painting.category, painting.medium,
-        painting.style, painting.width ?? '', painting.height ?? '',
-        painting.depth ?? '', painting.dimensionUnit, painting.price ?? '',
-        painting.currency, painting.availability, painting.location,
-        painting.tags.join('; '), painting.dateCreated ?? '',
+        painting.title,
+        painting.artistName,
+        painting.category,
+        painting.medium,
+        painting.style,
+        painting.width ?? '',
+        painting.height ?? '',
+        painting.depth ?? '',
+        painting.dimensionUnit,
+        painting.price ?? '',
+        painting.currency,
+        painting.availability,
+        painting.location,
+        painting.tags.join('; '),
+        painting.dateCreated ?? '',
         painting.createdAt.toIso8601String(),
       ]);
     }
     final csvString = const CsvEncoder().convert(rows);
-    final file = File(p.join(FileStorageService.instance.exportsDir.path,
-        'collection_${Formatters.fileStamp(DateTime.now())}.csv'));
+    final file = File(
+      p.join(
+        FileStorageService.instance.exportsDir.path,
+        'collection_${Formatters.fileStamp(DateTime.now())}.csv',
+      ),
+    );
     await file.writeAsString(csvString);
     return file;
   }
@@ -259,8 +324,7 @@ class ExportService {
     final totalByCurrency = <String, double>{};
     for (final p in valued) {
       final code = p.currency.isEmpty ? 'USD' : p.currency;
-      totalByCurrency[code] =
-          (totalByCurrency[code] ?? 0) + (p.price ?? 0);
+      totalByCurrency[code] = (totalByCurrency[code] ?? 0) + (p.price ?? 0);
     }
 
     pw.Widget totalRow() {
@@ -352,13 +416,7 @@ class ExportService {
               color: PdfColors.white,
             ),
             headerDecoration: const pw.BoxDecoration(color: _accent),
-            headers: [
-              'Artwork',
-              'Artist',
-              'Dimensions',
-              'Location',
-              'Value',
-            ],
+            headers: ['Artwork', 'Artist', 'Dimensions', 'Location', 'Value'],
             data: paintings
                 .map(
                   (p) => [
@@ -366,9 +424,7 @@ class ExportService {
                     p.artistName.isEmpty ? '-' : p.artistName,
                     p.width == null ? '-' : _asciiDimensions(p),
                     p.location.isEmpty ? '-' : p.location,
-                    p.price == null
-                        ? '-'
-                        : _asciiMoney(p.price!, p.currency),
+                    p.price == null ? '-' : _asciiMoney(p.price!, p.currency),
                   ],
                 )
                 .toList(),
@@ -386,8 +442,10 @@ class ExportService {
   /// blanks on paper.
   static String _asciiMoney(double value, String currency) {
     final code = currency.isEmpty ? 'USD' : currency.toUpperCase();
-    final amount =
-        NumberFormat.currency(symbol: '', decimalDigits: 0).format(value);
+    final amount = NumberFormat.currency(
+      symbol: '',
+      decimalDigits: 0,
+    ).format(value);
     return '$amount $code'.trim();
   }
 
@@ -424,49 +482,49 @@ class ExportService {
             crossAxisAlignment: pw.CrossAxisAlignment.center,
             mainAxisAlignment: pw.MainAxisAlignment.center,
             children: [
-            pw.BarcodeWidget(
-              barcode: pw.Barcode.qrCode(),
-              data: QrService.payloadFor(
-                p.id,
-                title: p.title,
-                artistName: p.artistName,
-                price: p.price,
-                currency: p.currency,
-                description: p.description,
-                imageUrl: p.coverImageUrl,
+              pw.BarcodeWidget(
+                barcode: pw.Barcode.qrCode(),
+                data: QrService.payloadFor(
+                  p.id,
+                  title: p.title,
+                  artistName: p.artistName,
+                  price: p.price,
+                  currency: p.currency,
+                  description: p.description,
+                  imageUrl: p.coverImageUrl,
+                ),
+                width: 110,
+                height: 110,
               ),
-              width: 110,
-              height: 110,
-            ),
-            pw.SizedBox(height: 8),
-            pw.Text(
-              p.title,
-              textAlign: pw.TextAlign.center,
-              style: pw.TextStyle(
-                fontSize: 11,
-                fontWeight: pw.FontWeight.bold,
-                color: _ink,
-              ),
-            ),
-            if (p.artistName.isNotEmpty)
+              pw.SizedBox(height: 8),
               pw.Text(
-                p.artistName,
+                p.title,
                 textAlign: pw.TextAlign.center,
-                style: const pw.TextStyle(
-                  fontSize: 9,
-                  color: PdfColors.grey700,
+                style: pw.TextStyle(
+                  fontSize: 11,
+                  fontWeight: pw.FontWeight.bold,
+                  color: _ink,
                 ),
               ),
-            pw.SizedBox(height: 4),
-            pw.Text(
-              'LOCATION: $location',
-              textAlign: pw.TextAlign.center,
-              style: pw.TextStyle(
-                fontSize: 8,
-                fontWeight: pw.FontWeight.bold,
-                color: _accent,
+              if (p.artistName.isNotEmpty)
+                pw.Text(
+                  p.artistName,
+                  textAlign: pw.TextAlign.center,
+                  style: const pw.TextStyle(
+                    fontSize: 9,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+              pw.SizedBox(height: 4),
+              pw.Text(
+                'LOCATION: $location',
+                textAlign: pw.TextAlign.center,
+                style: pw.TextStyle(
+                  fontSize: 8,
+                  fontWeight: pw.FontWeight.bold,
+                  color: _accent,
+                ),
               ),
-            ),
             ],
           ),
         ),

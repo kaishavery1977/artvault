@@ -84,48 +84,52 @@ class Artist {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'photoPath': photoPath,
-        'photoUrl': photoUrl,
-        'biography': biography,
-        'nationality': nationality,
-        'phone': phone,
-        'email': email,
-        'website': website,
-        'instagram': instagram,
-        'facebook': facebook,
-        'awards': awards,
-        'exhibitions': exhibitions,
-        'isDeleted': isDeleted,
-        'needsSync': needsSync,
-        'synced': synced,
-        'ownerUid': ownerUid,
-        'createdAt': createdAt.toIso8601String(),
-        'updatedAt': updatedAt.toIso8601String(),
-      };
+    'id': id,
+    'name': name,
+    'photoPath': photoPath,
+    'photoUrl': photoUrl,
+    'biography': biography,
+    'nationality': nationality,
+    'phone': phone,
+    'email': email,
+    'website': website,
+    'instagram': instagram,
+    'facebook': facebook,
+    'awards': awards,
+    'exhibitions': exhibitions,
+    'isDeleted': isDeleted,
+    'needsSync': needsSync,
+    'synced': synced,
+    'ownerUid': ownerUid,
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+  };
 
   factory Artist.fromJson(Map<String, dynamic> json) => Artist(
-        id: json['id'] as String,
-        name: (json['name'] as String?) ?? 'Unknown',
-        photoPath: (json['photoPath'] as String?) ?? '',
-        photoUrl: (json['photoUrl'] as String?) ?? '',
-        biography: (json['biography'] as String?) ?? '',
-        nationality: (json['nationality'] as String?) ?? '',
-        phone: (json['phone'] as String?) ?? '',
-        email: (json['email'] as String?) ?? '',
-        website: (json['website'] as String?) ?? '',
-        instagram: (json['instagram'] as String?) ?? '',
-        facebook: (json['facebook'] as String?) ?? '',
-        awards: (json['awards'] as List?)?.whereType<String>().toList() ?? const [],
-        exhibitions: (json['exhibitions'] as List?)?.whereType<String>().toList() ?? const [],
-        isDeleted: (json['isDeleted'] as bool?) ?? false,
-        needsSync: (json['needsSync'] as bool?) ?? true,
-        synced: (json['synced'] as bool?) ?? false,
-        ownerUid: (json['ownerUid'] as String?) ?? '',
-        createdAt: DateTime.tryParse((json['createdAt'] as String?) ?? '') ??
-            DateTime.now(),
-        updatedAt: DateTime.tryParse((json['updatedAt'] as String?) ?? '') ??
-            DateTime.now(),
-      );
+    id: json['id'] as String,
+    name: (json['name'] as String?) ?? 'Unknown',
+    photoPath: (json['photoPath'] as String?) ?? '',
+    photoUrl: (json['photoUrl'] as String?) ?? '',
+    biography: (json['biography'] as String?) ?? '',
+    nationality: (json['nationality'] as String?) ?? '',
+    phone: (json['phone'] as String?) ?? '',
+    email: (json['email'] as String?) ?? '',
+    website: (json['website'] as String?) ?? '',
+    instagram: (json['instagram'] as String?) ?? '',
+    facebook: (json['facebook'] as String?) ?? '',
+    awards: (json['awards'] as List?)?.whereType<String>().toList() ?? const [],
+    exhibitions:
+        (json['exhibitions'] as List?)?.whereType<String>().toList() ??
+        const [],
+    isDeleted: (json['isDeleted'] as bool?) ?? false,
+    needsSync: (json['needsSync'] as bool?) ?? true,
+    synced: (json['synced'] as bool?) ?? false,
+    ownerUid: (json['ownerUid'] as String?) ?? '',
+    createdAt:
+        DateTime.tryParse((json['createdAt'] as String?) ?? '') ??
+        DateTime.now(),
+    updatedAt:
+        DateTime.tryParse((json['updatedAt'] as String?) ?? '') ??
+        DateTime.now(),
+  );
 }

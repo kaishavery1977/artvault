@@ -59,154 +59,154 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
         children: [
           const SizedBox(height: AppSpacing.sm),
           ...staggerReveal([
-          GlassCard(
-            padding: AppSpacing.cardPadding,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.cloud_outlined, color: scheme.primary),
-                    const SizedBox(width: AppSpacing.sm),
-                    Text(
-                      'Cloud sync',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
+            GlassCard(
+              padding: AppSpacing.cardPadding,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.cloud_outlined, color: scheme.primary),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text(
+                        'Cloud sync',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                        ),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _StatusRow(
+                    context,
+                    'Firebase',
+                    cloudReady ? 'Connected' : 'Offline mode',
+                    cloudReady ? AppColors.success : AppColors.warning,
+                  ),
+                  if (!cloudReady)
+                    Text(
+                      'Connect Firebase (flutterfire configure) to enable cloud backup and sync.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: scheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            if (canBackup) ...[
+              GlassCard(
+                padding: AppSpacing.cardPadding,
+                child: Column(
+                  children: [
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.save_alt, color: scheme.primary),
+                      title: const Text('Back up now'),
+                      subtitle: const Text('Local file + cloud (if connected)'),
+                      trailing: _busy
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.chevron_right, size: 20),
+                      onTap: _busy
+                          ? null
+                          : () => _run(
+                              BackupService.instance.runBackup,
+                              'Backup completed',
+                            ),
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        Icons.cloud_upload_outlined,
+                        color: scheme.primary,
+                      ),
+                      title: const Text('Export local backup'),
+                      subtitle: const Text(
+                        'A single .json bundle of your whole vault',
+                      ),
+                      trailing: const Icon(Icons.chevron_right, size: 20),
+                      onTap: _busy
+                          ? null
+                          : () => _run(() async {
+                              final file = await BackupService.instance
+                                  .exportLocalBackup();
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Saved to ${file.path}'),
+                                  ),
+                                );
+                              }
+                            }, 'Backup exported'),
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                _StatusRow(
-                  context,
-                  'Firebase',
-                  cloudReady ? 'Connected' : 'Offline mode',
-                  cloudReady ? AppColors.success : AppColors.warning,
-                ),
-                if (!cloudReady)
+              ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
+            GlassCard(
+              padding: AppSpacing.cardPadding,
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.restore),
+                title: const Text('Restore from local backup'),
+                subtitle: const Text('Replace current data with a backup file'),
+                trailing: const Icon(Icons.chevron_right, size: 20),
+                onTap: _busy ? null : _restore,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            GlassCard(
+              padding: AppSpacing.cardPadding,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    'Connect Firebase (flutterfire configure) to enable cloud backup and sync.',
+                    'Storage',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _DeviceStorageRow(device: device),
+                  const SizedBox(height: AppSpacing.md),
+                  const Divider(height: 1),
+                  const SizedBox(height: AppSpacing.md),
+                  _UsageRow(
+                    label: 'Paintings & thumbnails',
+                    value: usage?.images ?? 0,
+                  ),
+                  _UsageRow(label: 'Documents', value: usage?.documents ?? 0),
+                  _UsageRow(
+                    label: 'Backups & exports',
+                    value: usage?.exports ?? 0,
+                  ),
+                  const Divider(height: 16),
+                  _UsageRow(
+                    label: 'Total on device',
+                    value: usage?.total ?? 0,
+                    bold: true,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    'ArtVault stores everything on-device first. Nothing leaves '
+                    'your device until you enable cloud sync.',
                     style: TextStyle(
                       fontSize: 12,
                       color: scheme.onSurface.withValues(alpha: 0.6),
                     ),
                   ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          if (canBackup) ...[
-            GlassCard(
-              padding: AppSpacing.cardPadding,
-              child: Column(
-                children: [
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(Icons.save_alt, color: scheme.primary),
-                    title: const Text('Back up now'),
-                    subtitle: const Text('Local file + cloud (if connected)'),
-                    trailing: _busy
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.chevron_right, size: 20),
-                    onTap: _busy
-                        ? null
-                        : () => _run(
-                            BackupService.instance.runBackup,
-                            'Backup completed',
-                          ),
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(
-                      Icons.cloud_upload_outlined,
-                      color: scheme.primary,
-                    ),
-                    title: const Text('Export local backup'),
-                    subtitle: const Text(
-                      'A single .json bundle of your whole vault',
-                    ),
-                    trailing: const Icon(Icons.chevron_right, size: 20),
-                    onTap: _busy
-                        ? null
-                        : () => _run(() async {
-                            final file = await BackupService.instance
-                                .exportLocalBackup();
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Saved to ${file.path}'),
-                                ),
-                              );
-                            }
-                          }, 'Backup exported'),
-                  ),
                 ],
               ),
             ),
-            const SizedBox(height: AppSpacing.lg),
-          ],
-          GlassCard(
-            padding: AppSpacing.cardPadding,
-            child: ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.restore),
-              title: const Text('Restore from local backup'),
-              subtitle: const Text('Replace current data with a backup file'),
-              trailing: const Icon(Icons.chevron_right, size: 20),
-              onTap: _busy ? null : _restore,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          GlassCard(
-            padding: AppSpacing.cardPadding,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Storage',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                _DeviceStorageRow(device: device),
-                const SizedBox(height: AppSpacing.md),
-                const Divider(height: 1),
-                const SizedBox(height: AppSpacing.md),
-                _UsageRow(
-                  label: 'Paintings & thumbnails',
-                  value: usage?.images ?? 0,
-                ),
-                _UsageRow(label: 'Documents', value: usage?.documents ?? 0),
-                _UsageRow(
-                  label: 'Backups & exports',
-                  value: usage?.exports ?? 0,
-                ),
-                const Divider(height: 16),
-                _UsageRow(
-                  label: 'Total on device',
-                  value: usage?.total ?? 0,
-                  bold: true,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  'ArtVault stores everything on-device first. Nothing leaves '
-                  'your device until you enable cloud sync.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: scheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                ),
-              ],
-            ),
-          ),
           ], context: context),
         ],
       ),

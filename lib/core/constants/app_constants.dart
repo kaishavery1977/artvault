@@ -76,39 +76,106 @@ abstract final class AppConstants {
 
   // Categories & mediums & styles vocabulary (used for filters + AI tagging)
   static const List<String> categories = [
-    'Abstract', 'Landscape', 'Portrait', 'Still Life', 'Figurative',
-    'Modern', 'Contemporary', 'Impressionist', 'Expressionist', 'Surreal',
-    'Minimalist', 'Religious', 'Mythological', 'Architecture', 'Floral',
-    'Marine', 'Wildlife', 'Urban', 'Calligraphy', 'Other',
+    'Abstract',
+    'Landscape',
+    'Portrait',
+    'Still Life',
+    'Figurative',
+    'Modern',
+    'Contemporary',
+    'Impressionist',
+    'Expressionist',
+    'Surreal',
+    'Minimalist',
+    'Religious',
+    'Mythological',
+    'Architecture',
+    'Floral',
+    'Marine',
+    'Wildlife',
+    'Urban',
+    'Calligraphy',
+    'Other',
   ];
 
   static const List<String> mediums = [
-    'Oil on Canvas', 'Acrylic on Canvas', 'Watercolor', 'Gouache',
-    'Pastel', 'Ink', 'Charcoal', 'Graphite', 'Mixed Media',
-    'Oil on Board', 'Tempera', 'Fresco', 'Encaustic', 'Photography',
-    'Digital Art', 'Print', 'Sculpture', 'Textile', 'Other',
+    'Oil on Canvas',
+    'Acrylic on Canvas',
+    'Watercolor',
+    'Gouache',
+    'Pastel',
+    'Ink',
+    'Charcoal',
+    'Graphite',
+    'Mixed Media',
+    'Oil on Board',
+    'Tempera',
+    'Fresco',
+    'Encaustic',
+    'Photography',
+    'Digital Art',
+    'Print',
+    'Sculpture',
+    'Textile',
+    'Other',
   ];
 
   static const List<String> styles = [
-    'Realism', 'Impressionism', 'Expressionism', 'Cubism', 'Surrealism',
-    'Abstract', 'Minimalism', 'Pop Art', 'Baroque', 'Rococo',
-    'Romanticism', 'Renaissance', 'Modernism', 'Contemporary', 'Naïve',
-    'Post-Impressionism', 'Art Deco', 'Art Nouveau', 'Fauvism', 'Other',
+    'Realism',
+    'Impressionism',
+    'Expressionism',
+    'Cubism',
+    'Surrealism',
+    'Abstract',
+    'Minimalism',
+    'Pop Art',
+    'Baroque',
+    'Rococo',
+    'Romanticism',
+    'Renaissance',
+    'Modernism',
+    'Contemporary',
+    'Naïve',
+    'Post-Impressionism',
+    'Art Deco',
+    'Art Nouveau',
+    'Fauvism',
+    'Other',
   ];
 
   static const List<String> documentTypes = [
-    'Certificate', 'Invoice', 'Ownership', 'Insurance',
-    'Biography', 'Restoration Report', 'Appraisal', 'Other',
+    'Certificate',
+    'Invoice',
+    'Ownership',
+    'Insurance',
+    'Biography',
+    'Restoration Report',
+    'Appraisal',
+    'Other',
   ];
 
   static const List<String> currencies = [
-    'USD', 'EUR', 'GBP', 'INR', 'AED', 'CAD', 'AUD', 'JPY', 'CHF', 'SGD',
+    'USD',
+    'EUR',
+    'GBP',
+    'INR',
+    'AED',
+    'CAD',
+    'AUD',
+    'JPY',
+    'CHF',
+    'SGD',
   ];
 
   static const List<String> dimensionUnits = ['cm', 'in'];
 
   static const List<String> availabilityOptions = [
-    'Available', 'Sold', 'On Loan', 'In Storage', 'Restoration', 'Not For Sale',
+    'Available',
+    'Sold',
+    'On Loan',
+    'In Storage',
+    'Restoration',
+    'Not For Sale',
   ];
 
   /// Deep-link scheme used by generated QR codes:

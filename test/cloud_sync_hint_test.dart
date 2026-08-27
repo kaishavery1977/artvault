@@ -25,14 +25,14 @@ class _FakeCloudSyncHealth extends CloudSyncHealthNotifier {
 }
 
 AppUser _user() => AppUser(
-      uid: 'u1',
-      email: 'a@b.com',
-      displayName: 'Tester',
-      role: AppRole.curator,
-      plan: AppPlan.free,
-      createdAt: DateTime(2026),
-      lastLogin: DateTime(2026),
-    );
+  uid: 'u1',
+  email: 'a@b.com',
+  displayName: 'Tester',
+  role: AppRole.curator,
+  plan: AppPlan.free,
+  createdAt: DateTime(2026),
+  lastLogin: DateTime(2026),
+);
 
 Widget _homeApp(int failedUploads) {
   return ProviderScope(
@@ -62,7 +62,10 @@ Widget _homeApp(int failedUploads) {
           initialLocation: '/home',
           routes: [
             GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
-            GoRoute(path: '/repair-images', builder: (_, _) => const SizedBox()),
+            GoRoute(
+              path: '/repair-images',
+              builder: (_, _) => const SizedBox(),
+            ),
           ],
         ),
       ),
@@ -81,10 +84,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(
-      find.text('Cloud sync unavailable — tap to retry'),
-      findsOneWidget,
-    );
+    expect(find.text('Cloud sync unavailable — tap to retry'), findsOneWidget);
   });
 
   testWidgets('hides the hint on a clean streak', (tester) async {
@@ -115,8 +115,9 @@ void main() {
     expect(find.text('Cloud sync unavailable — tap to retry'), findsNothing);
   });
 
-  testWidgets('a successful sync un-dismisses so the hint can return',
-      (tester) async {
+  testWidgets('a successful sync un-dismisses so the hint can return', (
+    tester,
+  ) async {
     await tester.pumpWidget(_homeApp(CloudBackend.uploadFailureHintAfter));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
@@ -124,8 +125,9 @@ void main() {
     await tester.pump();
     expect(find.text('Cloud sync unavailable — tap to retry'), findsNothing);
 
-    final container =
-        ProviderScope.containerOf(tester.element(find.byType(HomeScreen)));
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(HomeScreen)),
+    );
     // A sync succeeded — streak back to 0.
     container.read(cloudSyncHealthProvider.notifier).state = 0;
     await tester.pump();
@@ -135,9 +137,6 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(
-      find.text('Cloud sync unavailable — tap to retry'),
-      findsOneWidget,
-    );
+    expect(find.text('Cloud sync unavailable — tap to retry'), findsOneWidget);
   });
 }

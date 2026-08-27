@@ -31,7 +31,10 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
         title: const Text('Delete artist?'),
         content: Text('$name will be removed. Paintings stay in your vault.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () => Navigator.pop(context, true),
@@ -53,7 +56,11 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final artist = ref.watch(artistsProvider).valueOrNull?.cast<Artist?>()
+    final artist =
+        ref
+            .watch(artistsProvider)
+            .valueOrNull
+            ?.cast<Artist?>()
             .firstWhere((a) => a?.id == widget.artistId, orElse: () => null) ??
         ArtistRepository.instance.get(widget.artistId);
     final paintings = (ref.watch(paintingsProvider).valueOrNull ?? const [])
@@ -97,81 +104,91 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ...staggerReveal([
-                  Center(
-                    child: Column(
-                      children: [
-                        Avatar(
-                          name: artist.name,
-                          imagePath: artist.photoPath,
-                          imageUrl: artist.photoUrl,
-                          radius: 48,
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        Text(artist.name, style: AppTheme.display(context, size: context.adaptiveFont(26))),
-                        if (artist.nationality.isNotEmpty)
+                    Center(
+                      child: Column(
+                        children: [
+                          Avatar(
+                            name: artist.name,
+                            imagePath: artist.photoPath,
+                            imageUrl: artist.photoUrl,
+                            radius: 48,
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
                           Text(
-                            artist.nationality,
-                            style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurface
-                                  .withValues(alpha: 0.55),
+                            artist.name,
+                            style: AppTheme.display(
+                              context,
+                              size: context.adaptiveFont(26),
                             ),
                           ),
-                      ],
-                    ),
-                  ),
-                  if (artist.biography.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.lg),
-                    SectionHeader(title: 'Biography'),
-                    Text(artist.biography, style: const TextStyle(height: 1.55)),
-                  ],
-                  if (artist.awards.isNotEmpty) ...[
-                    SectionHeader(title: 'Awards'),
-                    Wrap(
-                      spacing: AppSpacing.xs,
-                      runSpacing: AppSpacing.xs,
-                      children: [
-                        for (final award in artist.awards)
-                          TagChip(label: award, color: AppColors.accent),
-                      ],
-                    ),
-                  ],
-                  if (artist.exhibitions.isNotEmpty) ...[
-                    SectionHeader(title: 'Exhibitions'),
-                    for (final exhibition in artist.exhibitions)
-                      ListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.museum_outlined),
-                        title: Text(exhibition),
+                          if (artist.nationality.isNotEmpty)
+                            Text(
+                              artist.nationality,
+                              style: TextStyle(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurface.withValues(alpha: 0.55),
+                              ),
+                            ),
+                        ],
                       ),
-                  ],
-                  const SizedBox(height: AppSpacing.sm),
-                  _ContactCard(artist: artist, onOpen: _open),
-                  SectionHeader(
-                    title: 'Paintings',
-                    actionLabel: paintings.isEmpty ? null : '${paintings.length} works',
-                  ),
-                  if (paintings.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
-                      child: Text('No paintings associated yet.'),
-                    )
-                  else
-                    GridView.count(
-                      crossAxisCount: AppBreakpoints.galleryColumns(context),
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: AppSpacing.sm,
-                      crossAxisSpacing: AppSpacing.sm,
-                      childAspectRatio: 0.82,
-                      children: [
-                        for (final painting in paintings)
-                          PaintingGridCard(painting: painting),
-                      ],
                     ),
-                  const SizedBox(height: AppSpacing.xl),
+                    if (artist.biography.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.lg),
+                      SectionHeader(title: 'Biography'),
+                      Text(
+                        artist.biography,
+                        style: const TextStyle(height: 1.55),
+                      ),
+                    ],
+                    if (artist.awards.isNotEmpty) ...[
+                      SectionHeader(title: 'Awards'),
+                      Wrap(
+                        spacing: AppSpacing.xs,
+                        runSpacing: AppSpacing.xs,
+                        children: [
+                          for (final award in artist.awards)
+                            TagChip(label: award, color: AppColors.accent),
+                        ],
+                      ),
+                    ],
+                    if (artist.exhibitions.isNotEmpty) ...[
+                      SectionHeader(title: 'Exhibitions'),
+                      for (final exhibition in artist.exhibitions)
+                        ListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.museum_outlined),
+                          title: Text(exhibition),
+                        ),
+                    ],
+                    const SizedBox(height: AppSpacing.sm),
+                    _ContactCard(artist: artist, onOpen: _open),
+                    SectionHeader(
+                      title: 'Paintings',
+                      actionLabel: paintings.isEmpty
+                          ? null
+                          : '${paintings.length} works',
+                    ),
+                    if (paintings.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                        child: Text('No paintings associated yet.'),
+                      )
+                    else
+                      GridView.count(
+                        crossAxisCount: AppBreakpoints.galleryColumns(context),
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        mainAxisSpacing: AppSpacing.sm,
+                        crossAxisSpacing: AppSpacing.sm,
+                        childAspectRatio: 0.82,
+                        children: [
+                          for (final painting in paintings)
+                            PaintingGridCard(painting: painting),
+                        ],
+                      ),
+                    const SizedBox(height: AppSpacing.xl),
                   ], context: context),
                 ],
               ),
@@ -214,7 +231,9 @@ class _ContactCard extends StatelessWidget {
               trailing: Icon(
                 Icons.open_in_new,
                 size: 16,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.4),
               ),
               onTap: () => onOpen(entry.$3!),
             ),

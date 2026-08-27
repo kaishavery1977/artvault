@@ -31,12 +31,9 @@ class PlayPurchaseVerifier {
       return ProPurchaseResult.unavailable;
     }
     try {
-      await FirebaseFunctions.instance
-          .httpsCallable('verifyPlayPurchase')
-          .call({
-        'productId': productId,
-        'purchaseToken': purchaseToken,
-      });
+      await FirebaseFunctions.instance.httpsCallable('verifyPlayPurchase').call(
+        {'productId': productId, 'purchaseToken': purchaseToken},
+      );
       return ProPurchaseResult.purchased;
     } catch (_) {
       return ProPurchaseResult.error;

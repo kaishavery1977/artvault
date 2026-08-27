@@ -14,8 +14,7 @@ PublicGalleryStatus _status({
   bool active = true,
   String token = 'tok',
   DateTime? expiresAt,
-}) =>
-    PublicGalleryStatus(active: active, token: token, expiresAt: expiresAt);
+}) => PublicGalleryStatus(active: active, token: token, expiresAt: expiresAt);
 
 void main() {
   setUpAll(initTestHive);
@@ -44,10 +43,7 @@ void main() {
       );
       // Empty token (link document without one) is treated as no link.
       expect(
-        GalleryLinkReminderService.reminderFor(
-          _status(token: ''),
-          now: now,
-        ),
+        GalleryLinkReminderService.reminderFor(_status(token: ''), now: now),
         GalleryLinkReminder.none,
       );
     });
@@ -135,14 +131,19 @@ void main() {
     tearDown(() => NotificationRepository.instance.clearAll());
 
     test('adds an expiring notification once and not repeatedly', () async {
-      Future<PublicGalleryStatus> loader() async => _status(
-            expiresAt: now.add(const Duration(days: 2)),
-          );
+      Future<PublicGalleryStatus> loader() async =>
+          _status(expiresAt: now.add(const Duration(days: 2)));
 
-      await GalleryLinkReminderService.instance
-          .check('u1', statusLoader: loader, now: now);
-      await GalleryLinkReminderService.instance
-          .check('u1', statusLoader: loader, now: now);
+      await GalleryLinkReminderService.instance.check(
+        'u1',
+        statusLoader: loader,
+        now: now,
+      );
+      await GalleryLinkReminderService.instance.check(
+        'u1',
+        statusLoader: loader,
+        now: now,
+      );
 
       final all = NotificationRepository.instance.all();
       expect(all.where((n) => n.id == 'gallery-link-expiring-u1').length, 1);
@@ -151,9 +152,8 @@ void main() {
     test('downgrades expiring to expired once the date passes', () async {
       await GalleryLinkReminderService.instance.check(
         'u1',
-        statusLoader: () async => _status(
-          expiresAt: now.add(const Duration(days: 2)),
-        ),
+        statusLoader: () async =>
+            _status(expiresAt: now.add(const Duration(days: 2))),
         now: now,
       );
       expect(
@@ -163,45 +163,52 @@ void main() {
 
       await GalleryLinkReminderService.instance.check(
         'u1',
-        statusLoader: () async => _status(expiresAt: now.subtract(const Duration(days: 1))),
+        statusLoader: () async =>
+            _status(expiresAt: now.subtract(const Duration(days: 1))),
         now: now,
       );
 
-      final ids = NotificationRepository.instance.all().map((n) => n.id).toSet();
+      final ids = NotificationRepository.instance
+          .all()
+          .map((n) => n.id)
+          .toSet();
       expect(ids, contains('gallery-link-expired-u1'));
       expect(ids, isNot(contains('gallery-link-expiring-u1')));
     });
 
-    test('clears reminders when the link is revoked or re-published fresh', () async {
-      await GalleryLinkReminderService.instance.check(
-        'u1',
-        statusLoader: () async => _status(expiresAt: now.add(const Duration(days: 1))),
-      );
-      expect(NotificationRepository.instance.all(), isNotEmpty);
+    test(
+      'clears reminders when the link is revoked or re-published fresh',
+      () async {
+        await GalleryLinkReminderService.instance.check(
+          'u1',
+          statusLoader: () async =>
+              _status(expiresAt: now.add(const Duration(days: 1))),
+        );
+        expect(NotificationRepository.instance.all(), isNotEmpty);
 
-      // Revoked link -> reminder goes away.
-      await GalleryLinkReminderService.instance.check(
-        'u1',
-        statusLoader: () async => _status(active: false),
-      );
-      expect(NotificationRepository.instance.all(), isEmpty);
+        // Revoked link -> reminder goes away.
+        await GalleryLinkReminderService.instance.check(
+          'u1',
+          statusLoader: () async => _status(active: false),
+        );
+        expect(NotificationRepository.instance.all(), isEmpty);
 
-      // Fresh link with no expiry -> reminder stays away.
-      await GalleryLinkReminderService.instance.check(
-        'u1',
-        statusLoader: () async => _status(expiresAt: null),
-      );
-      expect(NotificationRepository.instance.all(), isEmpty);
-    });
+        // Fresh link with no expiry -> reminder stays away.
+        await GalleryLinkReminderService.instance.check(
+          'u1',
+          statusLoader: () async => _status(expiresAt: null),
+        );
+        expect(NotificationRepository.instance.all(), isEmpty);
+      },
+    );
 
     test('reminders are per-owner and never leak across users', () async {
       // Pin the clock so the link always lands in the "expiring" window
       // no matter when the suite runs.
       await GalleryLinkReminderService.instance.check(
         'alice',
-        statusLoader: () async => _status(
-          expiresAt: now.add(const Duration(days: 1)),
-        ),
+        statusLoader: () async =>
+            _status(expiresAt: now.add(const Duration(days: 1))),
         now: now,
       );
       await GalleryLinkReminderService.instance.check(
@@ -209,7 +216,10 @@ void main() {
         statusLoader: () async => _status(active: false),
       );
 
-      final ids = NotificationRepository.instance.all().map((n) => n.id).toSet();
+      final ids = NotificationRepository.instance
+          .all()
+          .map((n) => n.id)
+          .toSet();
       expect(ids, contains('gallery-link-expiring-alice'));
       expect(ids, isNot(contains('gallery-link-expiring-bob')));
     });

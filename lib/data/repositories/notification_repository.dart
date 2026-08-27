@@ -21,8 +21,11 @@ class NotificationRepository {
     return list;
   }
 
-  Future<void> add(AppNotification notification) =>
-      _db.put(AppConstants.boxNotifications, notification.id, notification.toJson());
+  Future<void> add(AppNotification notification) => _db.put(
+    AppConstants.boxNotifications,
+    notification.id,
+    notification.toJson(),
+  );
 
   Future<void> markRead(String id) async {
     final raw = _db.getById(AppConstants.boxNotifications, id);
@@ -45,7 +48,8 @@ class NotificationRepository {
     }
   }
 
-  Future<void> remove(String id) => _db.delete(AppConstants.boxNotifications, id);
+  Future<void> remove(String id) =>
+      _db.delete(AppConstants.boxNotifications, id);
 
   Future<void> clearAll() => _db.clear(AppConstants.boxNotifications);
 

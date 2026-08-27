@@ -18,21 +18,20 @@ Painting _paint({
   String location = '',
   double? price,
   String currency = 'USD',
-}) =>
-    Painting(
-      id: id,
-      title: title.isEmpty ? id : title,
-      artistId: '',
-      artistName: artistName,
-      width: width,
-      height: height,
-      dimensionUnit: 'cm',
-      location: location,
-      price: price,
-      currency: currency,
-      createdAt: DateTime(2024),
-      updatedAt: DateTime(2024),
-    );
+}) => Painting(
+  id: id,
+  title: title.isEmpty ? id : title,
+  artistId: '',
+  artistName: artistName,
+  width: width,
+  height: height,
+  dimensionUnit: 'cm',
+  location: location,
+  price: price,
+  currency: currency,
+  createdAt: DateTime(2024),
+  updatedAt: DateTime(2024),
+);
 
 void main() {
   final paintings = [
@@ -61,10 +60,12 @@ void main() {
 
   group('ExportService.buildInsuranceSchedulePdf', () {
     test('produces a valid non-empty PDF and grows with content', () async {
-      final one = await ExportService.instance
-          .buildInsuranceSchedulePdf([paintings.first]);
-      final all = await ExportService.instance
-          .buildInsuranceSchedulePdf(paintings);
+      final one = await ExportService.instance.buildInsuranceSchedulePdf([
+        paintings.first,
+      ]);
+      final all = await ExportService.instance.buildInsuranceSchedulePdf(
+        paintings,
+      );
 
       expect(one, isA<Uint8List>());
       expect(one.length, greaterThan(1000));
@@ -73,16 +74,20 @@ void main() {
       expect(all.length, greaterThan(one.length));
     });
 
-    test('handles missing values and mixed currencies without throwing',
-        () async {
-      final bytes = await ExportService.instance
-          .buildInsuranceSchedulePdf(paintings);
-      expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
+    test(
+      'handles missing values and mixed currencies without throwing',
+      () async {
+        final bytes = await ExportService.instance.buildInsuranceSchedulePdf(
+          paintings,
+        );
+        expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
 
-      // Empty selection is also fine.
-      final empty = await ExportService.instance
-          .buildInsuranceSchedulePdf(const []);
-      expect(String.fromCharCodes(empty.take(5)), '%PDF-');
-    });
+        // Empty selection is also fine.
+        final empty = await ExportService.instance.buildInsuranceSchedulePdf(
+          const [],
+        );
+        expect(String.fromCharCodes(empty.take(5)), '%PDF-');
+      },
+    );
   });
 }

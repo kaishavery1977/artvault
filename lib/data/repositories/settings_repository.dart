@@ -37,9 +37,11 @@ class SettingsRepository {
 
   String get locale => _db.getString(AppConstants.kLocale, 'en') ?? 'en';
 
-  Future<void> setLocale(String code) => _db.setSetting(AppConstants.kLocale, code);
+  Future<void> setLocale(String code) =>
+      _db.setSetting(AppConstants.kLocale, code);
 
-  bool get notificationsEnabled => _db.getBool(AppConstants.kNotificationsEnabled, true);
+  bool get notificationsEnabled =>
+      _db.getBool(AppConstants.kNotificationsEnabled, true);
 
   Future<void> setNotificationsEnabled(bool value) =>
       _db.setSetting(AppConstants.kNotificationsEnabled, value);
@@ -94,7 +96,10 @@ class SettingsRepository {
   /// Whether [id] has been celebrated recently (within the cooldown). The
   /// same celebration (e.g. the Pro unlock) is shown once, so relaunching or
   /// re-tapping the same moment doesn't replay the confetti every time.
-  bool wasCelebratedRecently(String id, {Duration within = const Duration(hours: 24)}) {
+  bool wasCelebratedRecently(
+    String id, {
+    Duration within = const Duration(hours: 24),
+  }) {
     for (final entry in celebrationHistory) {
       if (entry['id'] != id) continue;
       final at = (entry['at'] as num?)?.toInt() ?? 0;
@@ -109,9 +114,8 @@ class SettingsRepository {
 
   Future<void> markCelebrated(String id) async {
     // Copy to a mutable list: one entry per celebration id, newest first.
-    final history = List<Map<String, dynamic>>.from(
-      celebrationHistory,
-    )..removeWhere((e) => e['id'] == id);
+    final history = List<Map<String, dynamic>>.from(celebrationHistory)
+      ..removeWhere((e) => e['id'] == id);
     history.insert(
       0,
       // Microsecond precision so rapid successive celebrations keep a
@@ -120,10 +124,7 @@ class SettingsRepository {
     );
     // Cap the list so it can't grow forever.
     final trimmed = history.take(20).toList();
-    await _db.setSetting(
-      AppConstants.kCelebrationHistory,
-      jsonEncode(trimmed),
-    );
+    await _db.setSetting(AppConstants.kCelebrationHistory, jsonEncode(trimmed));
   }
 
   /// Role hint used to seed brand-new users. Managed through AuthRepository.

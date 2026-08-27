@@ -122,21 +122,25 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             key: _formKey,
             child: Column(
               // Fields cascade in, matching the login and register screens.
-              children: staggerReveal([
-                AppTextField(
-                  controller: _email,
-                  label: 'Email',
-                  icon: Icons.mail_outline,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: Validators.email,
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                AppButton(
-                  label: 'Send reset link',
-                  loading: auth.busy,
-                  onPressed: _submit,
-                ),
-              ], initialDelay: const Duration(milliseconds: 100), context: context),
+              children: staggerReveal(
+                [
+                  AppTextField(
+                    controller: _email,
+                    label: 'Email',
+                    icon: Icons.mail_outline,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: Validators.email,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  AppButton(
+                    label: 'Send reset link',
+                    loading: auth.busy,
+                    onPressed: _submit,
+                  ),
+                ],
+                initialDelay: const Duration(milliseconds: 100),
+                context: context,
+              ),
             ),
           ),
         ],

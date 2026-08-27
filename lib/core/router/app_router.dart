@@ -115,10 +115,7 @@ Page<void> _page(Widget child) {
               return Transform(
                 alignment: Alignment.center,
                 transform: transform,
-                child: Opacity(
-                  opacity: t,
-                  child: child,
-                ),
+                child: Opacity(opacity: t, child: child),
               );
             },
           ),

@@ -3,7 +3,8 @@
 // home. The camera/ML pipeline is replaced with a stub route that pops
 // `true`, isolating the lock screen's push round-trip + navigation logic.
 
-import 'package:flutter/foundation.dart' show TargetPlatform, debugDefaultTargetPlatformOverride;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, debugDefaultTargetPlatformOverride;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,8 +35,7 @@ class _ScanPopsTrueState extends State<_ScanPopsTrue> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      const Scaffold(body: Text('FAKE_SCAN'));
+  Widget build(BuildContext context) => const Scaffold(body: Text('FAKE_SCAN'));
 }
 
 /// Persistent secure-storage mock (same pattern as app_lock_test) so the
@@ -45,19 +45,19 @@ void stubSecureStoragePersist() {
   const channel = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(channel, (call) async {
-    final args = call.arguments as Map;
-    switch (call.method) {
-      case 'read':
-        return store[args['key'] as String];
-      case 'write':
-        store[args['key'] as String] = args['value'] as String;
+        final args = call.arguments as Map;
+        switch (call.method) {
+          case 'read':
+            return store[args['key'] as String];
+          case 'write':
+            store[args['key'] as String] = args['value'] as String;
+            return null;
+          case 'delete':
+            store.remove(args['key'] as String);
+            return null;
+        }
         return null;
-      case 'delete':
-        store.remove(args['key'] as String);
-        return null;
-    }
-    return null;
-  });
+      });
   // A face biometric is enrolled (and no fingerprint): with the test
   // platform forced to iOS, hasFaceId reads this channel — so the face
   // method is the ONLY unlock path and _setup auto-starts it. (On Android
@@ -66,9 +66,9 @@ void stubSecureStoragePersist() {
   const biometrics = MethodChannel('plugins.flutter.io/local_auth');
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(biometrics, (call) async {
-    if (call.method == 'getAvailableBiometrics') return <String>['face'];
-    return null;
-  });
+        if (call.method == 'getAvailableBiometrics') return <String>['face'];
+        return null;
+      });
 }
 
 void main() {
@@ -79,16 +79,16 @@ void main() {
   });
 
   GoRouter lockRouter() => GoRouter(
-        initialLocation: '/lock',
-        routes: [
-          GoRoute(path: '/lock', builder: (_, _) => const AppLockScreen()),
-          GoRoute(path: '/face-scan', builder: (_, _) => const _ScanPopsTrue()),
-          GoRoute(
-            path: '/home',
-            builder: (_, _) => const Scaffold(body: Text('HOME_RENDERED')),
-          ),
-        ],
-      );
+    initialLocation: '/lock',
+    routes: [
+      GoRoute(path: '/lock', builder: (_, _) => const AppLockScreen()),
+      GoRoute(path: '/face-scan', builder: (_, _) => const _ScanPopsTrue()),
+      GoRoute(
+        path: '/home',
+        builder: (_, _) => const Scaffold(body: Text('HOME_RENDERED')),
+      ),
+    ],
+  );
 
   Future<void> pumpLock(WidgetTester tester) async {
     await tester.pumpWidget(MaterialApp.router(routerConfig: lockRouter()));

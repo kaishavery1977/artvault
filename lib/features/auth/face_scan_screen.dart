@@ -163,7 +163,8 @@ class _FaceScanScreenState extends State<FaceScanScreen>
     final initGuard = Timer(const Duration(seconds: 12), () {
       if (mounted && !_ready && !_done) {
         setState(() {
-          _status = 'Camera is taking too long — go back and try another '
+          _status =
+              'Camera is taking too long — go back and try another '
               'unlock method';
         });
       }
@@ -568,8 +569,10 @@ class _FaceScanScreenState extends State<FaceScanScreen>
   bool _eyesClosed(Face face) {
     final left = face.leftEyeOpenProbability;
     final right = face.rightEyeOpenProbability;
-    return left != null && right != null &&
-        left < _eyeClosedProb && right < _eyeClosedProb;
+    return left != null &&
+        right != null &&
+        left < _eyeClosedProb &&
+        right < _eyeClosedProb;
   }
 
   /// ML Kit's rotationDegrees, per the official google_mlkit sample formula:
@@ -603,23 +606,26 @@ class _FaceScanScreenState extends State<FaceScanScreen>
   /// widget space. CameraX mirrors the front-camera preview by default
   /// (MIRROR_MODE_ON_FRONT_ONLY), so for the front lens the box is flipped
   /// horizontally to land on the face the user sees.
-  Rect? _screenRectFor(
-    ({Rect box, int width, int height}) data,
-    Size size,
-  ) {
+  Rect? _screenRectFor(({Rect box, int width, int height}) data, Size size) {
     final c = _controller;
     if (c == null || size.isEmpty) return null;
     final rot = _mlKitRotation();
     final isFront = c.description.lensDirection == CameraLensDirection.front;
-    final uprightW =
-        (rot % 180 == 0) ? data.width.toDouble() : data.height.toDouble();
-    final uprightH =
-        (rot % 180 == 0) ? data.height.toDouble() : data.width.toDouble();
+    final uprightW = (rot % 180 == 0)
+        ? data.width.toDouble()
+        : data.height.toDouble();
+    final uprightH = (rot % 180 == 0)
+        ? data.height.toDouble()
+        : data.width.toDouble();
     if (uprightW <= 0 || uprightH <= 0) return null;
     final sx = size.width / uprightW;
     final sy = size.height / uprightH;
-    final left = isFront ? (uprightW - data.box.right) * sx : data.box.left * sx;
-    final right = isFront ? (uprightW - data.box.left) * sx : data.box.right * sx;
+    final left = isFront
+        ? (uprightW - data.box.right) * sx
+        : data.box.left * sx;
+    final right = isFront
+        ? (uprightW - data.box.left) * sx
+        : data.box.right * sx;
     return Rect.fromLTRB(left, data.box.top * sy, right, data.box.bottom * sy);
   }
 
@@ -723,34 +729,40 @@ class _FaceScanScreenState extends State<FaceScanScreen>
             ),
             Align(
               alignment: Alignment.topCenter,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 24),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.55),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.25),
-                    ),
-                  ),
-                  child: Text(
-                    isEnroll
-                        ? 'Set up Face lock — look at the camera'
-                        : 'Face unlock — look at the camera',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ).animate(
-                  onPlay: (c) => MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
-                ).fadeIn(duration: 450.ms).slideY(begin: -0.25),
+              child:
+                  Padding(
+                        padding: const EdgeInsets.only(top: 24),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.55),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.25),
+                            ),
+                          ),
+                          child: Text(
+                            isEnroll
+                                ? 'Set up Face lock — look at the camera'
+                                : 'Face unlock — look at the camera',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      )
+                      .animate(
+                        onPlay: (c) => MediaQuery.disableAnimationsOf(context)
+                            ? c.stop()
+                            : null,
+                      )
+                      .fadeIn(duration: 450.ms)
+                      .slideY(begin: -0.25),
             ),
             // Scan frame: pulsing oval, sweeping scan line, progress ring.
             Center(child: _buildScanFrame(isEnroll)),
@@ -763,16 +775,20 @@ class _FaceScanScreenState extends State<FaceScanScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      _status,
-                      key: ValueKey(_status),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 14,
-                      ),
-                    ).animate(
-                      onPlay: (c) => MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
-                    ).fadeIn(duration: 300.ms),
+                          _status,
+                          key: ValueKey(_status),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: 14,
+                          ),
+                        )
+                        .animate(
+                          onPlay: (c) => MediaQuery.disableAnimationsOf(context)
+                              ? c.stop()
+                              : null,
+                        )
+                        .fadeIn(duration: 300.ms),
                     if (_ready) ...[
                       const SizedBox(height: 12),
                       const SizedBox(
@@ -926,20 +942,27 @@ class _FaceScanScreenState extends State<FaceScanScreen>
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  '${_samples.length}/$_enrollFrames',
-                                  key: ValueKey(_samples.length),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ).animate(
-                                  onPlay: (c) => MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
-                                ).scale(
-                                  begin: const Offset(1.35, 1.35),
-                                  curve: Curves.easeOutBack,
-                                  duration: 260.ms,
-                                ),
+                                      '${_samples.length}/$_enrollFrames',
+                                      key: ValueKey(_samples.length),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    )
+                                    .animate(
+                                      onPlay: (c) =>
+                                          MediaQuery.disableAnimationsOf(
+                                            context,
+                                          )
+                                          ? c.stop()
+                                          : null,
+                                    )
+                                    .scale(
+                                      begin: const Offset(1.35, 1.35),
+                                      curve: Curves.easeOutBack,
+                                      duration: 260.ms,
+                                    ),
                                 Text(
                                   'captured',
                                   style: TextStyle(

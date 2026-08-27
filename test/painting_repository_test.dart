@@ -13,20 +13,22 @@ import 'package:artvault/data/repositories/painting_repository.dart';
 
 import 'hive_test_harness.dart';
 
-Painting _makePainting({String id = 'test-1', String title = 'Test Painting'}) =>
-    Painting(
-      id: id,
-      title: title,
-      artistId: 'a1',
-      artistName: 'Test Artist',
-      category: 'Landscape',
-      medium: 'Oil on Canvas',
-      style: 'Impressionism',
-      price: 5000,
-      currency: 'USD',
-      createdAt: DateTime(2026),
-      updatedAt: DateTime(2026),
-    );
+Painting _makePainting({
+  String id = 'test-1',
+  String title = 'Test Painting',
+}) => Painting(
+  id: id,
+  title: title,
+  artistId: 'a1',
+  artistName: 'Test Artist',
+  category: 'Landscape',
+  medium: 'Oil on Canvas',
+  style: 'Impressionism',
+  price: 5000,
+  currency: 'USD',
+  createdAt: DateTime(2026),
+  updatedAt: DateTime(2026),
+);
 
 void main() {
   setUpAll(() async {
@@ -62,16 +64,23 @@ void main() {
       expect(fromHive!.title, 'Updated Title');
     });
 
-    test('readAll returns all non-deleted paintings sorted by updatedAt', () async {
-      await PaintingRepository.instance.save(_makePainting(id: 'p1', title: 'First'));
-      await PaintingRepository.instance.save(_makePainting(id: 'p2', title: 'Second'));
+    test(
+      'readAll returns all non-deleted paintings sorted by updatedAt',
+      () async {
+        await PaintingRepository.instance.save(
+          _makePainting(id: 'p1', title: 'First'),
+        );
+        await PaintingRepository.instance.save(
+          _makePainting(id: 'p2', title: 'Second'),
+        );
 
-      final all = PaintingRepository.instance.readAll();
-      expect(all.length, 2);
-      // Both have the same updatedAt — just verify both are present and sorted
-      final ids = all.map((p) => p.id).toSet();
-      expect(ids, containsAll(['p1', 'p2']));
-    });
+        final all = PaintingRepository.instance.readAll();
+        expect(all.length, 2);
+        // Both have the same updatedAt — just verify both are present and sorted
+        final ids = all.map((p) => p.id).toSet();
+        expect(ids, containsAll(['p1', 'p2']));
+      },
+    );
 
     test('countActive excludes deleted paintings', () async {
       await PaintingRepository.instance.save(_makePainting(id: 'p1'));
@@ -139,7 +148,9 @@ void main() {
       expect(painting, isNull);
 
       // Tombstone should be in sync queue
-      final tombstones = LocalDatabase.instance.getAll(AppConstants.boxSyncQueue);
+      final tombstones = LocalDatabase.instance.getAll(
+        AppConstants.boxSyncQueue,
+      );
       expect(tombstones.any((t) => t['id'] == 'test-1'), isTrue);
     });
   });

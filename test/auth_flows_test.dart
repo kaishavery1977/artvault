@@ -58,20 +58,20 @@ void main() {
   // awaits the disk flush, which never completes inside the fake-async
   // test zone.
   Future<void> presetSetting(WidgetTester tester, String key, bool value) =>
-      tester.runAsync(
-        () => LocalDatabase.instance.setSetting(key, value),
-      );
+      tester.runAsync(() => LocalDatabase.instance.setSetting(key, value));
 
   // Stubs the secure-storage platform channel so AuthRepository's reads
   // resolve (returning null = "no passcode/session stored") instead of
   // hanging inside the fake-async test zone.
   void stubSecureStorage() {
-    const channel = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+    const channel = MethodChannel(
+      'plugins.it_nomads.com/flutter_secure_storage',
+    );
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (call) async {
-      if (call.method == 'read') return null;
-      return null;
-    });
+          if (call.method == 'read') return null;
+          return null;
+        });
   }
 
   group('Login validation', () {
@@ -80,7 +80,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: appOverrides(introShown: true),
-          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: LoginScreen())),
+          child: AdaptiveLayout(
+            profile: testProfile,
+            child: const MaterialApp(home: LoginScreen()),
+          ),
         ),
       );
       await _drainLoginMotion(tester);
@@ -97,7 +100,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: appOverrides(introShown: true),
-          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: LoginScreen())),
+          child: AdaptiveLayout(
+            profile: testProfile,
+            child: const MaterialApp(home: LoginScreen()),
+          ),
         ),
       );
       await _drainLoginMotion(tester);
@@ -117,7 +123,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: appOverrides(introShown: true),
-          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: LoginScreen())),
+          child: AdaptiveLayout(
+            profile: testProfile,
+            child: const MaterialApp(home: LoginScreen()),
+          ),
         ),
       );
       await _drainLoginMotion(tester);
@@ -139,16 +148,24 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: appOverrides(introShown: true),
-          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: RegisterScreen())),
+          child: AdaptiveLayout(
+            profile: testProfile,
+            child: const MaterialApp(home: RegisterScreen()),
+          ),
         ),
       );
       await _drainAuthLayoutMotion(tester);
 
       await tester.enterText(find.byType(TextFormField).at(0), 'Kais Havery');
-      await tester.enterText(find.byType(TextFormField).at(1), 'kais@example.com');
+      await tester.enterText(
+        find.byType(TextFormField).at(1),
+        'kais@example.com',
+      );
       await tester.enterText(find.byType(TextFormField).at(2), 'password123');
       await tester.enterText(find.byType(TextFormField).at(3), 'password456');
-      await tester.ensureVisible(find.widgetWithText(PremiumButton, 'Create Account'));
+      await tester.ensureVisible(
+        find.widgetWithText(PremiumButton, 'Create Account'),
+      );
       await tester.pump();
       await tester.tap(find.widgetWithText(PremiumButton, 'Create Account'));
       await tester.pump();
@@ -161,12 +178,17 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: appOverrides(introShown: true),
-          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: RegisterScreen())),
+          child: AdaptiveLayout(
+            profile: testProfile,
+            child: const MaterialApp(home: RegisterScreen()),
+          ),
         ),
       );
       await _drainAuthLayoutMotion(tester);
 
-      await tester.ensureVisible(find.widgetWithText(PremiumButton, 'Create Account'));
+      await tester.ensureVisible(
+        find.widgetWithText(PremiumButton, 'Create Account'),
+      );
       await tester.pump();
       await tester.tap(find.widgetWithText(PremiumButton, 'Create Account'));
       await tester.pump();
@@ -177,13 +199,17 @@ void main() {
       expect(find.text('Confirm your password'), findsOneWidget);
     });
 
-    testWidgets('eye toggles reveal each password field independently',
-        (tester) async {
+    testWidgets('eye toggles reveal each password field independently', (
+      tester,
+    ) async {
       await freshSettings(tester);
       await tester.pumpWidget(
         ProviderScope(
           overrides: appOverrides(introShown: true),
-          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: RegisterScreen())),
+          child: AdaptiveLayout(
+            profile: testProfile,
+            child: const MaterialApp(home: RegisterScreen()),
+          ),
         ),
       );
       await _drainAuthLayoutMotion(tester);
@@ -234,7 +260,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: appOverrides(introShown: true),
-          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: ForgotPasswordScreen())),
+          child: AdaptiveLayout(
+            profile: testProfile,
+            child: const MaterialApp(home: ForgotPasswordScreen()),
+          ),
         ),
       );
       await _drainAuthLayoutMotion(tester);
@@ -247,20 +276,22 @@ void main() {
       expect(find.text('Check your inbox'), findsNothing);
     });
 
-    testWidgets('offline submit surfaces a clear error, not a spinner', (tester) async {
+    testWidgets('offline submit surfaces a clear error, not a spinner', (
+      tester,
+    ) async {
       await freshSettings(tester);
       await tester.pumpWidget(
         ProviderScope(
           overrides: appOverrides(introShown: true),
-          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: ForgotPasswordScreen())),
+          child: AdaptiveLayout(
+            profile: testProfile,
+            child: const MaterialApp(home: ForgotPasswordScreen()),
+          ),
         ),
       );
       await _drainAuthLayoutMotion(tester);
 
-      await tester.enterText(
-        find.byType(TextFormField),
-        'kais@example.com',
-      );
+      await tester.enterText(find.byType(TextFormField), 'kais@example.com');
       await tester.tap(find.widgetWithText(AppButton, 'Send reset link'));
       // Let the busy state render, then settle the failed Future.
       await tester.pump();
@@ -274,13 +305,18 @@ void main() {
   });
 
   group('Offline social sign-in guard', () {
-    testWidgets('Google button explains offline instead of firing', (tester) async {
+    testWidgets('Google button explains offline instead of firing', (
+      tester,
+    ) async {
       await freshSettings(tester);
       // CloudBackend singleton defaults to not ready in tests.
       await tester.pumpWidget(
         ProviderScope(
           overrides: appOverrides(introShown: true),
-          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: LoginScreen())),
+          child: AdaptiveLayout(
+            profile: testProfile,
+            child: const MaterialApp(home: LoginScreen()),
+          ),
         ),
       );
       await _drainLoginMotion(tester);
@@ -297,12 +333,17 @@ void main() {
       );
     });
 
-    testWidgets('Apple button explains offline instead of firing', (tester) async {
+    testWidgets('Apple button explains offline instead of firing', (
+      tester,
+    ) async {
       await freshSettings(tester);
       await tester.pumpWidget(
         ProviderScope(
           overrides: appOverrides(introShown: true),
-          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: LoginScreen())),
+          child: AdaptiveLayout(
+            profile: testProfile,
+            child: const MaterialApp(home: LoginScreen()),
+          ),
         ),
       );
       await _drainLoginMotion(tester);
@@ -321,11 +362,8 @@ void main() {
   });
 
   group('Security screen — passcode lock', () {
-    Future<BiometricAvailability> probe() async => const BiometricAvailability(
-      any: true,
-      fingerprint: true,
-      face: true,
-    );
+    Future<BiometricAvailability> probe() async =>
+        const BiometricAvailability(any: true, fingerprint: true, face: true);
 
     // Persistent secure-storage mock: writes are stored so `passcodeSet`
     // reads back what was saved (the shared stub always returns null).
@@ -336,34 +374,34 @@ void main() {
       );
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (call) async {
-        final args = call.arguments as Map;
-        switch (call.method) {
-          case 'read':
-            return store[args['key'] as String];
-          case 'write':
-            store[args['key'] as String] = args['value'] as String;
+            final args = call.arguments as Map;
+            switch (call.method) {
+              case 'read':
+                return store[args['key'] as String];
+              case 'write':
+                store[args['key'] as String] = args['value'] as String;
+                return null;
+              case 'delete':
+                store.remove(args['key'] as String);
+                return null;
+            }
             return null;
-          case 'delete':
-            store.remove(args['key'] as String);
-            return null;
-        }
-        return null;
-      });
+          });
     }
 
     Widget securityApp() => ProviderScope(
-          overrides: appOverrides(introShown: true),
-          child: MaterialApp(
-            home: SecurityScreen(availabilityProbe: probe),
-          ),
-        );
+      overrides: appOverrides(introShown: true),
+      child: MaterialApp(home: SecurityScreen(availabilityProbe: probe)),
+    );
 
     Finder passcodeSwitch() => find.descendant(
-          of: find.widgetWithText(ListTile, 'Passcode lock'),
-          matching: find.byType(Switch),
-        );
+      of: find.widgetWithText(ListTile, 'Passcode lock'),
+      matching: find.byType(Switch),
+    );
 
-    testWidgets('setting a passcode saves and flips the switch on', (tester) async {
+    testWidgets('setting a passcode saves and flips the switch on', (
+      tester,
+    ) async {
       await freshSettings(tester);
       stubSecureStoragePersist();
       await tester.pumpWidget(securityApp());
@@ -399,7 +437,9 @@ void main() {
       expect(tester.widget<Switch>(passcodeSwitch()).value, isTrue);
     });
 
-    testWidgets('mismatched passcodes stay in the dialog without saving', (tester) async {
+    testWidgets('mismatched passcodes stay in the dialog without saving', (
+      tester,
+    ) async {
       await freshSettings(tester);
       stubSecureStorage();
       await tester.pumpWidget(securityApp());
@@ -430,20 +470,17 @@ void main() {
   });
 
   group('Security screen — biometric management', () {
-    Future<BiometricAvailability> probe() async => const BiometricAvailability(
-      any: true,
-      fingerprint: true,
-      face: true,
-    );
+    Future<BiometricAvailability> probe() async =>
+        const BiometricAvailability(any: true, fingerprint: true, face: true);
 
     Widget securityApp() => ProviderScope(
-          overrides: appOverrides(introShown: true),
-          child: MaterialApp(
-            home: SecurityScreen(availabilityProbe: probe),
-          ),
-        );
+      overrides: appOverrides(introShown: true),
+      child: MaterialApp(home: SecurityScreen(availabilityProbe: probe)),
+    );
 
-    testWidgets('loads cleanly even when passcode secure-storage fails', (tester) async {
+    testWidgets('loads cleanly even when passcode secure-storage fails', (
+      tester,
+    ) async {
       await freshSettings(tester);
       stubSecureStorage();
       // preset face lock + biometric ON so the rows render in managed state
@@ -460,7 +497,9 @@ void main() {
       expect(find.text('Security'), findsOneWidget);
     });
 
-    testWidgets('face lock row opens the manage sheet with re-scan + remove', (tester) async {
+    testWidgets('face lock row opens the manage sheet with re-scan + remove', (
+      tester,
+    ) async {
       await freshSettings(tester);
       stubSecureStorage();
       await presetSetting(tester, AppConstants.kFaceLockEnabled, true);
@@ -469,7 +508,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('On — tap to re-scan or remove your face'), findsOneWidget);
+      expect(
+        find.text('On — tap to re-scan or remove your face'),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text('Unlock with Face lock'));
       await tester.pump();
@@ -479,7 +521,9 @@ void main() {
       expect(find.text('Remove face lock'), findsOneWidget);
     });
 
-    testWidgets('fingerprint row opens the manage sheet with test + remove', (tester) async {
+    testWidgets('fingerprint row opens the manage sheet with test + remove', (
+      tester,
+    ) async {
       await freshSettings(tester);
       stubSecureStorage();
       await presetSetting(tester, AppConstants.kBiometricEnabled, true);
@@ -498,7 +542,9 @@ void main() {
       expect(find.text('Remove fingerprint unlock'), findsOneWidget);
     });
 
-    testWidgets('removing face lock from the sheet turns the setting off', (tester) async {
+    testWidgets('removing face lock from the sheet turns the setting off', (
+      tester,
+    ) async {
       await freshSettings(tester);
       stubSecureStorage();
       await presetSetting(tester, AppConstants.kFaceLockEnabled, true);

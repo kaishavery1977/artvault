@@ -63,13 +63,13 @@ Widget wrapWithAdaptiveLayout(Widget child) {
 /// Shared provider overrides: storage-backed providers are pinned to fixed
 /// values so the test doesn't depend on Hive/Firebase.
 List<Override> appOverrides({required bool introShown}) => [
-      themeModeProvider.overrideWith((ref) => ThemeMode.system),
-      localeProvider.overrideWith((ref) => 'en'),
-      onboardedProvider.overrideWith((ref) => false),
-      splashIntroShownProvider.overrideWith((ref) => introShown),
-      cloudReadyProvider.overrideWith((ref) => false),
-      authProvider.overrideWith((ref) => FakeAuthController()),
-    ];
+  themeModeProvider.overrideWith((ref) => ThemeMode.system),
+  localeProvider.overrideWith((ref) => 'en'),
+  onboardedProvider.overrideWith((ref) => false),
+  splashIntroShownProvider.overrideWith((ref) => introShown),
+  cloudReadyProvider.overrideWith((ref) => false),
+  authProvider.overrideWith((ref) => FakeAuthController()),
+];
 
 /// Pumps through the full splash intro (played on every launch) into
 /// onboarding, draining the exit hold, the route transition and the
@@ -78,5 +78,7 @@ Future<void> pumpToOnboarding(WidgetTester tester) async {
   await tester.pump(); // splash first frame
   await tester.pump(const Duration(milliseconds: 2400)); // intro part 1
   await tester.pump(const Duration(milliseconds: 1600)); // intro + exit hold
-  await tester.pump(const Duration(milliseconds: 900)); // hand-off + drain mount timers
+  await tester.pump(
+    const Duration(milliseconds: 900),
+  ); // hand-off + drain mount timers
 }

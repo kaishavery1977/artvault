@@ -88,7 +88,9 @@ class PublicGalleryService {
     String? ownerUid,
     String? token,
   }) {
-    final cards = paintings.map((p) => _cardHtml(p, watermark: watermark)).join('\n');
+    final cards = paintings
+        .map((p) => _cardHtml(p, watermark: watermark))
+        .join('\n');
     final wmCss = watermark.isEmpty
         ? ''
         : '''
@@ -146,7 +148,6 @@ $beacon
   }
 
   /// The optional Pro view-tracking beacon. Resolves the Firebase project
-
 
   String _cardHtml(Painting painting, {String watermark = ''}) {
     final image = _imageTag(painting);
@@ -299,9 +300,7 @@ $beacon
       views: views,
       url: token.isEmpty
           ? null
-          : CloudBackend.instance.publicUrlFor(
-              storagePathFor(ownerUid, token),
-            ),
+          : CloudBackend.instance.publicUrlFor(storagePathFor(ownerUid, token)),
     );
   }
 
@@ -328,7 +327,10 @@ $beacon
   /// INCREMENT transform — no read-modify-write race, and a revoked or
   /// re-published link can never receive forged increments.
   static String _viewBeacon(String? ownerUid, String watermark, String? token) {
-    if (ownerUid == null || token == null || token.isEmpty || watermark.isEmpty) {
+    if (ownerUid == null ||
+        token == null ||
+        token.isEmpty ||
+        watermark.isEmpty) {
       return '';
     }
     String projectId;

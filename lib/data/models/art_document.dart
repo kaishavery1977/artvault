@@ -61,35 +61,36 @@ class ArtDocument {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'paintingId': paintingId,
-        'type': type,
-        'name': name,
-        'localPath': localPath,
-        'remoteUrl': remoteUrl,
-        'mimeType': mimeType,
-        'sizeBytes': sizeBytes,
-        'isDeleted': isDeleted,
-        'needsSync': needsSync,
-        'synced': synced,
-        'ownerUid': ownerUid,
-        'createdAt': createdAt.toIso8601String(),
-      };
+    'id': id,
+    'paintingId': paintingId,
+    'type': type,
+    'name': name,
+    'localPath': localPath,
+    'remoteUrl': remoteUrl,
+    'mimeType': mimeType,
+    'sizeBytes': sizeBytes,
+    'isDeleted': isDeleted,
+    'needsSync': needsSync,
+    'synced': synced,
+    'ownerUid': ownerUid,
+    'createdAt': createdAt.toIso8601String(),
+  };
 
   factory ArtDocument.fromJson(Map<String, dynamic> json) => ArtDocument(
-        id: json['id'] as String,
-        paintingId: (json['paintingId'] as String?) ?? '',
-        type: (json['type'] as String?) ?? 'Other',
-        name: (json['name'] as String?) ?? 'Untitled',
-        localPath: (json['localPath'] as String?) ?? '',
-        remoteUrl: (json['remoteUrl'] as String?) ?? '',
-        mimeType: (json['mimeType'] as String?) ?? 'application/octet-stream',
-        sizeBytes: (json['sizeBytes'] as num?)?.toInt() ?? 0,
-        isDeleted: (json['isDeleted'] as bool?) ?? false,
-        needsSync: (json['needsSync'] as bool?) ?? true,
-        synced: (json['synced'] as bool?) ?? false,
-        ownerUid: (json['ownerUid'] as String?) ?? '',
-        createdAt: DateTime.tryParse((json['createdAt'] as String?) ?? '') ??
-            DateTime.now(),
-      );
+    id: json['id'] as String,
+    paintingId: (json['paintingId'] as String?) ?? '',
+    type: (json['type'] as String?) ?? 'Other',
+    name: (json['name'] as String?) ?? 'Untitled',
+    localPath: (json['localPath'] as String?) ?? '',
+    remoteUrl: (json['remoteUrl'] as String?) ?? '',
+    mimeType: (json['mimeType'] as String?) ?? 'application/octet-stream',
+    sizeBytes: (json['sizeBytes'] as num?)?.toInt() ?? 0,
+    isDeleted: (json['isDeleted'] as bool?) ?? false,
+    needsSync: (json['needsSync'] as bool?) ?? true,
+    synced: (json['synced'] as bool?) ?? false,
+    ownerUid: (json['ownerUid'] as String?) ?? '',
+    createdAt:
+        DateTime.tryParse((json['createdAt'] as String?) ?? '') ??
+        DateTime.now(),
+  );
 }

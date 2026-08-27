@@ -42,12 +42,14 @@ class ReportsScreen extends ConsumerWidget {
           final file = await ExportService.instance.exportCsv(paintings);
           await ShareService.instance.shareFile(file.path, text: 'CSV export');
         case _ExportKind.insurance:
-          final pdf =
-              await ExportService.instance.buildInsuranceSchedulePdf(paintings);
+          final pdf = await ExportService.instance.buildInsuranceSchedulePdf(
+            paintings,
+          );
           await ShareService.instance.sharePdf(pdf, 'insurance_schedule.pdf');
         case _ExportKind.qrLabels:
-          final pdf = await ExportService.instance
-              .buildQrLabelSheetPdf(paintings);
+          final pdf = await ExportService.instance.buildQrLabelSheetPdf(
+            paintings,
+          );
           await ShareService.instance.sharePdf(pdf, 'qr_labels.pdf');
         case _ExportKind.print:
           await ExportService.instance.printCatalog(paintings);
@@ -81,41 +83,46 @@ class ReportsScreen extends ConsumerWidget {
               ),
               child: Text(
                 'Reports & Analytics',
-                style: AppTheme.display(context, size: context.adaptiveFont(28)),
+                style: AppTheme.display(
+                  context,
+                  size: context.adaptiveFont(28),
+                ),
               ),
             ),
           ),
           SliverPadding(
             padding: AppSpacing.screenPadding,
             sliver: SliverList(
-              delegate: SliverChildListDelegate(staggerReveal([
-                _SummaryRow(
-                  paintings: paintings,
-                  artists: artists,
-                  currency: ref.watch(currencyProvider),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                if (canSeeAnalytics) ...[
-                  SectionHeader(title: 'Collection breakdown'),
-                  _BarCard(
-                    title: 'Most common mediums',
-                    data: _topMediums(paintings),
+              delegate: SliverChildListDelegate(
+                staggerReveal([
+                  _SummaryRow(
+                    paintings: paintings,
+                    artists: artists,
+                    currency: ref.watch(currencyProvider),
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  _BarCard(
-                    title: 'Upload trend (last 6 months)',
-                    data: _uploadTrend(paintings),
+                  const SizedBox(height: AppSpacing.lg),
+                  if (canSeeAnalytics) ...[
+                    SectionHeader(title: 'Collection breakdown'),
+                    _BarCard(
+                      title: 'Most common mediums',
+                      data: _topMediums(paintings),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    _BarCard(
+                      title: 'Upload trend (last 6 months)',
+                      data: _uploadTrend(paintings),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    _InsightsCard(paintings: paintings),
+                  ],
+                  const SizedBox(height: AppSpacing.lg),
+                  SectionHeader(title: 'Export & print'),
+                  _ExportCard(
+                    onExport: (kind) => _export(context, kind, paintings),
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  _InsightsCard(paintings: paintings),
-                ],
-                const SizedBox(height: AppSpacing.lg),
-                SectionHeader(title: 'Export & print'),
-                _ExportCard(
-                  onExport: (kind) => _export(context, kind, paintings),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-              ], context: context)),
+                  const SizedBox(height: AppSpacing.xl),
+                ], context: context),
+              ),
             ),
           ),
         ],
@@ -414,7 +421,10 @@ class _Row extends StatelessWidget {
       ),
     );
   }
-}enum _ExportKind { pdf, excel, csv, insurance, qrLabels, print }
+}
+
+enum _ExportKind { pdf, excel, csv, insurance, qrLabels, print }
+
 extension _ExportKindX on _ExportKind {
   String get label => switch (this) {
     _ExportKind.pdf => 'PDF catalogue',

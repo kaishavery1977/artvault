@@ -60,9 +60,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // best-effort (worst case: onboarding plays again on the next launch).
     ref.read(onboardedProvider.notifier).state = true;
     context.go('/login');
-    unawaited(
-      SettingsRepository.instance.setOnboarded().catchError((_) {}),
-    );
+    unawaited(SettingsRepository.instance.setOnboarded().catchError((_) {}));
   }
 
   @override
@@ -143,8 +141,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             style: Theme.of(context).textTheme.bodyLarge
                                 ?.copyWith(
                                   height: 1.5,
-                                  color: scheme.onSurface
-                                      .withValues(alpha: 0.6),
+                                  color: scheme.onSurface.withValues(
+                                    alpha: 0.6,
+                                  ),
                                 ),
                           ),
                         ),
@@ -256,11 +255,7 @@ class _SlideIcon extends StatelessWidget {
           width: 0.6,
         ),
       ),
-      child: Icon(
-        slide.icon,
-        size: 64,
-        color: scheme.primary,
-      ),
+      child: Icon(slide.icon, size: 64, color: scheme.primary),
     );
 
     if (!animated) return badge;
@@ -268,10 +263,7 @@ class _SlideIcon extends StatelessWidget {
     if (!cinematic) {
       return badge
           .animate(key: ValueKey('onboard_${slide.title}'))
-          .scale(
-            begin: const Offset(0.7, 0.7),
-            curve: Curves.easeOutBack,
-          );
+          .scale(begin: const Offset(0.7, 0.7), curve: Curves.easeOutBack);
     }
 
     // First slide: glow + ring + settle, echoing the splash's intro.
@@ -283,18 +275,18 @@ class _SlideIcon extends StatelessWidget {
         children: [
           // Soft radial glow blooming open behind the badge.
           Container(
-            width: 240,
-            height: 240,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  scheme.primary.withValues(alpha: 0.20),
-                  scheme.primary.withValues(alpha: 0),
-                ],
-              ),
-            ),
-          )
+                width: 240,
+                height: 240,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      scheme.primary.withValues(alpha: 0.20),
+                      scheme.primary.withValues(alpha: 0),
+                    ],
+                  ),
+                ),
+              )
               .animate()
               .scaleXY(
                 begin: 0.4,
@@ -307,16 +299,16 @@ class _SlideIcon extends StatelessWidget {
               .fadeOut(delay: 500.ms, duration: 1100.ms),
           // Expanding ring — the splash's stamp shockwave, replayed softly.
           Container(
-            width: 168,
-            height: 168,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: scheme.primary.withValues(alpha: 0.25),
-                width: 1.5,
-              ),
-            ),
-          )
+                width: 168,
+                height: 168,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: scheme.primary.withValues(alpha: 0.25),
+                    width: 1.5,
+                  ),
+                ),
+              )
               .animate(delay: 250.ms)
               .scaleXY(
                 begin: 0.7,
@@ -327,10 +319,7 @@ class _SlideIcon extends StatelessWidget {
               .fadeOut(duration: 1200.ms),
           // The badge itself, dropping in with a settle.
           badge
-              .animate(
-                key: ValueKey('onboard_${slide.title}'),
-                delay: 100.ms,
-              )
+              .animate(key: ValueKey('onboard_${slide.title}'), delay: 100.ms)
               .scaleXY(
                 begin: 0.55,
                 end: 1,

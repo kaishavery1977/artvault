@@ -19,7 +19,8 @@ class ArtVaultHttpOverrides extends HttpOverrides {
       return client;
     }
 
-    client.badCertificateCallback = (X509Certificate cert, String host, int port) {
+    client
+        .badCertificateCallback = (X509Certificate cert, String host, int port) {
       final expectedPins = pinnedKeys[host];
       if (expectedPins == null) return false; // No pin = rely on system trust
 
@@ -27,7 +28,9 @@ class ArtVaultHttpOverrides extends HttpOverrides {
       final actualPinB64 = base64Url.encode(actualPin).replaceAll('=', '');
 
       if (!expectedPins.contains(actualPinB64)) {
-        AppLogger.error('TLS PIN MISMATCH: $host — expected one of $expectedPins, got $actualPinB64');
+        AppLogger.error(
+          'TLS PIN MISMATCH: $host — expected one of $expectedPins, got $actualPinB64',
+        );
         return false; // Reject mismatch
       }
       return true; // Allow matched pin (even if system says bad, our pin says it's ok)

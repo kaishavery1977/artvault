@@ -14,15 +14,15 @@ import 'helpers.dart';
 import 'hive_test_harness.dart';
 
 Painting _painting({String id = 'perf-1'}) => Painting(
-      id: id,
-      title: 'Performance Test Painting',
-      artistId: 'a1',
-      artistName: 'Test Artist',
-      category: 'Landscape',
-      medium: 'Oil on Canvas',
-      createdAt: DateTime(2026),
-      updatedAt: DateTime(2026),
-    );
+  id: id,
+  title: 'Performance Test Painting',
+  artistId: 'a1',
+  artistName: 'Test Artist',
+  category: 'Landscape',
+  medium: 'Oil on Canvas',
+  createdAt: DateTime(2026),
+  updatedAt: DateTime(2026),
+);
 
 void main() {
   setUpAll(() async {
@@ -45,9 +45,7 @@ void main() {
           child: AdaptiveLayout(
             profile: testProfile,
             child: MaterialApp(
-              home: Scaffold(
-                body: PaintingGridCard(painting: painting),
-              ),
+              home: Scaffold(body: PaintingGridCard(painting: painting)),
             ),
           ),
         ),
@@ -63,7 +61,8 @@ void main() {
       expect(
         stopwatch.elapsedMilliseconds,
         lessThan(3000),
-        reason: 'First build of PaintingGridCard took ${stopwatch.elapsedMilliseconds}ms',
+        reason:
+            'First build of PaintingGridCard took ${stopwatch.elapsedMilliseconds}ms',
       );
     });
 
@@ -109,9 +108,7 @@ void main() {
           child: AdaptiveLayout(
             profile: testProfile,
             child: MaterialApp(
-              home: Scaffold(
-                body: PaintingGridCard(painting: painting),
-              ),
+              home: Scaffold(body: PaintingGridCard(painting: painting)),
             ),
           ),
         ),

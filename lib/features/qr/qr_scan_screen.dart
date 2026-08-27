@@ -347,10 +347,7 @@ class _QrScanScreenState extends State<QrScanScreen>
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final reduced = MediaQuery.disableAnimationsOf(context);
-    final lineT = CurvedAnimation(
-      parent: _line,
-      curve: Curves.easeInOutCubic,
-    );
+    final lineT = CurvedAnimation(parent: _line, curve: Curves.easeInOutCubic);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Scan a QR code')),
@@ -476,23 +473,23 @@ class _CornerBrackets extends StatelessWidget {
       right: BorderSide(color: color, width: thick),
     );
     Widget corner(Alignment a) => Align(
-          alignment: a,
-          child: SizedBox(
-            width: len,
-            height: len,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(radius),
-                border: Border(
-                  top: a.y < 0 ? b.top : BorderSide.none,
-                  bottom: a.y > 0 ? b.bottom : BorderSide.none,
-                  left: a.x < 0 ? b.left : BorderSide.none,
-                  right: a.x > 0 ? b.right : BorderSide.none,
-                ),
-              ),
+      alignment: a,
+      child: SizedBox(
+        width: len,
+        height: len,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(radius),
+            border: Border(
+              top: a.y < 0 ? b.top : BorderSide.none,
+              bottom: a.y > 0 ? b.bottom : BorderSide.none,
+              left: a.x < 0 ? b.left : BorderSide.none,
+              right: a.x > 0 ? b.right : BorderSide.none,
             ),
           ),
-        );
+        ),
+      ),
+    );
     return Stack(
       children: [
         corner(const Alignment(-1, -1)),

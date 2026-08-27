@@ -60,8 +60,10 @@ class BiometricService {
       final enrolled = await _auth.getAvailableBiometrics();
 
       if (!hasHardware) return 'No biometric hardware on this device.';
-      if (!canCheck) return 'Biometrics not enrolled. Set up a screen lock and fingerprint/face.';
-      if (enrolled.isEmpty) return 'No biometrics enrolled. Add fingerprint/face in phone settings.';
+      if (!canCheck)
+        return 'Biometrics not enrolled. Set up a screen lock and fingerprint/face.';
+      if (enrolled.isEmpty)
+        return 'No biometrics enrolled. Add fingerprint/face in phone settings.';
       return 'Available: ${enrolled.map((e) => e.name).join(', ')}';
     } catch (e) {
       return 'Error: $e';
@@ -138,12 +140,13 @@ class BiometricService {
 
   /// Authenticates using ONLY strong biometrics — fingerprint (Class 3).
   /// The device PIN/pattern/password never satisfies this prompt.
-  Future<bool> authenticateFingerprint({String reason = 'Unlock ArtVault'}) async {
+  Future<bool> authenticateFingerprint({
+    String reason = 'Unlock ArtVault',
+  }) async {
     try {
-      final ok = await _native.invokeMethod<bool>(
-        'authenticateClass',
-        {'class': 'strong'},
-      );
+      final ok = await _native.invokeMethod<bool>('authenticateClass', {
+        'class': 'strong',
+      });
       return ok ?? false;
     } catch (_) {
       // No native channel (iOS / web / desktop) — fall back to the standard
@@ -158,7 +161,9 @@ class BiometricService {
   /// - Android: returns [FaceAuthResult.needsCameraScan] so the caller can run
   ///   the in-app camera face scan — the system face prompt cannot be trusted
   ///   here (it shows the fingerprint prompt instead of a face scan).
-  Future<FaceAuthResult> authenticateFace({String reason = 'Unlock ArtVault'}) async {
+  Future<FaceAuthResult> authenticateFace({
+    String reason = 'Unlock ArtVault',
+  }) async {
     if (defaultTargetPlatform == TargetPlatform.android) {
       return FaceAuthResult.needsCameraScan;
     }

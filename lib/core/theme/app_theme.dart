@@ -4,11 +4,35 @@ import '../constants/app_colors.dart';
 import 'app_spacing.dart';
 
 // Local font helpers — bundled offline, no network flash.
-TextStyle _inter({double? fontSize, FontWeight? fontWeight, Color? color, double? height, double? letterSpacing}) =>
-    TextStyle(fontFamily: 'Inter', fontSize: fontSize, fontWeight: fontWeight, color: color, height: height, letterSpacing: letterSpacing);
+TextStyle _inter({
+  double? fontSize,
+  FontWeight? fontWeight,
+  Color? color,
+  double? height,
+  double? letterSpacing,
+}) => TextStyle(
+  fontFamily: 'Inter',
+  fontSize: fontSize,
+  fontWeight: fontWeight,
+  color: color,
+  height: height,
+  letterSpacing: letterSpacing,
+);
 
-TextStyle _playfair({double? fontSize, FontWeight? fontWeight, Color? color, double? height, double? letterSpacing}) =>
-    TextStyle(fontFamily: 'PlayfairDisplay', fontSize: fontSize, fontWeight: fontWeight, color: color, height: height, letterSpacing: letterSpacing);
+TextStyle _playfair({
+  double? fontSize,
+  FontWeight? fontWeight,
+  Color? color,
+  double? height,
+  double? letterSpacing,
+}) => TextStyle(
+  fontFamily: 'PlayfairDisplay',
+  fontSize: fontSize,
+  fontWeight: fontWeight,
+  color: color,
+  height: height,
+  letterSpacing: letterSpacing,
+);
 
 /// ArtVault Design System — Premium Theme
 ///
@@ -23,26 +47,44 @@ abstract final class AppTheme {
     final isDark = brightness == Brightness.dark;
 
     // Surface colors
-    final background = isDark ? AppColors.darkBackground : AppColors.lightBackground;
+    final background = isDark
+        ? AppColors.darkBackground
+        : AppColors.lightBackground;
     final surface = isDark ? AppColors.darkSurface : AppColors.lightSurface;
-    final surfaceVariant = isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant;
-    final surfaceContainer = isDark ? AppColors.darkSurfaceContainer : AppColors.lightSurfaceContainer;
-    final surfaceContainerHigh = isDark ? AppColors.darkSurfaceContainerHigh : AppColors.lightSurfaceContainerHigh;
-    final surfaceContainerHighest = isDark ? AppColors.darkSurfaceContainerHighest : AppColors.lightSurfaceContainerHighest;
+    final surfaceVariant = isDark
+        ? AppColors.darkSurfaceVariant
+        : AppColors.lightSurfaceVariant;
+    final surfaceContainer = isDark
+        ? AppColors.darkSurfaceContainer
+        : AppColors.lightSurfaceContainer;
+    final surfaceContainerHigh = isDark
+        ? AppColors.darkSurfaceContainerHigh
+        : AppColors.lightSurfaceContainerHigh;
+    final surfaceContainerHighest = isDark
+        ? AppColors.darkSurfaceContainerHighest
+        : AppColors.lightSurfaceContainerHighest;
 
     // Text colors
-    final onSurface = isDark ? AppColors.darkOnSurface : AppColors.lightOnSurface;
-    final onSurfaceVariant = isDark ? AppColors.darkOnSurfaceVariant : AppColors.lightOnSurfaceVariant;
+    final onSurface = isDark
+        ? AppColors.darkOnSurface
+        : AppColors.lightOnSurface;
+    final onSurfaceVariant = isDark
+        ? AppColors.darkOnSurfaceVariant
+        : AppColors.lightOnSurfaceVariant;
 
     // Outline
     final outline = isDark ? AppColors.darkOutline : AppColors.lightOutline;
-    final outlineVariant = isDark ? AppColors.darkOutlineVariant : AppColors.lightOutlineVariant;
+    final outlineVariant = isDark
+        ? AppColors.darkOutlineVariant
+        : AppColors.lightOutlineVariant;
 
     // === PRIMARY — Violet ===
     final primary = isDark ? AppColors.violet500 : AppColors.violet600;
     final onPrimary = isDark ? Colors.white : Colors.white;
     final primaryContainer = isDark ? AppColors.violet900 : AppColors.violet100;
-    final onPrimaryContainer = isDark ? AppColors.violet200 : AppColors.violet800;
+    final onPrimaryContainer = isDark
+        ? AppColors.violet200
+        : AppColors.violet800;
 
     // === SECONDARY — Cyan ===
     final secondary = isDark ? AppColors.cyan400 : AppColors.cyan600;
@@ -62,7 +104,9 @@ abstract final class AppTheme {
     final errorContainer = isDark
         ? AppColors.errorDark.withValues(alpha: 0.15)
         : AppColors.errorLight.withValues(alpha: 0.15);
-    final onErrorContainer = isDark ? AppColors.errorDark : AppColors.errorLight;
+    final onErrorContainer = isDark
+        ? AppColors.errorDark
+        : AppColors.errorLight;
 
     final scheme = ColorScheme(
       brightness: brightness,
@@ -145,9 +189,7 @@ abstract final class AppTheme {
       // CARD — Glass surface with subtle violet border in dark mode
       // =======================================================================
       cardTheme: CardThemeData(
-        color: isDark
-            ? AppColors.glassDark(opacity: 0.70)
-            : surface,
+        color: isDark ? AppColors.glassDark(opacity: 0.70) : surface,
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
@@ -202,8 +244,16 @@ abstract final class AppTheme {
         indicatorColor: primary.withValues(alpha: 0.12),
         selectedIconTheme: IconThemeData(color: primary, size: 24),
         unselectedIconTheme: IconThemeData(color: onSurfaceVariant, size: 24),
-        selectedLabelTextStyle: _inter(fontSize: 12, fontWeight: FontWeight.w600, color: primary),
-        unselectedLabelTextStyle: _inter(fontSize: 12, fontWeight: FontWeight.w500, color: onSurfaceVariant),
+        selectedLabelTextStyle: _inter(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: primary,
+        ),
+        unselectedLabelTextStyle: _inter(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: onSurfaceVariant,
+        ),
       ),
 
       // =======================================================================
@@ -217,8 +267,16 @@ abstract final class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
         ),
-        labelStyle: _inter(fontSize: 13, fontWeight: FontWeight.w600, color: onSurface),
-        secondaryLabelStyle: _inter(fontSize: 13, fontWeight: FontWeight.w600, color: primary),
+        labelStyle: _inter(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: onSurface,
+        ),
+        secondaryLabelStyle: _inter(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: primary,
+        ),
         padding: AppSpacing.chipPadding,
         elevation: 0,
         pressElevation: 0,
@@ -233,7 +291,10 @@ abstract final class AppTheme {
             ? AppColors.violet500.withValues(alpha: 0.04)
             : surfaceVariant,
         isDense: false,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusInput),
           borderSide: BorderSide(color: outlineVariant, width: 0.5),
@@ -256,11 +317,25 @@ abstract final class AppTheme {
         ),
         disabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusInput),
-          borderSide: BorderSide(color: outlineVariant.withValues(alpha: 0.5), width: 0.5),
+          borderSide: BorderSide(
+            color: outlineVariant.withValues(alpha: 0.5),
+            width: 0.5,
+          ),
         ),
-        hintStyle: _inter(color: onSurfaceVariant.withValues(alpha: 0.65), fontSize: 15, fontWeight: FontWeight.w400),
-        labelStyle: _inter(color: onSurfaceVariant, fontSize: 14, fontWeight: FontWeight.w500),
-        helperStyle: _inter(color: onSurfaceVariant.withValues(alpha: 0.7), fontSize: 12),
+        hintStyle: _inter(
+          color: onSurfaceVariant.withValues(alpha: 0.65),
+          fontSize: 15,
+          fontWeight: FontWeight.w400,
+        ),
+        labelStyle: _inter(
+          color: onSurfaceVariant,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        helperStyle: _inter(
+          color: onSurfaceVariant.withValues(alpha: 0.7),
+          fontSize: 12,
+        ),
         errorStyle: _inter(color: error, fontSize: 12),
         prefixIconColor: onSurfaceVariant,
         suffixIconColor: onSurfaceVariant,
@@ -270,47 +345,61 @@ abstract final class AppTheme {
       // BUTTONS — Violet primary, cyan outline, glassmorphism
       // =======================================================================
       elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: primary,
-          foregroundColor: onPrimary,
-          disabledBackgroundColor: surfaceVariant,
-          disabledForegroundColor: onSurfaceVariant.withValues(alpha: 0.6),
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          minimumSize: const Size(0, 52),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
-          ),
-          padding: AppSpacing.buttonPadding,
-          textStyle: _inter(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: 0.3),
-        ).copyWith(
-          overlayColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.hovered)) return onPrimary.withValues(alpha: 0.08);
-            if (states.contains(WidgetState.pressed)) return onPrimary.withValues(alpha: 0.12);
-            return null;
-          }),
-        ),
+        style:
+            ElevatedButton.styleFrom(
+              backgroundColor: primary,
+              foregroundColor: onPrimary,
+              disabledBackgroundColor: surfaceVariant,
+              disabledForegroundColor: onSurfaceVariant.withValues(alpha: 0.6),
+              elevation: 0,
+              shadowColor: Colors.transparent,
+              minimumSize: const Size(0, 52),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
+              ),
+              padding: AppSpacing.buttonPadding,
+              textStyle: _inter(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
+              ),
+            ).copyWith(
+              overlayColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.hovered))
+                  return onPrimary.withValues(alpha: 0.08);
+                if (states.contains(WidgetState.pressed))
+                  return onPrimary.withValues(alpha: 0.12);
+                return null;
+              }),
+            ),
       ),
 
       outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: primary,
-          disabledForegroundColor: onSurfaceVariant.withValues(alpha: 0.6),
-          elevation: 0,
-          side: BorderSide(color: primary.withValues(alpha: 0.4), width: 1),
-          minimumSize: const Size(0, 52),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
-          ),
-          padding: AppSpacing.buttonPadding,
-          textStyle: _inter(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: 0.3),
-        ).copyWith(
-          overlayColor: WidgetStateProperty.resolveWith((states) {
-            if (states.contains(WidgetState.hovered)) return primary.withValues(alpha: 0.06);
-            if (states.contains(WidgetState.pressed)) return primary.withValues(alpha: 0.10);
-            return null;
-          }),
-        ),
+        style:
+            OutlinedButton.styleFrom(
+              foregroundColor: primary,
+              disabledForegroundColor: onSurfaceVariant.withValues(alpha: 0.6),
+              elevation: 0,
+              side: BorderSide(color: primary.withValues(alpha: 0.4), width: 1),
+              minimumSize: const Size(0, 52),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
+              ),
+              padding: AppSpacing.buttonPadding,
+              textStyle: _inter(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.3,
+              ),
+            ).copyWith(
+              overlayColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.hovered))
+                  return primary.withValues(alpha: 0.06);
+                if (states.contains(WidgetState.pressed))
+                  return primary.withValues(alpha: 0.10);
+                return null;
+              }),
+            ),
       ),
 
       textButtonTheme: TextButtonThemeData(
@@ -389,7 +478,10 @@ abstract final class AppTheme {
           fontWeight: FontWeight.w400,
           color: onSurfaceVariant,
         ),
-        actionsPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        actionsPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 12,
+        ),
       ),
 
       // =======================================================================
@@ -616,29 +708,108 @@ abstract final class AppTheme {
   }
 
   static TextTheme _buildTextTheme(ThemeData base, bool isDark) {
-    final onSurface = isDark ? AppColors.darkOnSurface : AppColors.lightOnSurface;
-    final onSurfaceVariant = isDark ? AppColors.darkOnSurfaceVariant : AppColors.lightOnSurfaceVariant;
+    final onSurface = isDark
+        ? AppColors.darkOnSurface
+        : AppColors.lightOnSurface;
+    final onSurfaceVariant = isDark
+        ? AppColors.darkOnSurfaceVariant
+        : AppColors.lightOnSurfaceVariant;
 
     final baseTextTheme = base.textTheme;
     final inter = _inter;
     final playfair = _playfair;
 
     return baseTextTheme.copyWith(
-      displayLarge: playfair(fontSize: 36, fontWeight: FontWeight.w700, color: onSurface, height: 1.1),
-      displayMedium: playfair(fontSize: 30, fontWeight: FontWeight.w700, color: onSurface, height: 1.15),
-      displaySmall: playfair(fontSize: 26, fontWeight: FontWeight.w600, color: onSurface, height: 1.2),
-      headlineLarge: playfair(fontSize: 24, fontWeight: FontWeight.w600, color: onSurface, height: 1.2),
-      headlineMedium: playfair(fontSize: 22, fontWeight: FontWeight.w600, color: onSurface, height: 1.2),
-      headlineSmall: inter(fontSize: 20, fontWeight: FontWeight.w700, color: onSurface, height: 1.25),
-      titleLarge: inter(fontSize: 18, fontWeight: FontWeight.w700, color: onSurface, height: 1.3),
-      titleMedium: inter(fontSize: 16, fontWeight: FontWeight.w600, color: onSurface, height: 1.35),
-      titleSmall: inter(fontSize: 14, fontWeight: FontWeight.w600, color: onSurface, height: 1.4),
-      bodyLarge: inter(fontSize: 16, fontWeight: FontWeight.w400, color: onSurface, height: 1.5),
-      bodyMedium: inter(fontSize: 14, fontWeight: FontWeight.w400, color: onSurfaceVariant, height: 1.5),
-      bodySmall: inter(fontSize: 13, fontWeight: FontWeight.w400, color: onSurfaceVariant, height: 1.45),
-      labelLarge: inter(fontSize: 14, fontWeight: FontWeight.w600, color: onSurface, height: 1.4),
-      labelMedium: inter(fontSize: 13, fontWeight: FontWeight.w600, color: onSurfaceVariant, height: 1.4),
-      labelSmall: inter(fontSize: 11, fontWeight: FontWeight.w600, color: onSurfaceVariant, height: 1.35),
+      displayLarge: playfair(
+        fontSize: 36,
+        fontWeight: FontWeight.w700,
+        color: onSurface,
+        height: 1.1,
+      ),
+      displayMedium: playfair(
+        fontSize: 30,
+        fontWeight: FontWeight.w700,
+        color: onSurface,
+        height: 1.15,
+      ),
+      displaySmall: playfair(
+        fontSize: 26,
+        fontWeight: FontWeight.w600,
+        color: onSurface,
+        height: 1.2,
+      ),
+      headlineLarge: playfair(
+        fontSize: 24,
+        fontWeight: FontWeight.w600,
+        color: onSurface,
+        height: 1.2,
+      ),
+      headlineMedium: playfair(
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+        color: onSurface,
+        height: 1.2,
+      ),
+      headlineSmall: inter(
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
+        color: onSurface,
+        height: 1.25,
+      ),
+      titleLarge: inter(
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+        color: onSurface,
+        height: 1.3,
+      ),
+      titleMedium: inter(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: onSurface,
+        height: 1.35,
+      ),
+      titleSmall: inter(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: onSurface,
+        height: 1.4,
+      ),
+      bodyLarge: inter(
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+        color: onSurface,
+        height: 1.5,
+      ),
+      bodyMedium: inter(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: onSurfaceVariant,
+        height: 1.5,
+      ),
+      bodySmall: inter(
+        fontSize: 13,
+        fontWeight: FontWeight.w400,
+        color: onSurfaceVariant,
+        height: 1.45,
+      ),
+      labelLarge: inter(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: onSurface,
+        height: 1.4,
+      ),
+      labelMedium: inter(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: onSurfaceVariant,
+        height: 1.4,
+      ),
+      labelSmall: inter(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        color: onSurfaceVariant,
+        height: 1.35,
+      ),
     );
   }
 
@@ -655,10 +826,18 @@ abstract final class AppTheme {
 
   // Utility helpers
   static BorderRadius cardRadius = BorderRadius.circular(AppSpacing.radiusCard);
-  static BorderRadius buttonRadius = BorderRadius.circular(AppSpacing.radiusButton);
-  static BorderRadius inputRadius = BorderRadius.circular(AppSpacing.radiusInput);
+  static BorderRadius buttonRadius = BorderRadius.circular(
+    AppSpacing.radiusButton,
+  );
+  static BorderRadius inputRadius = BorderRadius.circular(
+    AppSpacing.radiusInput,
+  );
   static BorderRadius chipRadius = BorderRadius.circular(AppSpacing.radiusChip);
-  static BorderRadius dialogRadius = BorderRadius.circular(AppSpacing.radiusDialog);
-  static BorderRadius bottomSheetRadius = BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusBottomSheet));
+  static BorderRadius dialogRadius = BorderRadius.circular(
+    AppSpacing.radiusDialog,
+  );
+  static BorderRadius bottomSheetRadius = BorderRadius.vertical(
+    top: Radius.circular(AppSpacing.radiusBottomSheet),
+  );
   static BorderRadius fullRadius = BorderRadius.circular(AppSpacing.radiusFull);
 }

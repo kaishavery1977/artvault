@@ -32,14 +32,14 @@ Painting _paint(String id) {
 }
 
 AppUser _freeUser() => AppUser(
-      uid: 'u1',
-      email: 'a@b.com',
-      displayName: 'Tester',
-      role: AppRole.curator,
-      plan: AppPlan.free,
-      createdAt: DateTime(2026),
-      lastLogin: DateTime(2026),
-    );
+  uid: 'u1',
+  email: 'a@b.com',
+  displayName: 'Tester',
+  role: AppRole.curator,
+  plan: AppPlan.free,
+  createdAt: DateTime(2026),
+  lastLogin: DateTime(2026),
+);
 
 /// Pumps the home screen with a controllable paintings stream so the test
 /// can push a count across a cap boundary mid-flight.
@@ -50,12 +50,14 @@ Widget _homeApp(
   return ProviderScope(
     overrides: [
       ...appOverrides(introShown: true),
-      authProvider.overrideWith((ref) => FakeAuthController(
-            AuthState(
-              status: AuthStatus.authenticated,
-              user: _freeUser().copyWith(plan: plan),
-            ),
-          )),
+      authProvider.overrideWith(
+        (ref) => FakeAuthController(
+          AuthState(
+            status: AuthStatus.authenticated,
+            user: _freeUser().copyWith(plan: plan),
+          ),
+        ),
+      ),
       paintingsProvider.overrideWith((ref) => paintings),
       artistsProvider.overrideWith((ref) => Stream.value(const [])),
       documentsProvider.overrideWith((ref) => Stream.value(const [])),
@@ -83,8 +85,7 @@ Widget _homeApp(
 void main() {
   setUpAll(disableRuntimeFontFetching);
 
-  testWidgets('usage meter shows counts against the free caps',
-      (tester) async {
+  testWidgets('usage meter shows counts against the free caps', (tester) async {
     final controller = StreamController<List<Painting>>();
     addTearDown(controller.close);
     controller.add([for (var i = 0; i < 12; i++) _paint('p$i')]);
@@ -95,10 +96,7 @@ void main() {
     // Let the count-up / bar-fill animations finish.
     await tester.pump(const Duration(milliseconds: 1000));
 
-    expect(
-      find.text('12 / ${ProLimits.freePaintings}'),
-      findsOneWidget,
-    );
+    expect(find.text('12 / ${ProLimits.freePaintings}'), findsOneWidget);
     // Rows exist for paintings, artists, documents and storage (the label
     // can also appear in the stats grid above, so at least one is enough).
     expect(find.text('Paintings'), findsWidgets);
@@ -107,15 +105,16 @@ void main() {
     expect(find.text('Storage'), findsWidgets);
   });
 
-  testWidgets('turns red and shakes the moment a count hits the cap',
-      (tester) async {
+  testWidgets('turns red and shakes the moment a count hits the cap', (
+    tester,
+  ) async {
     final controller = StreamController<List<Painting>>();
     addTearDown(controller.close);
 
     // Start below the cap, then push one more painting to cross it.
-    controller.add(
-      [for (var i = 0; i < ProLimits.freePaintings - 1; i++) _paint('p$i')],
-    );
+    controller.add([
+      for (var i = 0; i < ProLimits.freePaintings - 1; i++) _paint('p$i'),
+    ]);
 
     await tester.pumpWidget(_homeApp(controller.stream));
     await tester.pump();
@@ -127,7 +126,9 @@ void main() {
     final barBefore = tester.widget<LinearProgressIndicator>(
       find.descendant(
         of: find.ancestor(
-          of: find.text('${ProLimits.freePaintings - 1} / ${ProLimits.freePaintings}'),
+          of: find.text(
+            '${ProLimits.freePaintings - 1} / ${ProLimits.freePaintings}',
+          ),
           matching: find.byType(Row),
         ),
         matching: find.byType(LinearProgressIndicator),
@@ -141,9 +142,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
 
     // Cross the cap: full count now.
-    controller.add(
-      [for (var i = 0; i < ProLimits.freePaintings; i++) _paint('p$i')],
-    );
+    controller.add([
+      for (var i = 0; i < ProLimits.freePaintings; i++) _paint('p$i'),
+    ]);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 900)); // fill animation
@@ -152,7 +153,9 @@ void main() {
     final barAfter = tester.widget<LinearProgressIndicator>(
       find.descendant(
         of: find.ancestor(
-          of: find.text('${ProLimits.freePaintings} / ${ProLimits.freePaintings}'),
+          of: find.text(
+            '${ProLimits.freePaintings} / ${ProLimits.freePaintings}',
+          ),
           matching: find.byType(Row),
         ),
         matching: find.byType(LinearProgressIndicator),

@@ -95,9 +95,9 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
             }
             break;
           }
-          await ref.read(authProvider.notifier).applyServerPlanGrant(
-            AppPlan.pro,
-          );
+          await ref
+              .read(authProvider.notifier)
+              .applyServerPlanGrant(AppPlan.pro);
           if (!mounted) return;
           // Celebratory moment before returning to the app.
           await showProCelebration(context);
@@ -109,9 +109,7 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
           );
         case ProPurchaseResult.error:
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Purchase failed. Please try again.'),
-            ),
+            const SnackBar(content: Text('Purchase failed. Please try again.')),
           );
         case ProPurchaseResult.unavailable:
         case null:
@@ -163,9 +161,9 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
           // The backend wrote the plan with the Admin SDK (verified
           // signature); reflect the grant locally — the live profile
           // watcher reconciles with the server document.
-          await ref.read(authProvider.notifier).applyServerPlanGrant(
-            AppPlan.pro,
-          );
+          await ref
+              .read(authProvider.notifier)
+              .applyServerPlanGrant(AppPlan.pro);
           if (!mounted) return;
           await showProCelebration(context);
           if (!mounted) return;
@@ -178,7 +176,9 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
         case ProPurchaseResult.unavailable:
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Payment could not be completed. Please try again.'),
+              content: Text(
+                'Payment could not be completed. Please try again.',
+              ),
             ),
           );
         case null:
@@ -331,7 +331,10 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
             children: [
               GradientShimmerText(
                 text: 'ArtVault Pro',
-                style: AppTheme.display(context, size: context.adaptiveFont(22)),
+                style: AppTheme.display(
+                  context,
+                  size: context.adaptiveFont(22),
+                ),
                 colors: [scheme.primary, scheme.secondary, scheme.tertiary],
                 duration: const Duration(milliseconds: 1400),
                 loop: true,
@@ -403,10 +406,10 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                         : _storeUnavailable
                         ? (RazorpayPaymentService.instance.isConfigured
                               ? () => _buyRazorpay(
-                                    monthly:
-                                        _billingMode ==
-                                        RazorpayBillingMode.monthly,
-                                  )
+                                  monthly:
+                                      _billingMode ==
+                                      RazorpayBillingMode.monthly,
+                                )
                               : _confirmPreviewUnlock)
                         : _buy,
                     icon: const Icon(Icons.workspace_premium, size: 18),
@@ -430,13 +433,13 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
                   _storeUnavailable
                       ? (RazorpayPaymentService.instance.isConfigured
                             ? 'Payment is processed securely by Razorpay (UPI / '
-                                'cards / netbanking) and verified by our server '
-                                'before Pro is activated.'
+                                  'cards / netbanking) and verified by our server '
+                                  'before Pro is activated.'
                             : 'No payment method is configured on this build '
-                                'yet. ${kReleaseMode ? '' : 'The button is a free developer preview. '}'
-                                'Real payments arrive with the store or Razorpay.')
+                                  'yet. ${kReleaseMode ? '' : 'The button is a free developer preview. '}'
+                                  'Real payments arrive with the store or Razorpay.')
                       : 'Payment is processed securely by your device\'s app store. '
-                          'Your plan syncs to the cloud and unlocks on every device.',
+                            'Your plan syncs to the cloud and unlocks on every device.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 11.5,
@@ -466,7 +469,10 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
       body: ListView(
         padding: AppSpacing.screenPadding,
         children: [
-          Text('Why go Pro?', style: AppTheme.display(context, size: context.adaptiveFont(24))),
+          Text(
+            'Why go Pro?',
+            style: AppTheme.display(context, size: context.adaptiveFont(24)),
+          ),
           const SizedBox(height: AppSpacing.md),
           ...rows,
           const SizedBox(height: AppSpacing.xl),
@@ -475,9 +481,8 @@ class _UpgradeScreenState extends ConsumerState<UpgradeScreen> {
     );
   }
 
-  static String _mb(int? bytes) => bytes == null
-      ? 'unlimited'
-      : '${(bytes ~/ (1024 * 1024))} MB';
+  static String _mb(int? bytes) =>
+      bytes == null ? 'unlimited' : '${(bytes ~/ (1024 * 1024))} MB';
 }
 
 /// Soft breathing glow behind a primary action. Ticker-only (no timers), so

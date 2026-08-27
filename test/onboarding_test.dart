@@ -18,8 +18,9 @@ void main() {
     disableRuntimeFontFetching();
   });
 
-  testWidgets('Skip hands off into login and marks onboarding done',
-      (WidgetTester tester) async {
+  testWidgets('Skip hands off into login and marks onboarding done', (
+    WidgetTester tester,
+  ) async {
     // Real file I/O only completes in the real-async zone — running the
     // clear here (rather than setUp) also drains any write left pending by
     // a previous test's fire-and-forget save, so Hive's per-box write chain
@@ -48,8 +49,9 @@ void main() {
     expect(SettingsRepository.instance.onboarded, isTrue);
   });
 
-  testWidgets('Next walks through all slides then Get Started finishes',
-      (WidgetTester tester) async {
+  testWidgets('Next walks through all slides then Get Started finishes', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: appOverrides(introShown: true),
@@ -83,8 +85,9 @@ void main() {
     expect(SettingsRepository.instance.onboarded, isTrue);
   });
 
-  testWidgets('Reduced motion renders onboarding statically',
-      (WidgetTester tester) async {
+  testWidgets('Reduced motion renders onboarding statically', (
+    WidgetTester tester,
+  ) async {
     tester.binding.platformDispatcher.accessibilityFeaturesTestValue =
         const FakeAccessibilityFeatures(disableAnimations: true);
     addTearDown(

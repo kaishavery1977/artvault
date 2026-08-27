@@ -171,72 +171,76 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             // Fields cascade in one by one — matches the cinematic splash
             // intro. Index-stable, so toggling the visibility switch or
             // remember-me never replays the animation.
-            children: staggerReveal([
-              AppTextField(
-                controller: _email,
-                label: 'Email',
-                hint: 'you@example.com',
-                icon: Icons.mail_outline,
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.next,
-                validator: Validators.email,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              AppTextField(
-                controller: _password,
-                label: 'Password',
-                icon: Icons.lock_outline,
-                obscureText: _obscure,
-                validator: Validators.password,
-                textInputAction: TextInputAction.done,
-                onChanged: (_) {},
-                suffixIcon: IconButton(
-                  tooltip: _obscure ? 'Show password' : 'Hide password',
-                  icon: Icon(
-                    _obscure
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                    size: 20,
-                  ),
-                  onPressed: () => setState(() => _obscure = !_obscure),
+            children: staggerReveal(
+              [
+                AppTextField(
+                  controller: _email,
+                  label: 'Email',
+                  hint: 'you@example.com',
+                  icon: Icons.mail_outline,
+                  keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
+                  validator: Validators.email,
                 ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              // Wrap instead of Row: on narrow widths or large text scales
-              // the 'Forgot password?' action drops to its own line rather
-              // than overflowing the card. When it fits, spaceBetween keeps
-              // the two sides at the card edges.
-              Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.xs,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Switch(
-                        value: _remember,
-                        onChanged: (v) => setState(() => _remember = v),
-                      ),
-                      const SizedBox(width: 4),
-                      const Text('Remember me'),
-                    ],
+                const SizedBox(height: AppSpacing.md),
+                AppTextField(
+                  controller: _password,
+                  label: 'Password',
+                  icon: Icons.lock_outline,
+                  obscureText: _obscure,
+                  validator: Validators.password,
+                  textInputAction: TextInputAction.done,
+                  onChanged: (_) {},
+                  suffixIcon: IconButton(
+                    tooltip: _obscure ? 'Show password' : 'Hide password',
+                    icon: Icon(
+                      _obscure
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      size: 20,
+                    ),
+                    onPressed: () => setState(() => _obscure = !_obscure),
                   ),
-                  TextButton(
-                    onPressed: () => context.push('/forgot'),
-                    child: const Text('Forgot password?'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              // Premium 3D button with glow effect
-              PremiumButton(
-                label: 'Sign In',
-                loading: auth.busy,
-                onPressed: _submit,
-              ),
-            ], initialDelay: const Duration(milliseconds: 300), context: context),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                // Wrap instead of Row: on narrow widths or large text scales
+                // the 'Forgot password?' action drops to its own line rather
+                // than overflowing the card. When it fits, spaceBetween keeps
+                // the two sides at the card edges.
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.xs,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Switch(
+                          value: _remember,
+                          onChanged: (v) => setState(() => _remember = v),
+                        ),
+                        const SizedBox(width: 4),
+                        const Text('Remember me'),
+                      ],
+                    ),
+                    TextButton(
+                      onPressed: () => context.push('/forgot'),
+                      child: const Text('Forgot password?'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                // Premium 3D button with glow effect
+                PremiumButton(
+                  label: 'Sign In',
+                  loading: auth.busy,
+                  onPressed: _submit,
+                ),
+              ],
+              initialDelay: const Duration(milliseconds: 300),
+              context: context,
+            ),
           ),
         ),
         if (_biometricAvailable) ...[

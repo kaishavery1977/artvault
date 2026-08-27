@@ -43,10 +43,12 @@ class NotificationsScreen extends ConsumerWidget {
             return const EmptyState(
               icon: Icons.notifications_none,
               title: 'No notifications yet',
-              subtitle: 'Uploads, backups and duplicate alerts will appear here.',
+              subtitle:
+                  'Uploads, backups and duplicate alerts will appear here.',
             );
           }
-          final sorted = [...items]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          final sorted = [...items]
+            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
           return ListView.separated(
             padding: AppSpacing.screenPadding,
             itemCount: sorted.length,
@@ -89,7 +91,9 @@ class _NotificationTile extends ConsumerWidget {
         padding: AppSpacing.cardPadding,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          color: scheme.surfaceContainerHighest.withValues(alpha: unread ? 0.9 : 0.55),
+          color: scheme.surfaceContainerHighest.withValues(
+            alpha: unread ? 0.9 : 0.55,
+          ),
           border: unread
               ? Border.all(color: scheme.primary.withValues(alpha: 0.35))
               : Border.all(color: scheme.outlineVariant.withValues(alpha: 0.2)),
@@ -109,13 +113,17 @@ class _NotificationTile extends ConsumerWidget {
                         child: Text(
                           notification.title,
                           style: TextStyle(
-                            fontWeight: unread ? FontWeight.w800 : FontWeight.w600,
+                            fontWeight: unread
+                                ? FontWeight.w800
+                                : FontWeight.w600,
                             fontSize: 14,
                           ),
                         ),
                       ),
                       Text(
-                        DateFormat('MMM d, HH:mm').format(notification.createdAt),
+                        DateFormat(
+                          'MMM d, HH:mm',
+                        ).format(notification.createdAt),
                         style: TextStyle(
                           fontSize: 11,
                           color: scheme.onSurface.withValues(alpha: 0.45),

@@ -22,7 +22,10 @@ abstract final class Validators {
     return null;
   }
 
-  static String? required(String? value, {String message = 'This field is required'}) {
+  static String? required(
+    String? value, {
+    String message = 'This field is required',
+  }) {
     if (value == null || value.trim().isEmpty) return message;
     return null;
   }
@@ -34,7 +37,10 @@ abstract final class Validators {
     return null;
   }
 
-  static String? positiveNumber(String? value, {String message = 'Enter a positive number'}) {
+  static String? positiveNumber(
+    String? value, {
+    String message = 'Enter a positive number',
+  }) {
     final v = value?.trim() ?? '';
     if (v.isEmpty) return null;
     final n = double.tryParse(v);

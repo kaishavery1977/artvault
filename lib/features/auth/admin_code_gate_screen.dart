@@ -19,7 +19,8 @@ class AdminCodeGateScreen extends ConsumerStatefulWidget {
   const AdminCodeGateScreen({super.key});
 
   @override
-  ConsumerState<AdminCodeGateScreen> createState() => _AdminCodeGateScreenState();
+  ConsumerState<AdminCodeGateScreen> createState() =>
+      _AdminCodeGateScreenState();
 }
 
 class _AdminCodeGateScreenState extends ConsumerState<AdminCodeGateScreen> {
@@ -49,7 +50,9 @@ class _AdminCodeGateScreenState extends ConsumerState<AdminCodeGateScreen> {
     // takes effect without an app update.
     String? expected;
     try {
-      final doc = await FirebaseFirestore.instance.doc('bootstrap/config').get();
+      final doc = await FirebaseFirestore.instance
+          .doc('bootstrap/config')
+          .get();
       expected = doc.data()?['adminCode'] as String?;
     } catch (_) {
       // Offline / not configured — surface a clear error, don't fall back to a
@@ -57,7 +60,8 @@ class _AdminCodeGateScreenState extends ConsumerState<AdminCodeGateScreen> {
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _error = 'Could not verify admin code — check your connection and try again, or tap Skip.';
+        _error =
+            'Could not verify admin code — check your connection and try again, or tap Skip.';
       });
       return;
     }
@@ -65,7 +69,8 @@ class _AdminCodeGateScreenState extends ConsumerState<AdminCodeGateScreen> {
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _error = 'Admin bootstrap not configured. Ask an existing admin to promote you.';
+        _error =
+            'Admin bootstrap not configured. Ask an existing admin to promote you.';
       });
       return;
     }
@@ -115,14 +120,17 @@ class _AdminCodeGateScreenState extends ConsumerState<AdminCodeGateScreen> {
         await ref.read(authProvider.notifier).refreshProfile();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Admin access granted (local) — syncing…')),
+            const SnackBar(
+              content: Text('Admin access granted (local) — syncing…'),
+            ),
           );
           context.go('/home');
         }
       } catch (_) {
         setState(() {
           _busy = false;
-          _error = 'Could not grant admin: ${e.toString().replaceFirst('Exception: ', '')}';
+          _error =
+              'Could not grant admin: ${e.toString().replaceFirst('Exception: ', '')}';
         });
       }
     } finally {
@@ -135,11 +143,14 @@ class _AdminCodeGateScreenState extends ConsumerState<AdminCodeGateScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider).user;
-    final name = user?.displayName.isNotEmpty == true ? user!.displayName : 'there';
+    final name = user?.displayName.isNotEmpty == true
+        ? user!.displayName
+        : 'there';
 
     return AuthLayout(
       title: 'Almost there, $name!',
-      subtitle: 'Enter the admin code to unlock admin access, or skip to continue as curator',
+      subtitle:
+          'Enter the admin code to unlock admin access, or skip to continue as curator',
       children: [
         if (_error != null)
           Container(
@@ -151,10 +162,20 @@ class _AdminCodeGateScreenState extends ConsumerState<AdminCodeGateScreen> {
             ),
             child: Row(
               children: [
-                Icon(Icons.error_outline, size: 18, color: Theme.of(context).colorScheme.error),
+                Icon(
+                  Icons.error_outline,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.error,
+                ),
                 const SizedBox(width: AppSpacing.xs),
                 Expanded(
-                  child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13)),
+                  child: Text(
+                    _error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                      fontSize: 13,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -174,10 +195,20 @@ class _AdminCodeGateScreenState extends ConsumerState<AdminCodeGateScreen> {
         const SizedBox(height: AppSpacing.sm),
         Text(
           'Only people with the one-time admin code can become admin here. Everyone else can skip — you’ll be a curator and an existing admin can promote you later in Users & roles.',
-          style: TextStyle(fontSize: 12, height: 1.4, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+          style: TextStyle(
+            fontSize: 12,
+            height: 1.4,
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.6),
+          ),
         ),
         const SizedBox(height: AppSpacing.lg),
-        PremiumButton(label: 'Verify & continue', loading: _busy, onPressed: _verify),
+        PremiumButton(
+          label: 'Verify & continue',
+          loading: _busy,
+          onPressed: _verify,
+        ),
         const SizedBox(height: AppSpacing.sm),
         SizedBox(
           width: double.infinity,

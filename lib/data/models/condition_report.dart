@@ -71,19 +71,19 @@ class ConditionReport {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'paintingId': paintingId,
-        'condition': condition,
-        'notes': notes,
-        'photoPath': photoPath,
-        'photoUrl': photoUrl,
-        'inspectedAt': inspectedAt.toIso8601String(),
-        'createdAt': createdAt.toIso8601String(),
-        'ownerUid': ownerUid,
-        'isDeleted': isDeleted,
-        'needsSync': needsSync,
-        'synced': synced,
-      };
+    'id': id,
+    'paintingId': paintingId,
+    'condition': condition,
+    'notes': notes,
+    'photoPath': photoPath,
+    'photoUrl': photoUrl,
+    'inspectedAt': inspectedAt.toIso8601String(),
+    'createdAt': createdAt.toIso8601String(),
+    'ownerUid': ownerUid,
+    'isDeleted': isDeleted,
+    'needsSync': needsSync,
+    'synced': synced,
+  };
 
   factory ConditionReport.fromJson(Map<String, dynamic> json) =>
       ConditionReport(
@@ -95,10 +95,10 @@ class ConditionReport {
         photoUrl: (json['photoUrl'] as String?) ?? '',
         inspectedAt:
             DateTime.tryParse((json['inspectedAt'] as String?) ?? '') ??
-                DateTime.now(),
+            DateTime.now(),
         createdAt:
             DateTime.tryParse((json['createdAt'] as String?) ?? '') ??
-                DateTime.now(),
+            DateTime.now(),
         ownerUid: (json['ownerUid'] as String?) ?? '',
         isDeleted: (json['isDeleted'] as bool?) ?? false,
         needsSync: (json['needsSync'] as bool?) ?? true,

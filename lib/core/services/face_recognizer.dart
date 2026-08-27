@@ -86,9 +86,7 @@ class FaceRecognizer {
     final List<dynamic>? out;
     try {
       out = await _channel
-          .invokeMethod<List<dynamic>>('embed', {
-            'input': input.toList(),
-          })
+          .invokeMethod<List<dynamic>>('embed', {'input': input.toList()})
           .timeout(timeout);
       lastError = '';
     } on TimeoutException {

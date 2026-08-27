@@ -87,7 +87,9 @@ class UsersScreen extends ConsumerWidget {
     RevokedAccount account,
   ) async {
     final messenger = ScaffoldMessenger.of(context);
-    final name = account.displayName.isEmpty ? account.uid : account.displayName;
+    final name = account.displayName.isEmpty
+        ? account.uid
+        : account.displayName;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -236,9 +238,7 @@ class UsersScreen extends ConsumerWidget {
       // the admin thinking the change went through.
       if (context.mounted) {
         messenger.showSnackBar(
-          SnackBar(
-            content: Text('Could not update role: ${_cleanError(e)}'),
-          ),
+          SnackBar(content: Text('Could not update role: ${_cleanError(e)}')),
         );
       }
       return;
@@ -356,10 +356,9 @@ class UsersScreen extends ConsumerWidget {
                           style: TextStyle(
                             fontSize: 12.5,
                             height: 1.45,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurface
-                                .withValues(alpha: 0.7),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.7),
                           ),
                         ),
                       ),
@@ -385,10 +384,9 @@ class UsersScreen extends ConsumerWidget {
                         style: TextStyle(
                           fontSize: 12.5,
                           height: 1.45,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withValues(alpha: 0.6),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
                     ),
@@ -401,15 +399,15 @@ class UsersScreen extends ConsumerWidget {
                   _UserRow(
                     user: users[i],
                     isMe: me?.uid == users[i].uid,
-                    onRoleChanged: (role) => _changeRole(context, ref, users[i], role),
+                    onRoleChanged: (role) =>
+                        _changeRole(context, ref, users[i], role),
                     onRevoke: () => _revoke(context, ref, users[i]),
                   ),
                   i,
                   key: ValueKey(users[i].uid),
                   context: context,
                 ),
-                if (i < users.length - 1)
-                  const SizedBox(height: AppSpacing.sm),
+                if (i < users.length - 1) const SizedBox(height: AppSpacing.sm),
               ],
               const SizedBox(height: AppSpacing.lg),
               _RevokedCard(
@@ -531,9 +529,8 @@ class _RoleHistoryCard extends ConsumerWidget {
     );
   }
 
-  static String _cap(String s) => s.isEmpty
-      ? 'unknown'
-      : '${s[0].toUpperCase()}${s.substring(1)}';
+  static String _cap(String s) =>
+      s.isEmpty ? 'unknown' : '${s[0].toUpperCase()}${s.substring(1)}';
 
   static String _when(DateTime at) {
     final diff = DateTime.now().difference(at);
@@ -550,10 +547,7 @@ class _RevokedCard extends ConsumerWidget {
   final ValueChanged<RevokedAccount> onRestore;
   final VoidCallback onRestoreAll;
 
-  const _RevokedCard({
-    required this.onRestore,
-    required this.onRestoreAll,
-  });
+  const _RevokedCard({required this.onRestore, required this.onRestoreAll});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -591,7 +585,9 @@ class _RevokedCard extends ConsumerWidget {
                   style: TextButton.styleFrom(
                     visualDensity: VisualDensity.compact,
                     foregroundColor: scheme.primary,
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                    ),
                   ),
                   onPressed: onRestoreAll,
                   icon: const Icon(Icons.person_add_alt_1, size: 15),
@@ -719,10 +715,7 @@ class _UserRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.sm),
-          _RoleMenu(
-            role: user.role,
-            onChanged: isMe ? null : onRoleChanged,
-          ),
+          _RoleMenu(role: user.role, onChanged: isMe ? null : onRoleChanged),
           if (!isMe) ...[
             const SizedBox(width: AppSpacing.xxs),
             IconButton(
@@ -788,7 +781,10 @@ class _RoleMenu extends StatelessWidget {
           ),
       ],
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(AppSpacing.radiusXs),
@@ -808,7 +804,11 @@ class _RoleMenu extends StatelessWidget {
             const SizedBox(width: AppSpacing.xxs),
             Text(
               role.label,
-              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: color),
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
             ),
             if (onChanged != null) ...[
               const SizedBox(width: AppSpacing.xxs),

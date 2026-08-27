@@ -51,30 +51,27 @@ void main() {
   setUp(() {
     barcodeSink = _NullSink();
 
-    messenger.setMockMethodCallHandler(
-      _methodChannel,
-      (call) async {
-        switch (call.method) {
-          // Camera permission already granted.
-          case 'state':
-            return 1;
-          // Camera starts: Android surface-producer config.
-          case 'start':
-            return <String, Object?>{
-              'textureId': 1,
-              'cameraDirection': 1, // back
-              'numberOfCameras': 1,
-              'currentTorchState': 0, // off
-              'size': {'width': 640.0, 'height': 480.0},
-              'handlesCropAndRotation': true,
-              'naturalDeviceOrientation': 'PORTRAIT_UP',
-              'sensorOrientation': 90,
-            };
-          default:
-            return null; // stop / toggleTorch / updateScanWindow / dispose…
-        }
-      },
-    );
+    messenger.setMockMethodCallHandler(_methodChannel, (call) async {
+      switch (call.method) {
+        // Camera permission already granted.
+        case 'state':
+          return 1;
+        // Camera starts: Android surface-producer config.
+        case 'start':
+          return <String, Object?>{
+            'textureId': 1,
+            'cameraDirection': 1, // back
+            'numberOfCameras': 1,
+            'currentTorchState': 0, // off
+            'size': {'width': 640.0, 'height': 480.0},
+            'handlesCropAndRotation': true,
+            'naturalDeviceOrientation': 'PORTRAIT_UP',
+            'sensorOrientation': 90,
+          };
+        default:
+          return null; // stop / toggleTorch / updateScanWindow / dispose…
+      }
+    });
     messenger.setMockStreamHandler(
       _eventChannel,
       MockStreamHandler.inline(
@@ -100,11 +97,10 @@ void main() {
     });
   });
 
-  testWidgets('a scanned ArtVault code flashes the success pulse',
-      (WidgetTester tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: QrScanScreen()),
-    );
+  testWidgets('a scanned ArtVault code flashes the success pulse', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: QrScanScreen()));
     // Let the controller attach + start the (mocked) camera.
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
@@ -163,17 +159,21 @@ void main() {
     expect(find.text('Add to vault'), findsOneWidget);
   });
 
-  testWidgets('foreign QR codes are ignored — no pulse', (WidgetTester tester) async {
-    await tester.pumpWidget(
-      const MaterialApp(home: QrScanScreen()),
-    );
+  testWidgets('foreign QR codes are ignored — no pulse', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: QrScanScreen()));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
     barcodeSink.success(<String, Object?>{
       'name': 'barcode',
       'data': <Map<String, Object?>>[
-        {'rawValue': 'https://example.com/not-artvault', 'format': 256, 'type': 8},
+        {
+          'rawValue': 'https://example.com/not-artvault',
+          'format': 256,
+          'type': 8,
+        },
       ],
     });
     await tester.pump();

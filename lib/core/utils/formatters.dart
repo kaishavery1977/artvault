@@ -24,7 +24,8 @@ abstract final class Formatters {
   ///
   /// Currencies without a single well-known glyph (AED, CHF) use the ISO code
   /// as a prefix so the value is never ambiguous.
-  static String currencySymbol(String currency) => switch (currency.toUpperCase()) {
+  static String currencySymbol(String currency) =>
+      switch (currency.toUpperCase()) {
         'USD' => '\$',
         'EUR' => '€',
         'GBP' => '£',
@@ -59,7 +60,8 @@ abstract final class Formatters {
 
   static String percent(double value) => '${(value * 100).toStringAsFixed(1)}%';
 
-  static String date(DateTime? value) => value == null ? '—' : _date.format(value);
+  static String date(DateTime? value) =>
+      value == null ? '—' : _date.format(value);
 
   static String dateTime(DateTime? value) =>
       value == null ? '—' : _dateTime.format(value);

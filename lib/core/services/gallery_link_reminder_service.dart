@@ -65,27 +65,29 @@ class GalleryLinkReminderService {
     final current = now ?? DateTime.now();
     return switch (reminder) {
       GalleryLinkReminder.expired => AppNotification(
-          id: _expiredId(uid),
-          title: 'Gallery link expired',
-          body: 'Your public gallery link expired on '
-              '${Formatters.date(expiresAt)} and no longer resolves. '
-              'Open any painting → More → Manage gallery link to publish '
-              'a new one.',
-          type: 'gallery',
-          createdAt: current,
-        ),
+        id: _expiredId(uid),
+        title: 'Gallery link expired',
+        body:
+            'Your public gallery link expired on '
+            '${Formatters.date(expiresAt)} and no longer resolves. '
+            'Open any painting → More → Manage gallery link to publish '
+            'a new one.',
+        type: 'gallery',
+        createdAt: current,
+      ),
       GalleryLinkReminder.expiring => AppNotification(
-          id: _expiringId(uid),
-          title: 'Gallery link expiring soon',
-          body: 'Your public gallery link stops working in '
-              '${_friendly(expiresAt!.difference(current))}. Open any '
-              'painting → More → Manage gallery link to extend it.',
-          type: 'gallery',
-          createdAt: current,
-        ),
+        id: _expiringId(uid),
+        title: 'Gallery link expiring soon',
+        body:
+            'Your public gallery link stops working in '
+            '${_friendly(expiresAt!.difference(current))}. Open any '
+            'painting → More → Manage gallery link to extend it.',
+        type: 'gallery',
+        createdAt: current,
+      ),
       GalleryLinkReminder.none => throw ArgumentError(
-          'No notification exists for the none reminder.',
-        ),
+        'No notification exists for the none reminder.',
+      ),
     };
   }
 

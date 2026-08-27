@@ -16,22 +16,24 @@ void main() {
   });
 
   Widget wrap() => ProviderScope(
-        overrides: [
-          ...appOverrides(introShown: true),
-          paintingsProvider.overrideWith((ref) => Stream.value(const [])),
-          artistsProvider.overrideWith((ref) => Stream.value(const [])),
-          documentsProvider.overrideWith((ref) => Stream.value(const [])),
-          storageUsageProvider.overrideWith(
-            (ref) async => const StorageUsage(
-              images: 8 * 1024 * 1024,
-              documents: 2 * 1024 * 1024,
-            ),
-          ),
-        ],
-        child: const MaterialApp(home: AboutScreen()),
-      );
+    overrides: [
+      ...appOverrides(introShown: true),
+      paintingsProvider.overrideWith((ref) => Stream.value(const [])),
+      artistsProvider.overrideWith((ref) => Stream.value(const [])),
+      documentsProvider.overrideWith((ref) => Stream.value(const [])),
+      storageUsageProvider.overrideWith(
+        (ref) async => const StorageUsage(
+          images: 8 * 1024 * 1024,
+          documents: 2 * 1024 * 1024,
+        ),
+      ),
+    ],
+    child: const MaterialApp(home: AboutScreen()),
+  );
 
-  testWidgets('About screen renders brand, version and sections', (tester) async {
+  testWidgets('About screen renders brand, version and sections', (
+    tester,
+  ) async {
     await tester.pumpWidget(wrap());
     await tester.pump(const Duration(milliseconds: 600));
 
@@ -39,7 +41,9 @@ void main() {
     expect(find.text('ArtVault'), findsWidgets);
     expect(find.text('Your Private Gallery'), findsOneWidget);
     expect(
-      find.text('Version ${AppConstants.appVersion} (${AppConstants.appBuild})'),
+      find.text(
+        'Version ${AppConstants.appVersion} (${AppConstants.appBuild})',
+      ),
       findsOneWidget,
     );
     expect(find.text('About'), findsOneWidget);
@@ -57,11 +61,23 @@ void main() {
     // The stats card's GridView is also a Scrollable, so target the page's
     // ListView explicitly when scrolling through the lazy sections.
     final list = find.byType(Scrollable).first;
-    await tester.scrollUntilVisible(find.text('Capabilities'), 200, scrollable: list);
+    await tester.scrollUntilVisible(
+      find.text('Capabilities'),
+      200,
+      scrollable: list,
+    );
     expect(find.text('Capabilities'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Celebrations'), 200, scrollable: list);
+    await tester.scrollUntilVisible(
+      find.text('Celebrations'),
+      200,
+      scrollable: list,
+    );
     expect(find.text('Celebrations'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Support'), 200, scrollable: list);
+    await tester.scrollUntilVisible(
+      find.text('Support'),
+      200,
+      scrollable: list,
+    );
     expect(find.text('Support'), findsOneWidget);
     expect(find.text('Send feedback'), findsOneWidget);
     expect(find.text('Rate ArtVault'), findsOneWidget);

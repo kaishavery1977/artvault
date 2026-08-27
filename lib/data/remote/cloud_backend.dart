@@ -1,12 +1,9 @@
+// ignore_for_file: deprecated_member_use
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 import 'package:flutter/foundation.dart'
-    show
-        ValueNotifier,
-        debugPrint,
-        kDebugMode,
-        kIsWeb;
+    show ValueNotifier, debugPrint, kDebugMode, kIsWeb;
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -73,8 +70,10 @@ class CloudBackend {
       );
       await _activateAppCheck();
     } catch (e) {
-      AppLogger.warning('Firebase init failed (continuing without it)',
-          error: e);
+      AppLogger.warning(
+        'Firebase init failed (continuing without it)',
+        error: e,
+      );
     }
 
     // Supabase (database + storage).
@@ -82,7 +81,7 @@ class CloudBackend {
       try {
         await supa.Supabase.initialize(
           url: SupabaseConfig.url,
-          anonKey: SupabaseConfig.anonKey, // ignore: deprecated_member_use
+          anonKey: SupabaseConfig.anonKey,
         );
         _ready = true;
       } catch (e) {
@@ -113,7 +112,8 @@ class CloudBackend {
   // ------------------------------------------------------------------ Auth --
   // Firebase Auth remains untouched — it's free up to 50K MAU.
 
-  Stream<User?> get authStateChanges => FirebaseAuth.instance.authStateChanges();
+  Stream<User?> get authStateChanges =>
+      FirebaseAuth.instance.authStateChanges();
 
   User? get currentUser => FirebaseAuth.instance.currentUser;
 
@@ -138,7 +138,8 @@ class CloudBackend {
   Future<User?> signInWithGoogle() async {
     try {
       await GoogleSignIn.instance.initialize(
-        clientId: '629393260589-kdn446mj2thdkk4klnvsve01ho2pirt1.apps.googleusercontent.com',
+        clientId:
+            '629393260589-kdn446mj2thdkk4klnvsve01ho2pirt1.apps.googleusercontent.com',
       );
     } catch (_) {}
     final GoogleSignInAccount googleUser;
@@ -162,8 +163,9 @@ class CloudBackend {
     required String idToken,
     required String? rawNonce,
   }) async {
-    final oauth = OAuthProvider('apple.com')
-        .credential(idToken: idToken, rawNonce: rawNonce);
+    final oauth = OAuthProvider(
+      'apple.com',
+    ).credential(idToken: idToken, rawNonce: rawNonce);
     final cred = await FirebaseAuth.instance.signInWithCredential(oauth);
     return cred.user;
   }
@@ -273,8 +275,7 @@ class CloudBackend {
         .map((list) => list.isEmpty ? null : list.first);
   }
 
-  Future<List<Map<String, dynamic>>> fetchUsers() async =>
-      fetchAll('users');
+  Future<List<Map<String, dynamic>>> fetchUsers() async => fetchAll('users');
 
   // ---------------------------------------------------------- Supabase Storage --
 
@@ -297,7 +298,9 @@ class CloudBackend {
     }
     return _trackUpload(() async {
       final bucket = _bucketForPath(path);
-      await _storage.from(bucket).uploadBinary(
+      await _storage
+          .from(bucket)
+          .uploadBinary(
             _stripBucket(path),
             bytes,
             fileOptions: supa.FileOptions(
@@ -353,11 +356,14 @@ class CloudBackend {
         '.firebaseio.com',
       ];
       final host = uri.host.toLowerCase();
-      final allowed = allowedSuffixes.any((s) => host.endsWith(s)) ||
+      final allowed =
+          allowedSuffixes.any((s) => host.endsWith(s)) ||
           host == 'mtwinlbgvuxezadbsrrl.supabase.co';
       if (!allowed) return null;
       // Block private/link-local/metadata IPs even if host was spoofed via DNS.
-      if (RegExp(r'^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|127\.|169\.254\.|::1)').hasMatch(host)) {
+      if (RegExp(
+        r'^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|127\.|169\.254\.|::1)',
+      ).hasMatch(host)) {
         return null;
       }
       final resp = await http.get(uri);

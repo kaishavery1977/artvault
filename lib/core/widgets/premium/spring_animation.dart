@@ -9,10 +9,10 @@ import 'package:flutter/material.dart';
 ///     spring: SpringType.bouncy,
 ///   )
 enum SpringType {
-  gentle,   // Slow, elegant settle
-  bouncy,   // Playful overshoot
-  snappy,   // Quick, responsive
-  heavy,    // Weighted, dramatic
+  gentle, // Slow, elegant settle
+  bouncy, // Playful overshoot
+  snappy, // Quick, responsive
+  heavy, // Weighted, dramatic
 }
 
 /// Predefined spring configurations.
@@ -94,10 +94,7 @@ class _SpringWidgetState extends State<SpringWidget>
     super.initState();
     final config = SpringConfig.forType(widget.spring);
 
-    _controller = AnimationController(
-      vsync: this,
-      duration: config.duration,
-    );
+    _controller = AnimationController(vsync: this, duration: config.duration);
 
     // Use Curves.elasticOut for spring-like overshoot
     final curve = Curves.elasticOut;
@@ -112,13 +109,12 @@ class _SpringWidgetState extends State<SpringWidget>
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: curve));
 
-    _fadeAnim = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
-    ));
+    _fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+      ),
+    );
 
     if (widget.autoPlay) {
       Future.delayed(widget.delay, () {
@@ -142,10 +138,7 @@ class _SpringWidgetState extends State<SpringWidget>
           offset: _slideAnim.value,
           child: Transform.scale(
             scale: _scaleAnim.value,
-            child: Opacity(
-              opacity: _fadeAnim.value,
-              child: widget.child,
-            ),
+            child: Opacity(opacity: _fadeAnim.value, child: widget.child),
           ),
         );
       },

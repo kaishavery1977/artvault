@@ -48,7 +48,7 @@ Future<void> main() async {
       statusBarColor: Colors.transparent,
       systemNavigationBarColor: Colors.transparent,
     ),
-  );    // Pre-detect resolution from the first view (available before runApp).
+  ); // Pre-detect resolution from the first view (available before runApp).
   // This captures install-time resolution; subsequent launches refresh it.
   final firstView = WidgetsBinding.instance.platformDispatcher.views.first;
   final mq = MediaQueryData.fromView(firstView);

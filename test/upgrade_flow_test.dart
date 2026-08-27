@@ -17,25 +17,27 @@ import 'helpers.dart';
 import 'hive_test_harness.dart';
 
 AppUser _user(AppPlan plan) => AppUser(
-      uid: 'u1',
-      email: 'a@b.com',
-      displayName: 'Tester',
-      role: AppRole.admin,
-      plan: plan,
-      createdAt: DateTime(2026),
-      lastLogin: DateTime(2026),
-    );
+  uid: 'u1',
+  email: 'a@b.com',
+  displayName: 'Tester',
+  role: AppRole.admin,
+  plan: plan,
+  createdAt: DateTime(2026),
+  lastLogin: DateTime(2026),
+);
 
 Widget _upgradeApp() {
   return ProviderScope(
     overrides: [
       ...appOverrides(introShown: true),
-      authProvider.overrideWith((ref) => FakeAuthController(
-            AuthState(
-              status: AuthStatus.authenticated,
-              user: _user(AppPlan.free),
-            ),
-          )),
+      authProvider.overrideWith(
+        (ref) => FakeAuthController(
+          AuthState(
+            status: AuthStatus.authenticated,
+            user: _user(AppPlan.free),
+          ),
+        ),
+      ),
     ],
     child: const MaterialApp(home: UpgradeScreen()),
   );
@@ -69,8 +71,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
   }
 
-  testWidgets('no payment method: tapping Unlock Pro does NOT grant Pro',
-      (tester) async {
+  testWidgets('no payment method: tapping Unlock Pro does NOT grant Pro', (
+    tester,
+  ) async {
     await tester.pumpWidget(_upgradeApp());
     // Let the store-availability probe settle (store is unavailable in
     // tests, Razorpay is not configured → preview path).
@@ -118,23 +121,28 @@ void main() {
     expect(container.read(authProvider).user?.plan, AppPlan.pro);
   });
 
-  testWidgets('Users screen shows an offline banner when cloud is down',
-      (tester) async {
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        ...appOverrides(introShown: true),
-        authProvider.overrideWith((ref) => FakeAuthController(
+  testWidgets('Users screen shows an offline banner when cloud is down', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          ...appOverrides(introShown: true),
+          authProvider.overrideWith(
+            (ref) => FakeAuthController(
               AuthState(
                 status: AuthStatus.authenticated,
                 user: _user(AppPlan.free),
               ),
-            )),
-        usersProvider.overrideWith(
-          (ref) => Stream.value([_user(AppPlan.free)]),
-        ),
-      ],
-      child: const MaterialApp(home: UsersScreen()),
-    ));
+            ),
+          ),
+          usersProvider.overrideWith(
+            (ref) => Stream.value([_user(AppPlan.free)]),
+          ),
+        ],
+        child: const MaterialApp(home: UsersScreen()),
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 

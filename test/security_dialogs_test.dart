@@ -149,12 +149,13 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('Cancel pops false and survives the exit transition',
-        (tester) async {
+    testWidgets('Cancel pops false and survives the exit transition', (
+      tester,
+    ) async {
       bool? popped;
-      await tester.pumpWidget(MaterialApp(
-        home: _ChangePasswordHost(onResult: (r) => popped = r),
-      ));
+      await tester.pumpWidget(
+        MaterialApp(home: _ChangePasswordHost(onResult: (r) => popped = r)),
+      );
       await tester.tap(find.text('open'));
       await settleOpen(tester);
 
@@ -168,42 +169,49 @@ void main() {
   });
 
   group('ResetPasswordDialog', () {
-    testWidgets('Send pops the trimmed email and survives the exit transition',
-        (tester) async {
-      String? popped;
-      await tester.pumpWidget(MaterialApp(
-        home: _ResetPasswordHost(
-          initial: 'old@test.dev',
-          onResult: (r) => popped = r,
-        ),
-      ));
-      await tester.tap(find.text('open'));
-      await settleOpen(tester);
+    testWidgets(
+      'Send pops the trimmed email and survives the exit transition',
+      (tester) async {
+        String? popped;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: _ResetPasswordHost(
+              initial: 'old@test.dev',
+              onResult: (r) => popped = r,
+            ),
+          ),
+        );
+        await tester.tap(find.text('open'));
+        await settleOpen(tester);
 
-      // Pre-filled with the passed-in email.
-      expect(
-        tester.widget<TextField>(find.byType(TextField)).controller?.text,
-        'old@test.dev',
-      );
+        // Pre-filled with the passed-in email.
+        expect(
+          tester.widget<TextField>(find.byType(TextField)).controller?.text,
+          'old@test.dev',
+        );
 
-      await tester.enterText(find.byType(TextField), '  new@test.dev  ');
-      await tester.tap(find.text('Send reset link'));
-      await settleClose(tester);
+        await tester.enterText(find.byType(TextField), '  new@test.dev  ');
+        await tester.tap(find.text('Send reset link'));
+        await settleClose(tester);
 
-      expect(popped, 'new@test.dev');
-      expect(find.byType(TextField), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
+        expect(popped, 'new@test.dev');
+        expect(find.byType(TextField), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-    testWidgets('Cancel pops null and survives the exit transition',
-        (tester) async {
+    testWidgets('Cancel pops null and survives the exit transition', (
+      tester,
+    ) async {
       String? popped = 'sentinel';
-      await tester.pumpWidget(MaterialApp(
-        home: _ResetPasswordHost(
-          initial: 'old@test.dev',
-          onResult: (r) => popped = r,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: _ResetPasswordHost(
+            initial: 'old@test.dev',
+            onResult: (r) => popped = r,
+          ),
         ),
-      ));
+      );
       await tester.tap(find.text('open'));
       await settleOpen(tester);
 

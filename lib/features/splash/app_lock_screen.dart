@@ -78,8 +78,6 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen>
   bool get _fingerprintMethod => _fingerprintOn && _fingerprintAvailable;
   bool get _faceMethod => _faceOn && _faceAvailable;
 
-
-
   Future<void> _setup() async {
     final fpOn = await AuthRepository.instance.biometricEnabled;
     final fpAvail = await BiometricService.instance.hasFingerprint;
@@ -275,7 +273,8 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen>
       } else {
         setState(() {
           _lockoutRemaining = remaining;
-          _status = 'Too many attempts — try again in ${_formatLock(remaining)}';
+          _status =
+              'Too many attempts — try again in ${_formatLock(remaining)}';
         });
       }
     });
@@ -336,44 +335,54 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 96,
-                      height: 96,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [AppColors.secondary, AppColors.accent],
-                        ),
-                        borderRadius: BorderRadius.circular(28),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.secondary.withValues(alpha: 0.35),
-                            blurRadius: 28,
-                            offset: const Offset(0, 10),
+                          width: 96,
+                          height: 96,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [AppColors.secondary, AppColors.accent],
+                            ),
+                            borderRadius: BorderRadius.circular(28),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.secondary.withValues(
+                                  alpha: 0.35,
+                                ),
+                                blurRadius: 28,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.lock_outline,
-                        size: 44,
-                        color: Colors.white,
-                      ),
-                    ).animate(
-                      onPlay: (c) => MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
-                    ).scale(
-                      begin: const Offset(0.6, 0.6),
-                      curve: Curves.easeOutBack,
-                    ),
+                          child: const Icon(
+                            Icons.lock_outline,
+                            size: 44,
+                            color: Colors.white,
+                          ),
+                        )
+                        .animate(
+                          onPlay: (c) => MediaQuery.disableAnimationsOf(context)
+                              ? c.stop()
+                              : null,
+                        )
+                        .scale(
+                          begin: const Offset(0.6, 0.6),
+                          curve: Curves.easeOutBack,
+                        ),
                     const SizedBox(height: AppSpacing.xl),
                     Text(
-                      'ArtVault is locked',
-                      style: AppTheme.display(
-                        context,
-                        size: 26,
-                      ).copyWith(color: fg),
-                    ).animate(
-                      onPlay: (c) => MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
-                    ).fadeIn(duration: 400.ms, delay: 150.ms),
+                          'ArtVault is locked',
+                          style: AppTheme.display(
+                            context,
+                            size: 26,
+                          ).copyWith(color: fg),
+                        )
+                        .animate(
+                          onPlay: (c) => MediaQuery.disableAnimationsOf(context)
+                              ? c.stop()
+                              : null,
+                        )
+                        .fadeIn(duration: 400.ms, delay: 150.ms),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       showPinPad
@@ -389,7 +398,8 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen>
                           length: AppConstants.kPasscodeLength,
                           entered: _pin.length,
                           error: _statusError,
-                          enabled: !_checking && _lockoutRemaining == Duration.zero,
+                          enabled:
+                              !_checking && _lockoutRemaining == Duration.zero,
                           onDigit: _onDigit,
                           onBackspace: _onBackspace,
                         ),

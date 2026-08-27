@@ -28,7 +28,8 @@ import '../../core/widgets/motion.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
-import '../../features/documents/documents_screen.dart' show RenameDocumentDialog;
+import '../../features/documents/documents_screen.dart'
+    show RenameDocumentDialog;
 import 'painting_lightbox_screen.dart';
 import '../../data/models/art_document.dart';
 import '../../data/models/condition_report.dart';
@@ -175,9 +176,9 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
     final related = painting == null
         ? const <Painting>[]
         : PaintingRepository.instance
-            .findSimilar(painting)
-            .map((m) => m.painting)
-            .toList();
+              .findSimilar(painting)
+              .map((m) => m.painting)
+              .toList();
 
     if (painting == null) {
       return Scaffold(
@@ -312,8 +313,7 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
                         duration: const Duration(milliseconds: 2000),
                         child: PageView.builder(
                           itemCount: images.length,
-                          onPageChanged: (i) =>
-                              setState(() => _imageIndex = i),
+                          onPageChanged: (i) => setState(() => _imageIndex = i),
                           itemBuilder: (context, i) => InteractiveViewer(
                             minScale: 0.8,
                             maxScale: 4,
@@ -384,7 +384,10 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
                         spacing: AppSpacing.xs,
                         runSpacing: AppSpacing.xs,
                         children: [
-                          for (final t in {...painting.tags, ...painting.aiTags})
+                          for (final t in {
+                            ...painting.tags,
+                            ...painting.aiTags,
+                          })
                             TagChip(label: t),
                         ],
                       ),
@@ -461,9 +464,8 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
   Future<void> _publicGallery(Painting painting) async {
     final result = await showDialog<_PublicGalleryResult>(
       context: context,
-      builder: (context) => _PublicGalleryDialog(
-        included: painting.inPublicGallery,
-      ),
+      builder: (context) =>
+          _PublicGalleryDialog(included: painting.inPublicGallery),
     );
     if (result == null || !mounted) return;
 
@@ -495,7 +497,9 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
         curated,
         ownerUid: uid,
         // Pro only: stamp the owner's name + arm view analytics.
-        watermark: isPro ? (ref.read(authProvider).user?.displayName ?? '') : '',
+        watermark: isPro
+            ? (ref.read(authProvider).user?.displayName ?? '')
+            : '',
       );
       if (!mounted) return;
       if (url != null && url.isNotEmpty) {
@@ -508,15 +512,17 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
             context,
             id: 'gallery-published',
             title: 'Gallery published!',
-            message: 'Your curated page is live. Anyone with the link can '
+            message:
+                'Your curated page is live. Anyone with the link can '
                 'view it until you revoke or expire it.',
             icon: Icons.public,
             iconLabel: 'Link shared',
           );
         }
       } else {
-        final file = await PublicGalleryService.instance
-            .writeLocalHtml(curated);
+        final file = await PublicGalleryService.instance.writeLocalHtml(
+          curated,
+        );
         if (!mounted) return;
         await ShareService.instance.shareFile(
           file.path,
@@ -681,7 +687,13 @@ class _TitleBlock extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(painting.title, style: AppTheme.display(context, size: context.adaptiveFont(26))),
+              Text(
+                painting.title,
+                style: AppTheme.display(
+                  context,
+                  size: context.adaptiveFont(26),
+                ),
+              ),
               const SizedBox(height: AppSpacing.xs),
               Text(
                 painting.artistName,
@@ -1123,10 +1135,7 @@ class _DocumentsSection extends ConsumerWidget {
     _ => Icons.description_outlined,
   };
 
-  static Future<String?> _promptName(
-    BuildContext context,
-    String current,
-  ) {
+  static Future<String?> _promptName(BuildContext context, String current) {
     // Reuses the shared RenameDocumentDialog, which owns and disposes its
     // TextEditingController; the copy that lived here created a controller
     // and never disposed it (a leak).
@@ -1397,10 +1406,7 @@ class _ConditionSection extends ConsumerWidget {
   final String paintingId;
   final bool canEdit;
 
-  const _ConditionSection({
-    required this.paintingId,
-    required this.canEdit,
-  });
+  const _ConditionSection({required this.paintingId, required this.canEdit});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1520,9 +1526,9 @@ class _ConditionSection extends ConsumerWidget {
         photo: draft.photo,
       );
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Condition report saved')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Condition report saved')));
     } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1534,10 +1540,8 @@ class _ConditionSection extends ConsumerWidget {
   Future<void> _showReport(BuildContext context, ConditionReport report) {
     return showDialog<void>(
       context: context,
-      builder: (context) => _ConditionReportView(
-        report: report,
-        canDelete: canEdit,
-      ),
+      builder: (context) =>
+          _ConditionReportView(report: report, canDelete: canEdit),
     );
   }
 
@@ -1616,12 +1620,12 @@ class _ConditionChip extends StatelessWidget {
   }
 
   static Color _colorFor(String condition) => switch (condition) {
-        'Excellent' => const Color(0xFF2E9E5B),
-        'Good' => const Color(0xFF3E8E41),
-        'Fair' => const Color(0xFFE0A100),
-        'Poor' => const Color(0xFFE67E22),
-        _ => const Color(0xFFD64550),
-      };
+    'Excellent' => const Color(0xFF2E9E5B),
+    'Good' => const Color(0xFF3E8E41),
+    'Fair' => const Color(0xFFE0A100),
+    'Poor' => const Color(0xFFE67E22),
+    _ => const Color(0xFFD64550),
+  };
 }
 
 class _ConditionReportView extends StatelessWidget {
@@ -1665,10 +1669,7 @@ class _ConditionReportView extends StatelessWidget {
               ),
             if (hasPhoto) const SizedBox(height: AppSpacing.md),
             if (report.notes.isNotEmpty)
-              Text(
-                report.notes,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              Text(report.notes, style: Theme.of(context).textTheme.bodyMedium),
           ],
         ),
       ),
@@ -1730,8 +1731,7 @@ class _ManageGalleryLinkDialogState
   }
 
   Future<void> _load() async {
-    final status =
-        await PublicGalleryService.instance.status(widget.ownerUid);
+    final status = await PublicGalleryService.instance.status(widget.ownerUid);
     if (!mounted) return;
     setState(() {
       _status = status;
@@ -1755,7 +1755,9 @@ class _ManageGalleryLinkDialogState
         curated,
         ownerUid: widget.ownerUid,
         // Pro only: stamp the owner's name + arm view analytics.
-        watermark: isPro && _watermark ? (ref.read(authProvider).user?.displayName ?? '') : '',
+        watermark: isPro && _watermark
+            ? (ref.read(authProvider).user?.displayName ?? '')
+            : '',
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -1781,7 +1783,8 @@ class _ManageGalleryLinkDialogState
         context,
         id: 'gallery-published',
         title: 'Gallery published!',
-        message: 'Your curated page is live. Anyone with the link can '
+        message:
+            'Your curated page is live. Anyone with the link can '
             'view it until you revoke or expire it.',
         icon: Icons.public,
         iconLabel: 'Link shared',
@@ -1799,9 +1802,7 @@ class _ManageGalleryLinkDialogState
         content: const Text('Gallery link copied'),
         backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -1850,17 +1851,19 @@ class _ManageGalleryLinkDialogState
     await PublicGalleryService.instance.revoke(widget.ownerUid);
     await _load();
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Gallery link revoked')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Gallery link revoked')));
   }
 
   static String _describeDuration(Duration d) {
     if (d.inDays >= 365) return '1 year';
     if (d.inDays >= 30) return '${d.inDays ~/ 30} months';
     if (d.inDays >= 7) return '${d.inDays ~/ 7} weeks';
-    return '${d.inDays} day${d.inDays == 1 ? '' : 's'}'
-        .replaceFirst('1 days', '1 day');
+    return '${d.inDays} day${d.inDays == 1 ? '' : 's'}'.replaceFirst(
+      '1 days',
+      '1 day',
+    );
   }
 
   /// The preset matching the current expiry (nearest within 2h), so the
@@ -1932,11 +1935,13 @@ class _ManageGalleryLinkDialogState
     final now = DateTime.now();
     // A link whose expiry has passed is still `active` in its document, but
     // the storage rules stop serving it — surface it as expired.
-    final expired = status.active &&
+    final expired =
+        status.active &&
         status.expiresAt != null &&
         !status.expiresAt!.isAfter(now);
     final active = status.active && !expired && status.url != null;
-    final expiringSoon = active &&
+    final expiringSoon =
+        active &&
         status.expiresAt != null &&
         status.expiresAt!.difference(now) <= const Duration(days: 7);
     return Column(
@@ -2010,9 +2015,9 @@ class _ManageGalleryLinkDialogState
                 onPressed: _busy
                     ? null
                     : () => ShareService.instance.shareText(
-                          'My ArtVault gallery: ${status.url}',
-                          subject: 'My ArtVault gallery',
-                        ),
+                        'My ArtVault gallery: ${status.url}',
+                        subject: 'My ArtVault gallery',
+                      ),
                 icon: const Icon(Icons.share_outlined, size: 16),
                 label: const Text('Share'),
               ),
@@ -2022,11 +2027,7 @@ class _ManageGalleryLinkDialogState
             const SizedBox(height: AppSpacing.md),
             Row(
               children: [
-                Icon(
-                  Icons.hourglass_top,
-                  color: AppColors.warning,
-                  size: 18,
-                ),
+                Icon(Icons.hourglass_top, color: AppColors.warning, size: 18),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -2061,8 +2062,9 @@ class _ManageGalleryLinkDialogState
             children: [
               Text(
                 'Expiry',
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(fontWeight: FontWeight.w600),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(width: AppSpacing.md),
               DropdownButton<Duration?>(
@@ -2135,9 +2137,7 @@ class _ManageGalleryLinkDialogState
           const SizedBox(height: AppSpacing.md),
           OutlinedButton.icon(
             onPressed: _busy ? null : _revoke,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.error,
-            ),
+            style: OutlinedButton.styleFrom(foregroundColor: AppColors.error),
             icon: const Icon(Icons.link_off, size: 18),
             label: const Text('Revoke link'),
           ),

@@ -45,10 +45,7 @@ class AboutScreen extends ConsumerWidget {
     final paintings = active.length;
     final artists = ref.watch(artistsProvider).valueOrNull?.length ?? 0;
     final documents = ref.watch(documentsProvider).valueOrNull?.length ?? 0;
-    final storedImages = active.fold<int>(
-      0,
-      (sum, p) => sum + p.images.length,
-    );
+    final storedImages = active.fold<int>(0, (sum, p) => sum + p.images.length);
     final vaultBytes = ref.watch(storageUsageProvider).valueOrNull?.total ?? 0;
     final plan = ref.watch(authProvider).user?.plan ?? AppPlan.free;
 
@@ -58,31 +55,41 @@ class AboutScreen extends ConsumerWidget {
         // HERO — logo tile, shimmering wordmark, tagline, version pill
         // ------------------------------------------------------------------
         Center(
-          child: Container(
-            width: 88,
-            height: 88,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [scheme.primary, scheme.primary.withValues(alpha: 0.55)],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: scheme.primary.withValues(alpha: isDark ? 0.35 : 0.25),
-                  blurRadius: 28,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: const Icon(Icons.museum, size: 44, color: Colors.white),
-          )
-              .animate(key: const ValueKey('about-logo'))
-              .scale(
-                begin: const Offset(0.6, 0.6),
-                curve: Curves.easeOutBack,
-              ),
+          child:
+              Container(
+                    width: 88,
+                    height: 88,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          scheme.primary,
+                          scheme.primary.withValues(alpha: 0.55),
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: scheme.primary.withValues(
+                            alpha: isDark ? 0.35 : 0.25,
+                          ),
+                          blurRadius: 28,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.museum,
+                      size: 44,
+                      color: Colors.white,
+                    ),
+                  )
+                  .animate(key: const ValueKey('about-logo'))
+                  .scale(
+                    begin: const Offset(0.6, 0.6),
+                    curve: Curves.easeOutBack,
+                  ),
         ),
         const SizedBox(height: AppSpacing.md),
         Center(
@@ -108,9 +115,7 @@ class AboutScreen extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
-              border: Border.all(
-                color: scheme.primary.withValues(alpha: 0.3),
-              ),
+              border: Border.all(color: scheme.primary.withValues(alpha: 0.3)),
               color: scheme.primary.withValues(alpha: 0.07),
             ),
             child: Text(
@@ -216,7 +221,11 @@ class AboutScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _cardTitle(context, Icons.workspace_premium_outlined, 'Capabilities'),
+              _cardTitle(
+                context,
+                Icons.workspace_premium_outlined,
+                'Capabilities',
+              ),
               const SizedBox(height: AppSpacing.md),
               Wrap(
                 spacing: AppSpacing.xs,
@@ -241,7 +250,11 @@ class AboutScreen extends ConsumerWidget {
               _infoRow(context, 'Version', '$appVersion ($appBuild)'),
               _infoRow(context, 'Engine', engineLabel),
               _infoRow(context, 'Platforms', 'Android · iOS'),
-              _infoRow(context, 'Data model', 'Offline-first · Firebase optional'),
+              _infoRow(
+                context,
+                'Data model',
+                'Offline-first · Firebase optional',
+              ),
               _infoRow(context, 'Plan', plan.isPro ? 'Pro' : 'Free'),
             ],
           ),
@@ -267,7 +280,8 @@ class AboutScreen extends ConsumerWidget {
               _link(
                 context,
                 'Send feedback',
-                subtitle: 'Questions, suggestions or issues — email the developer',
+                subtitle:
+                    'Questions, suggestions or issues — email the developer',
                 icon: Icons.mail_outline,
                 onTap: () => _launch(
                   'mailto:${AppConstants.supportEmail}'
@@ -311,23 +325,20 @@ class AboutScreen extends ConsumerWidget {
               _link(
                 context,
                 'Privacy policy',
-                onTap: () => _launch(
-                  'https://artvault-d69d0.web.app/privacy.html',
-                ),
+                onTap: () =>
+                    _launch('https://artvault-d69d0.web.app/privacy.html'),
               ),
               _link(
                 context,
                 'Terms of service',
-                onTap: () => _launch(
-                  'https://artvault-d69d0.web.app/terms.html',
-                ),
+                onTap: () =>
+                    _launch('https://artvault-d69d0.web.app/terms.html'),
               ),
               _link(
                 context,
                 'Licences',
-                onTap: () => _launch(
-                  'https://artvault-d69d0.web.app/licenses.html',
-                ),
+                onTap: () =>
+                    _launch('https://artvault-d69d0.web.app/licenses.html'),
               ),
             ],
           ),
@@ -342,9 +353,7 @@ class AboutScreen extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                color: scheme.primary.withValues(alpha: 0.35),
-              ),
+              border: Border.all(color: scheme.primary.withValues(alpha: 0.35)),
               color: scheme.primary.withValues(alpha: 0.08),
             ),
             child: Row(
@@ -399,19 +408,18 @@ class AboutScreen extends ConsumerWidget {
             left: 0,
             right: 0,
             // In landscape, shrink the aurora since there's less vertical space.
-            height: MediaQuery.sizeOf(context).width > MediaQuery.sizeOf(context).height ? 200 : 340,
+            height:
+                MediaQuery.sizeOf(context).width >
+                    MediaQuery.sizeOf(context).height
+                ? 200
+                : 340,
             child: const IgnorePointer(child: AuroraBackground()),
           ),
-          ListView(
-            padding: AppSpacing.screenPadding,
-            children: children,
-          ),
+          ListView(padding: AppSpacing.screenPadding, children: children),
           // Museum-style vignette: softly darkens the edges and casts a warm
           // gallery-light glow in the corners, like light falling on art.
           Positioned.fill(
-            child: const IgnorePointer(
-              child: FilmVignette(strength: 0.14),
-            ),
+            child: const IgnorePointer(child: FilmVignette(strength: 0.14)),
           ),
         ],
       ),
@@ -424,21 +432,26 @@ class AboutScreen extends ConsumerWidget {
       children: [
         Icon(icon, size: 18, color: scheme.primary),
         const SizedBox(width: AppSpacing.xs),
-        Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+        Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+        ),
       ],
     );
   }
 
-  static Widget _featureChip(BuildContext context, IconData icon, String label) {
+  static Widget _featureChip(
+    BuildContext context,
+    IconData icon,
+    String label,
+  ) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
         color: scheme.primary.withValues(alpha: 0.06),
-        border: Border.all(
-          color: scheme.primary.withValues(alpha: 0.16),
-        ),
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.16)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -594,11 +607,7 @@ class _CelebrationsCard extends ConsumerWidget {
           else
             for (final entry in history) ...[
               _CelebrationRow(entry: entry),
-              const Divider(
-                height: 1,
-                indent: 16,
-                color: Color(0x0D000000),
-              ),
+              const Divider(height: 1, indent: 16, color: Color(0x0D000000)),
             ],
         ],
       ),

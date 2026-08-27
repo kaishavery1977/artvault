@@ -71,30 +71,36 @@ class ProBillingService {
       if (!completer.isCompleted) completer.complete(outcome);
     }
 
-    sub = _iap.purchaseStream.listen((details) {
-      for (final purchase in details) {
-        if (purchase.productID != proProductId) continue;
-        switch (purchase.status) {
-          case PurchaseStatus.purchased:
-          case PurchaseStatus.restored:
-            _iap.completePurchase(purchase);
-            settle(ProPurchaseOutcome(
-              ProPurchaseResult.purchased,
-              // The token the Play Developer API validates (purchase token
-              // on Android; the app receipt on iOS).
-              purchaseToken: purchase.verificationData.serverVerificationData,
-            ));
-          case PurchaseStatus.pending:
-            // A pending payment must NOT cancel the attempt — the store may
-            // still confirm it later; keep listening.
-            break;
-          case PurchaseStatus.error:
-            settle(const ProPurchaseOutcome(ProPurchaseResult.error));
-          case PurchaseStatus.canceled:
-            settle(null);
+    sub = _iap.purchaseStream.listen(
+      (details) {
+        for (final purchase in details) {
+          if (purchase.productID != proProductId) continue;
+          switch (purchase.status) {
+            case PurchaseStatus.purchased:
+            case PurchaseStatus.restored:
+              _iap.completePurchase(purchase);
+              settle(
+                ProPurchaseOutcome(
+                  ProPurchaseResult.purchased,
+                  // The token the Play Developer API validates (purchase token
+                  // on Android; the app receipt on iOS).
+                  purchaseToken:
+                      purchase.verificationData.serverVerificationData,
+                ),
+              );
+            case PurchaseStatus.pending:
+              // A pending payment must NOT cancel the attempt — the store may
+              // still confirm it later; keep listening.
+              break;
+            case PurchaseStatus.error:
+              settle(const ProPurchaseOutcome(ProPurchaseResult.error));
+            case PurchaseStatus.canceled:
+              settle(null);
+          }
         }
-      }
-    }, onError: (_) => settle(const ProPurchaseOutcome(ProPurchaseResult.error)));
+      },
+      onError: (_) => settle(const ProPurchaseOutcome(ProPurchaseResult.error)),
+    );
 
     try {
       final param = PurchaseParam(

@@ -33,31 +33,30 @@ class _FakePathProvider extends PathProviderPlatform {
 final Map<String, String> _secureStore = <String, String>{};
 
 void _stubSecureStoragePersist() {
-  const channel =
-      MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+  const channel = MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(channel, (call) async {
-    if (call.method == 'read') {
-      return _secureStore[call.arguments['key'] as String];
-    }
-    if (call.method == 'write') {
-      _secureStore[call.arguments['key'] as String] =
-          call.arguments['value'] as String;
-      return null;
-    }
-    if (call.method == 'delete') {
-      _secureStore.remove(call.arguments['key'] as String);
-      return null;
-    }
-    if (call.method == 'deleteAll') {
-      _secureStore.clear();
-      return null;
-    }
-    if (call.method == 'readAll') {
-      return Map<String, String>.from(_secureStore);
-    }
-    return null;
-  });
+        if (call.method == 'read') {
+          return _secureStore[call.arguments['key'] as String];
+        }
+        if (call.method == 'write') {
+          _secureStore[call.arguments['key'] as String] =
+              call.arguments['value'] as String;
+          return null;
+        }
+        if (call.method == 'delete') {
+          _secureStore.remove(call.arguments['key'] as String);
+          return null;
+        }
+        if (call.method == 'deleteAll') {
+          _secureStore.clear();
+          return null;
+        }
+        if (call.method == 'readAll') {
+          return Map<String, String>.from(_secureStore);
+        }
+        return null;
+      });
 }
 
 /// Idempotent — call once per test file (e.g. in `setUpAll`).

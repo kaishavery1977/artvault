@@ -31,8 +31,32 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Analyze
-        run: flutter analyze
+      - name: Analyze (fatal on infos)
+        run: flutter analyze --fatal-infos --fatal-warnings
 
-      - name: Test
-        run: flutter test
+      - name: Format check
+        run: dart format --set-exit-if-changed .
+
+      - name: Test with coverage
+        run: flutter test --coverage
+
+      - name: Coverage gate (>40% line)
+        uses: VeryGoodOpenSource/very_good_coverage@v3
+        with:
+          path: ./coverage/lcov.info
+          min_coverage: 40
+          exclude: "**/*.g.dart **/generated/**"
+
+      - name: Functions audit (high only)
+        working-directory: functions
+        run: |
+          npm ci
+          npm audit --audit-level=high
+
+      - name: Supabase RLS lint (if CLI present)
+        run: |
+          if command -v supabase >/dev/null 2>&1; then
+            supabase db lint --linked || echo "supabase lint skipped (not linked)"
+          else
+            echo "supabase CLI not installed — RLS lint skipped"
+          fi

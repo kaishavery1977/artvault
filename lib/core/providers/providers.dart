@@ -195,7 +195,8 @@ class AuthController extends StateNotifier<AuthState> {
           await AuthRepository.instance.recoverProfilePhoto();
           break;
         } catch (_) {
-          if (attempt < 2) await Future<void>.delayed(const Duration(seconds: 2));
+          if (attempt < 2)
+            await Future<void>.delayed(const Duration(seconds: 2));
         }
       }
       // The avatar may have swapped from a network URL to a fresh local
@@ -221,12 +222,14 @@ class AuthController extends StateNotifier<AuthState> {
     _profileSub = null;
     if (user.uid.isEmpty) return;
     try {
-      _profileSub = CloudBackend.instance.watchDoc('users', user.uid).listen(
-        _applyProfileSnapshot,
-        onError: (e, _) {
-          debugPrint('watchMyProfile onError: $e');
-        },
-      );
+      _profileSub = CloudBackend.instance
+          .watchDoc('users', user.uid)
+          .listen(
+            _applyProfileSnapshot,
+            onError: (e, _) {
+              debugPrint('watchMyProfile onError: $e');
+            },
+          );
     } catch (e) {
       debugPrint('watchMyProfile failed: $e');
       _profileSub = null;
@@ -517,15 +520,14 @@ class RoleAuditEntry {
     required this.at,
   });
 
-  factory RoleAuditEntry.fromJson(Map<String, dynamic> json) =>
-      RoleAuditEntry(
-        uid: (json['uid'] as String?) ?? '',
-        byUid: (json['byUid'] as String?) ?? '',
-        byEmail: (json['byEmail'] as String?) ?? '',
-        oldRole: (json['oldRole'] as String?) ?? 'unknown',
-        newRole: (json['newRole'] as String?) ?? 'unknown',
-        at: DateTime.tryParse((json['at'] as String?) ?? '') ?? DateTime.now(),
-      );
+  factory RoleAuditEntry.fromJson(Map<String, dynamic> json) => RoleAuditEntry(
+    uid: (json['uid'] as String?) ?? '',
+    byUid: (json['byUid'] as String?) ?? '',
+    byEmail: (json['byEmail'] as String?) ?? '',
+    oldRole: (json['oldRole'] as String?) ?? 'unknown',
+    newRole: (json['newRole'] as String?) ?? 'unknown',
+    at: DateTime.tryParse((json['at'] as String?) ?? '') ?? DateTime.now(),
+  );
 }
 
 /// Role-change audit trail (admin only), newest first.
@@ -538,12 +540,13 @@ final roleAuditProvider = StreamProvider<List<RoleAuditEntry>>((ref) async* {
     yield const [];
     return;
   }
-  yield* cloud.watchCollection('role_audit').map(
-    (list) => list
-        .map(RoleAuditEntry.fromJson)
-        .toList()
-        ..sort((a, b) => b.at.compareTo(a.at)),
-  );
+  yield* cloud
+      .watchCollection('role_audit')
+      .map(
+        (list) =>
+            list.map(RoleAuditEntry.fromJson).toList()
+              ..sort((a, b) => b.at.compareTo(a.at)),
+      );
 });
 
 /// A revoked account marker (`revoked/{uid}`), kept so an admin can see who
@@ -565,17 +568,16 @@ class RevokedAccount {
     required this.byEmail,
   });
 
-  factory RevokedAccount.fromJson(Map<String, dynamic> json) =>
-      RevokedAccount(
-        uid: (json['uid'] as String?) ?? '',
-        email: (json['email'] as String?) ?? '',
-        displayName: (json['displayName'] as String?) ?? 'Revoked user',
-        role: (json['role'] as String?) ?? 'unknown',
-        revokedAt:
-            DateTime.tryParse((json['revokedAt'] as String?) ?? '') ??
-            DateTime.now(),
-        byEmail: (json['byEmail'] as String?) ?? '',
-      );
+  factory RevokedAccount.fromJson(Map<String, dynamic> json) => RevokedAccount(
+    uid: (json['uid'] as String?) ?? '',
+    email: (json['email'] as String?) ?? '',
+    displayName: (json['displayName'] as String?) ?? 'Revoked user',
+    role: (json['role'] as String?) ?? 'unknown',
+    revokedAt:
+        DateTime.tryParse((json['revokedAt'] as String?) ?? '') ??
+        DateTime.now(),
+    byEmail: (json['byEmail'] as String?) ?? '',
+  );
 }
 
 /// Revoked accounts (admin only), newest first — drives the Restore list.
@@ -585,12 +587,13 @@ final revokedProvider = StreamProvider<List<RevokedAccount>>((ref) async* {
     yield const [];
     return;
   }
-  yield* cloud.watchCollection('revoked').map(
-    (list) => list
-        .map(RevokedAccount.fromJson)
-        .toList()
-        ..sort((a, b) => b.revokedAt.compareTo(a.revokedAt)),
-  );
+  yield* cloud
+      .watchCollection('revoked')
+      .map(
+        (list) =>
+            list.map(RevokedAccount.fromJson).toList()
+              ..sort((a, b) => b.revokedAt.compareTo(a.revokedAt)),
+      );
 });
 
 /// On-disk storage usage (bytes) broken down by category.
@@ -689,8 +692,9 @@ class CloudSyncHealthNotifier extends Notifier<int> {
 /// [CloudBackend.failedUploadStreak]). The home screen shows a subtle
 /// "cloud sync unavailable" hint once it passes the threshold, and a
 /// successful upload clears it.
-final cloudSyncHealthProvider =
-    NotifierProvider<CloudSyncHealthNotifier, int>(CloudSyncHealthNotifier.new);
+final cloudSyncHealthProvider = NotifierProvider<CloudSyncHealthNotifier, int>(
+  CloudSyncHealthNotifier.new,
+);
 
 /// Whether the user dismissed the "cloud sync unavailable" hint for this
 /// session. Reset when the failed-upload streak drops back to 0 (a sync
@@ -716,20 +720,20 @@ final documentsForPaintingProvider = Provider.family<List<ArtDocument>, String>(
 );
 
 /// Condition reports for every painting.
-final conditionReportsProvider =
-    StreamProvider<List<ConditionReport>>((ref) {
+final conditionReportsProvider = StreamProvider<List<ConditionReport>>((ref) {
   return ConditionReportRepository.instance.watchReports();
 });
 
 /// Condition reports for one painting (newest first).
 final conditionReportsForPaintingProvider =
     Provider.family<List<ConditionReport>, String>((ref, id) {
-  final reports = ref.watch(conditionReportsProvider).valueOrNull ?? const [];
-  final list =
-      reports.where((r) => r.paintingId == id && !r.isDeleted).toList()
-        ..sort((a, b) => b.inspectedAt.compareTo(a.inspectedAt));
-  return list;
-});
+      final reports =
+          ref.watch(conditionReportsProvider).valueOrNull ?? const [];
+      final list =
+          reports.where((r) => r.paintingId == id && !r.isDeleted).toList()
+            ..sort((a, b) => b.inspectedAt.compareTo(a.inspectedAt));
+      return list;
+    });
 
 /// Live computed stats for the dashboard.
 class VaultStats {

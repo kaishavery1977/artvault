@@ -10,7 +10,8 @@ class NotificationService {
 
   static final NotificationService instance = NotificationService._();
 
-  final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _plugin =
+      FlutterLocalNotificationsPlugin();
   bool _initialized = false;
 
   Future<void> init() async {
@@ -30,7 +31,8 @@ class NotificationService {
       try {
         await _plugin
             .resolvePlatformSpecificImplementation<
-                AndroidFlutterLocalNotificationsPlugin>()
+              AndroidFlutterLocalNotificationsPlugin
+            >()
             ?.requestNotificationsPermission();
       } catch (_) {}
     }
@@ -69,11 +71,7 @@ class NotificationService {
   Future<void> cancelAll() => _plugin.cancelAll();
 
   /// Shows one of the standard ArtVault event notifications.
-  Future<void> notify(
-    String title,
-    String body, {
-    String type = 'system',
-  }) =>
+  Future<void> notify(String title, String body, {String type = 'system'}) =>
       show(
         id: DateTime.now().millisecondsSinceEpoch.remainder(1 << 31),
         title: title,

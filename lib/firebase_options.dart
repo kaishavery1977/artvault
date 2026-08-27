@@ -46,7 +46,8 @@ class DefaultFirebaseOptions {
     projectId: 'artvault-d69d0',
     databaseURL: 'https://artvault-d69d0-default-rtdb.firebaseio.com',
     storageBucket: 'artvault-d69d0.firebasestorage.app',
-    iosClientId: '629393260589-fs8ind9q5gc52k64j2uip6rrkvjubp3v.apps.googleusercontent.com',
+    iosClientId:
+        '629393260589-fs8ind9q5gc52k64j2uip6rrkvjubp3v.apps.googleusercontent.com',
     iosBundleId: 'com.artvault.artvault',
   );
 

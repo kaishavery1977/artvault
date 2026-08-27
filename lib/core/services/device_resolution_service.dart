@@ -108,7 +108,9 @@ class DeviceProfile {
     fontScale: (json['fontScale'] as num).toDouble(),
     isHighDensity: json['isHighDensity'] as bool? ?? false,
     isLandscape: json['isLandscape'] as bool? ?? false,
-    capturedAt: DateTime.tryParse(json['capturedAt'] as String? ?? '') ?? DateTime.now(),
+    capturedAt:
+        DateTime.tryParse(json['capturedAt'] as String? ?? '') ??
+        DateTime.now(),
   );
 
   /// Build a fresh profile from the current [MediaQueryData].

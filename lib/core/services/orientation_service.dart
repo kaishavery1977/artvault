@@ -61,7 +61,9 @@ class OrientationService {
     }
 
     await SystemChrome.setPreferredOrientations(orientations);
-    debugPrint('OrientationService: locked to $orientations (${profile.size.name})');
+    debugPrint(
+      'OrientationService: locked to $orientations (${profile.size.name})',
+    );
   }
 
   /// Quick predicate: does the current device support landscape by default

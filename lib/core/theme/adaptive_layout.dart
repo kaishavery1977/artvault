@@ -23,7 +23,9 @@ class AdaptiveLayout extends InheritedWidget {
   }
 
   static DeviceProfile? maybeOf(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<AdaptiveLayout>()?.profile;
+    return context
+        .dependOnInheritedWidgetOfExactType<AdaptiveLayout>()
+        ?.profile;
   }
 
   @override

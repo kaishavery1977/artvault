@@ -17,8 +17,9 @@ void main() {
     await initTestHive();
   });
 
-  testWidgets('App boots to the full splash on first launch',
-      (WidgetTester tester) async {
+  testWidgets('App boots to the full splash on first launch', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: appOverrides(introShown: false),
@@ -46,8 +47,9 @@ void main() {
     expect(find.text('Curate Your Collection'), findsOneWidget);
   });
 
-  testWidgets('Every launch plays the full cinematic intro',
-      (WidgetTester tester) async {
+  testWidgets('Every launch plays the full cinematic intro', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: appOverrides(introShown: true),
@@ -70,8 +72,9 @@ void main() {
     expect(find.text('Curate Your Collection'), findsOneWidget);
   });
 
-  testWidgets('Returning from background replays the full intro',
-      (WidgetTester tester) async {
+  testWidgets('Returning from background replays the full intro', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: appOverrides(introShown: true),
@@ -98,8 +101,9 @@ void main() {
     expect(find.text('Curate Your Collection'), findsOneWidget);
   });
 
-  testWidgets('Transient overlays (inactive) do not replay the intro',
-      (WidgetTester tester) async {
+  testWidgets('Transient overlays (inactive) do not replay the intro', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: appOverrides(introShown: true),
@@ -117,8 +121,9 @@ void main() {
     expect(find.text('Curate Your Collection'), findsOneWidget);
   });
 
-  testWidgets('Reduced motion shows a static splash and skips the exit',
-      (WidgetTester tester) async {
+  testWidgets('Reduced motion shows a static splash and skips the exit', (
+    WidgetTester tester,
+  ) async {
     tester.binding.platformDispatcher.accessibilityFeaturesTestValue =
         const FakeAccessibilityFeatures(disableAnimations: true);
     addTearDown(

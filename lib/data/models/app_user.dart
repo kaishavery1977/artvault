@@ -8,17 +8,17 @@ enum AppRole { admin, curator, viewer }
 
 extension AppRoleX on AppRole {
   String get label => switch (this) {
-        AppRole.admin => 'Admin',
-        AppRole.curator => 'Curator',
-        AppRole.viewer => 'Viewer',
-      };
+    AppRole.admin => 'Admin',
+    AppRole.curator => 'Curator',
+    AppRole.viewer => 'Viewer',
+  };
 
   String get wire => name;
 
   static AppRole fromWire(String? value) => AppRole.values.firstWhere(
-        (r) => r.name == value,
-        orElse: () => AppRole.viewer,
-      );
+    (r) => r.name == value,
+    orElse: () => AppRole.viewer,
+  );
 
   bool get canEdit => this != AppRole.viewer;
 
@@ -30,13 +30,13 @@ extension AppRoleX on AppRole {
 
   /// Human-readable description used in the UI.
   String get description => switch (this) {
-        AppRole.admin =>
-          'Full access to artworks, users, analytics, backups and settings.',
-        AppRole.curator =>
-          'Upload, edit, organise and manage artworks and artists.',
-        AppRole.viewer =>
-          'Read-only access to browse the collection. No edits allowed.',
-      };
+    AppRole.admin =>
+      'Full access to artworks, users, analytics, backups and settings.',
+    AppRole.curator =>
+      'Upload, edit, organise and manage artworks and artists.',
+    AppRole.viewer =>
+      'Read-only access to browse the collection. No edits allowed.',
+  };
 }
 
 /// The user's subscription tier. `free` is the default; `pro` unlocks
@@ -45,18 +45,18 @@ enum AppPlan { free, pro }
 
 extension AppPlanX on AppPlan {
   String get label => switch (this) {
-        AppPlan.free => 'Free',
-        AppPlan.pro => 'Pro',
-      };
+    AppPlan.free => 'Free',
+    AppPlan.pro => 'Pro',
+  };
 
   String get wire => name;
 
   bool get isPro => this == AppPlan.pro;
 
   static AppPlan fromWire(String? value) => AppPlan.values.firstWhere(
-        (p) => p.name == value,
-        orElse: () => AppPlan.free,
-      );
+    (p) => p.name == value,
+    orElse: () => AppPlan.free,
+  );
 }
 
 /// A user profile stored locally + in Firestore (`users/{uid}`).
@@ -127,40 +127,46 @@ class AppUser {
 
   /// Serialise for local Hive storage — preserves the real email.
   Map<String, dynamic> toJson() => {
-        'uid': uid,
-        'email': email,
-        'displayName': displayName,
-        'photoPath': photoPath,
-        'photoUrl': photoUrl,
-        'bio': bio,
-        'role': role.wire,
-        'plan': plan.wire,
-        'createdAt': createdAt.toIso8601String(),
-        'lastLogin': lastLogin.toIso8601String(),
-      };
+    'uid': uid,
+    'email': email,
+    'displayName': displayName,
+    'photoPath': photoPath,
+    'photoUrl': photoUrl,
+    'bio': bio,
+    'role': role.wire,
+    'plan': plan.wire,
+    'createdAt': createdAt.toIso8601String(),
+    'lastLogin': lastLogin.toIso8601String(),
+  };
 
   /// Serialise for Firestore upload — stores masked email to protect PII.
   Map<String, dynamic> toFirestoreJson() => {
-        ...toJson(),
-        'email': maskedEmail(email),
-      };
+    ...toJson(),
+    'email': maskedEmail(email),
+  };
 
   factory AppUser.fromJson(Map<String, dynamic> json) => AppUser(
-        uid: (json['uid'] as String?) ?? '',
-        email: (json['email'] as String?) ?? '',
-        displayName: (json['displayName'] as String?) ?? 'ArtVault User',
-        photoPath: (json['photoPath'] as String?) ?? '',
-        photoUrl: (json['photoUrl'] as String?) ?? '',
-        bio: (json['bio'] as String?) ?? '',
-        role: AppRoleX.fromWire(json['role'] as String?),
-        plan: AppPlanX.fromWire(json['plan'] as String?),
-        createdAt: DateTime.tryParse((json['createdAt'] as String?) ?? '') ??
-            DateTime.now(),
-        lastLogin: DateTime.tryParse((json['lastLogin'] as String?) ?? '') ??
-            DateTime.now(),
-      );
+    uid: (json['uid'] as String?) ?? '',
+    email: (json['email'] as String?) ?? '',
+    displayName: (json['displayName'] as String?) ?? 'ArtVault User',
+    photoPath: (json['photoPath'] as String?) ?? '',
+    photoUrl: (json['photoUrl'] as String?) ?? '',
+    bio: (json['bio'] as String?) ?? '',
+    role: AppRoleX.fromWire(json['role'] as String?),
+    plan: AppPlanX.fromWire(json['plan'] as String?),
+    createdAt:
+        DateTime.tryParse((json['createdAt'] as String?) ?? '') ??
+        DateTime.now(),
+    lastLogin:
+        DateTime.tryParse((json['lastLogin'] as String?) ?? '') ??
+        DateTime.now(),
+  );
 
-  static AppUser placeholder() =>
-      AppUser(uid: '', email: '', displayName: 'Guest', createdAt: DateTime(0),
-          lastLogin: DateTime(0));
+  static AppUser placeholder() => AppUser(
+    uid: '',
+    email: '',
+    displayName: 'Guest',
+    createdAt: DateTime(0),
+    lastLogin: DateTime(0),
+  );
 }

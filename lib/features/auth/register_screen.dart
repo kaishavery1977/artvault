@@ -34,12 +34,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
-    final ok = await ref.read(authProvider.notifier).register(
+    final ok = await ref
+        .read(authProvider.notifier)
+        .register(
           _name.text,
           _email.text,
           _password.text,
-          adminCode:
-              _showAdminCode && _adminCode.text.trim().isNotEmpty
+          adminCode: _showAdminCode && _adminCode.text.trim().isNotEmpty
               ? _adminCode.text.trim()
               : null,
         );
@@ -99,109 +100,118 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           child: Column(
             // Fields cascade in one by one, matching the login screen and
             // the cinematic splash intro.
-            children: staggerReveal([
-              AppTextField(
-                controller: _name,
-                label: 'Full name',
-                hint: 'Alexandra Restrepo',
-                icon: Icons.person_outline,
-                capitalization: TextCapitalization.words,
-                validator: Validators.name,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              AppTextField(
-                controller: _email,
-                label: 'Email',
-                icon: Icons.mail_outline,
-                keyboardType: TextInputType.emailAddress,
-                validator: Validators.email,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              AppTextField(
-                controller: _password,
-                label: 'Password',
-                icon: Icons.lock_outline,
-                obscureText: _obscure,
-                validator: Validators.password,
-                textInputAction: TextInputAction.next,
-                suffixIcon: IconButton(
-                  tooltip: _obscure ? 'Show password' : 'Hide password',
-                  icon: Icon(
-                    _obscure
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                    size: 20,
-                  ),
-                  onPressed: () => setState(() => _obscure = !_obscure),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              AppTextField(
-                controller: _confirm,
-                label: 'Confirm password',
-                icon: Icons.lock_outline,
-                obscureText: _confirmObscure,
-                validator: (v) => Validators.passwordConfirm(v, _password.text),
-                textInputAction: TextInputAction.done,
-                suffixIcon: IconButton(
-                  tooltip: _confirmObscure ? 'Show password' : 'Hide password',
-                  icon: Icon(
-                    _confirmObscure
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                    size: 20,
-                  ),
-                  onPressed: () => setState(() => _confirmObscure = !_confirmObscure),
-                ),
-              ),
-              // Optional one-time setup: the very first account can become
-              // admin with the bootstrap code created in Firestore
-              // (bootstrap/config.adminCode). Hidden by default so everyday
-              // sign-ups never see it.
-              TextButton.icon(
-                onPressed: () => setState(() => _showAdminCode = !_showAdminCode),
-                icon: Icon(
-                  _showAdminCode
-                      ? Icons.expand_less
-                      : Icons.admin_panel_settings_outlined,
-                  size: 18,
-                ),
-                label: Text(
-                  _showAdminCode
-                      ? 'Hide admin setup code'
-                      : 'First admin? Enter setup code',
-                ),
-              ),
-              if (_showAdminCode) ...[
-                const SizedBox(height: AppSpacing.xs),
+            children: staggerReveal(
+              [
                 AppTextField(
-                  controller: _adminCode,
-                  label: 'Admin setup code',
-                  icon: Icons.key_outlined,
-                  obscureText: _adminCodeObscure,
-                  textInputAction: TextInputAction.done,
+                  controller: _name,
+                  label: 'Full name',
+                  hint: 'Alexandra Restrepo',
+                  icon: Icons.person_outline,
+                  capitalization: TextCapitalization.words,
+                  validator: Validators.name,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                AppTextField(
+                  controller: _email,
+                  label: 'Email',
+                  icon: Icons.mail_outline,
+                  keyboardType: TextInputType.emailAddress,
+                  validator: Validators.email,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                AppTextField(
+                  controller: _password,
+                  label: 'Password',
+                  icon: Icons.lock_outline,
+                  obscureText: _obscure,
+                  validator: Validators.password,
+                  textInputAction: TextInputAction.next,
                   suffixIcon: IconButton(
-                    tooltip: _adminCodeObscure ? 'Show code' : 'Hide code',
+                    tooltip: _obscure ? 'Show password' : 'Hide password',
                     icon: Icon(
-                      _adminCodeObscure
+                      _obscure
                           ? Icons.visibility_outlined
                           : Icons.visibility_off_outlined,
                       size: 20,
                     ),
-                    onPressed: () => setState(
-                      () => _adminCodeObscure = !_adminCodeObscure,
-                    ),
+                    onPressed: () => setState(() => _obscure = !_obscure),
                   ),
                 ),
+                const SizedBox(height: AppSpacing.md),
+                AppTextField(
+                  controller: _confirm,
+                  label: 'Confirm password',
+                  icon: Icons.lock_outline,
+                  obscureText: _confirmObscure,
+                  validator: (v) =>
+                      Validators.passwordConfirm(v, _password.text),
+                  textInputAction: TextInputAction.done,
+                  suffixIcon: IconButton(
+                    tooltip: _confirmObscure
+                        ? 'Show password'
+                        : 'Hide password',
+                    icon: Icon(
+                      _confirmObscure
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      size: 20,
+                    ),
+                    onPressed: () =>
+                        setState(() => _confirmObscure = !_confirmObscure),
+                  ),
+                ),
+                // Optional one-time setup: the very first account can become
+                // admin with the bootstrap code created in Firestore
+                // (bootstrap/config.adminCode). Hidden by default so everyday
+                // sign-ups never see it.
+                TextButton.icon(
+                  onPressed: () =>
+                      setState(() => _showAdminCode = !_showAdminCode),
+                  icon: Icon(
+                    _showAdminCode
+                        ? Icons.expand_less
+                        : Icons.admin_panel_settings_outlined,
+                    size: 18,
+                  ),
+                  label: Text(
+                    _showAdminCode
+                        ? 'Hide admin setup code'
+                        : 'First admin? Enter setup code',
+                  ),
+                ),
+                if (_showAdminCode) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  AppTextField(
+                    controller: _adminCode,
+                    label: 'Admin setup code',
+                    icon: Icons.key_outlined,
+                    obscureText: _adminCodeObscure,
+                    textInputAction: TextInputAction.done,
+                    suffixIcon: IconButton(
+                      tooltip: _adminCodeObscure ? 'Show code' : 'Hide code',
+                      icon: Icon(
+                        _adminCodeObscure
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                        size: 20,
+                      ),
+                      onPressed: () => setState(
+                        () => _adminCodeObscure = !_adminCodeObscure,
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.md),
+                // Premium 3D button with glow effect
+                PremiumButton(
+                  label: 'Create Account',
+                  loading: auth.busy,
+                  onPressed: _submit,
+                ),
               ],
-              const SizedBox(height: AppSpacing.md),
-              // Premium 3D button with glow effect
-              PremiumButton(
-                label: 'Create Account',
-                loading: auth.busy,
-                onPressed: _submit,
-              ),
-            ], initialDelay: const Duration(milliseconds: 100), context: context),
+              initialDelay: const Duration(milliseconds: 100),
+              context: context,
+            ),
           ),
         ),
       ],

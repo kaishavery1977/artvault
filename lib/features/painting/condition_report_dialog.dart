@@ -175,8 +175,9 @@ class _ConditionReportDialogState extends State<ConditionReportDialog> {
                         ],
                       )
                     : ClipRRect(
-                        borderRadius:
-                            BorderRadius.circular(AppSpacing.radiusMd - 2),
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusMd - 2,
+                        ),
                         child: Image.file(
                           _photo!,
                           fit: BoxFit.cover,
@@ -214,10 +215,7 @@ class _ConditionReportDialogState extends State<ConditionReportDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
-        FilledButton(
-          onPressed: _save,
-          child: const Text('Save report'),
-        ),
+        FilledButton(onPressed: _save, child: const Text('Save report')),
       ],
     );
   }

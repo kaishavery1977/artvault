@@ -20,9 +20,7 @@ class TrashScreen extends ConsumerWidget {
     await PaintingRepository.instance.restore(painting.id);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('“${painting.title}” restored to your vault'),
-        ),
+        SnackBar(content: Text('“${painting.title}” restored to your vault')),
       );
     }
   }

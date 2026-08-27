@@ -64,11 +64,15 @@ class _ChangelogScreenState extends ConsumerState<ChangelogScreen> {
 
           // Changelog entries
           ...staggerReveal(
-            _changelogEntries(currentVersion).map<Widget>((entry) => _ChangelogEntryWidget(
-              version: entry.version,
-              date: entry.date,
-              entries: entry.entries,
-            )).toList(),
+            _changelogEntries(currentVersion)
+                .map<Widget>(
+                  (entry) => _ChangelogEntryWidget(
+                    version: entry.version,
+                    date: entry.date,
+                    entries: entry.entries,
+                  ),
+                )
+                .toList(),
             initialDelay: const Duration(milliseconds: 60),
             interval: const Duration(milliseconds: 50),
             context: context,
@@ -86,24 +90,96 @@ class _ChangelogScreenState extends ConsumerState<ChangelogScreen> {
         version: '0.1.0',
         date: 'August 2026',
         entries: [
-          _ChangelogItem(Icons.security, 'Security', 'AES-256 encryption at rest for all vault data'),
-          _ChangelogItem(Icons.security, 'Security', 'PBKDF2-HMAC-SHA256 passcode hashing with brute-force throttle'),
-          _ChangelogItem(Icons.face, 'Security', 'Face lock with blink-liveness detection'),
-          _ChangelogItem(Icons.lock, 'Security', 'HMAC integrity check on face embeddings'),
-          _ChangelogItem(Icons.shield, 'Security', 'App Check on all Storage writes'),
-          _ChangelogItem(Icons.speed, 'Performance', 'Rate limiting on all payment Cloud Functions'),
-          _ChangelogItem(Icons.cloud, 'Sync', 'Bulletproof cloud sync with automatic retry'),
-          _ChangelogItem(Icons.cloud_upload, 'Sync', 'Auto-backup of painting images to Firebase Storage'),
-          _ChangelogItem(Icons.sync, 'Sync', 'Persistent sync queue with exponential backoff'),
-          _ChangelogItem(Icons.person, 'Sync', 'Profile photo upload and cross-device restore'),
-          _ChangelogItem(Icons.phone_android, 'Design', 'Adaptive resolution scaling for all screen sizes'),
-          _ChangelogItem(Icons.phone_android, 'Design', 'Landscape-aware layouts on tablets'),
-          _ChangelogItem(Icons.palette, 'Design', 'Gold accent primary color in dark mode'),
-          _ChangelogItem(Icons.font_download, 'Design', 'Bundled fonts for offline-first typography'),
-          _ChangelogItem(Icons.accessibility, 'Accessibility', 'Screen reader labels on all icon buttons'),
-          _ChangelogItem(Icons.animation, 'Accessibility', 'Reduced-motion support for all animations'),
-          _ChangelogItem(Icons.bug_report, 'Quality', 'Centralized error logging with Crashlytics'),
-          _ChangelogItem(Icons.bug_report, 'Quality', 'Widget tests for painting CRUD, passcode security, and performance'),
+          _ChangelogItem(
+            Icons.security,
+            'Security',
+            'AES-256 encryption at rest for all vault data',
+          ),
+          _ChangelogItem(
+            Icons.security,
+            'Security',
+            'PBKDF2-HMAC-SHA256 passcode hashing with brute-force throttle',
+          ),
+          _ChangelogItem(
+            Icons.face,
+            'Security',
+            'Face lock with blink-liveness detection',
+          ),
+          _ChangelogItem(
+            Icons.lock,
+            'Security',
+            'HMAC integrity check on face embeddings',
+          ),
+          _ChangelogItem(
+            Icons.shield,
+            'Security',
+            'App Check on all Storage writes',
+          ),
+          _ChangelogItem(
+            Icons.speed,
+            'Performance',
+            'Rate limiting on all payment Cloud Functions',
+          ),
+          _ChangelogItem(
+            Icons.cloud,
+            'Sync',
+            'Bulletproof cloud sync with automatic retry',
+          ),
+          _ChangelogItem(
+            Icons.cloud_upload,
+            'Sync',
+            'Auto-backup of painting images to Firebase Storage',
+          ),
+          _ChangelogItem(
+            Icons.sync,
+            'Sync',
+            'Persistent sync queue with exponential backoff',
+          ),
+          _ChangelogItem(
+            Icons.person,
+            'Sync',
+            'Profile photo upload and cross-device restore',
+          ),
+          _ChangelogItem(
+            Icons.phone_android,
+            'Design',
+            'Adaptive resolution scaling for all screen sizes',
+          ),
+          _ChangelogItem(
+            Icons.phone_android,
+            'Design',
+            'Landscape-aware layouts on tablets',
+          ),
+          _ChangelogItem(
+            Icons.palette,
+            'Design',
+            'Gold accent primary color in dark mode',
+          ),
+          _ChangelogItem(
+            Icons.font_download,
+            'Design',
+            'Bundled fonts for offline-first typography',
+          ),
+          _ChangelogItem(
+            Icons.accessibility,
+            'Accessibility',
+            'Screen reader labels on all icon buttons',
+          ),
+          _ChangelogItem(
+            Icons.animation,
+            'Accessibility',
+            'Reduced-motion support for all animations',
+          ),
+          _ChangelogItem(
+            Icons.bug_report,
+            'Quality',
+            'Centralized error logging with Crashlytics',
+          ),
+          _ChangelogItem(
+            Icons.bug_report,
+            'Quality',
+            'Widget tests for painting CRUD, passcode security, and performance',
+          ),
         ],
       ),
     ];
@@ -158,10 +234,7 @@ class _ChangelogEntryWidget extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(
-                'v$version',
-                style: AppTheme.display(context, size: 20),
-              ),
+              Text('v$version', style: AppTheme.display(context, size: 20)),
               const SizedBox(width: AppSpacing.sm),
               Text(
                 date,
@@ -191,7 +264,11 @@ class _ChangelogEntryWidget extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(item.icon, size: 16, color: scheme.onSurface.withValues(alpha: 0.4)),
+                    Icon(
+                      item.icon,
+                      size: 16,
+                      color: scheme.onSurface.withValues(alpha: 0.4),
+                    ),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Text(

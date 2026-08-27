@@ -90,10 +90,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     // Restore session / check remember-me while the intro plays, so the
     // animation is never gated on the network.
     final boot = ref.read(authProvider.notifier).bootstrap();
-    await Future.wait([
-      boot,
-      Future<void>.delayed(present),
-    ]);
+    await Future.wait([boot, Future<void>.delayed(present)]);
     if (!mounted) return;
 
     final state = ref.read(authProvider);
@@ -102,9 +99,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       // Notifications on launch. Fire-and-forget — a reminder hiccup must
       // never gate the hand-off.
       unawaited(
-        GalleryLinkReminderService.instance.check(
-          state.user?.uid ?? '',
-        ),
+        GalleryLinkReminderService.instance.check(state.user?.uid ?? ''),
       );
     }
     // A resume-replay hands off back to where the user was (when it's a
@@ -192,16 +187,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 .fadeOut(delay: 200.ms, duration: 600.ms),
             // Expanding shockwave ring, like a stamp landing.
             Container(
-              width: 132,
-              height: 132,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: AppColors.accent.withValues(alpha: 0.8),
-                  width: 3,
-                ),
-              ),
-            )
+                  width: 132,
+                  height: 132,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.accent.withValues(alpha: 0.8),
+                      width: 3,
+                    ),
+                  ),
+                )
                 .animate(delay: 150.ms)
                 .scaleXY(
                   begin: 0.45,
@@ -263,16 +258,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 // parallel with the expansion made it vanish before it could
                 // grow (2px at 45% alpha on the warm ambient reads as nothing).
                 Container(
-                  width: 132,
-                  height: 132,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.accent.withValues(alpha: 0.8),
-                      width: 3,
-                    ),
-                  ),
-                )
+                      width: 132,
+                      height: 132,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.accent.withValues(alpha: 0.8),
+                          width: 3,
+                        ),
+                      ),
+                    )
                     .animate(delay: 350.ms)
                     .scaleXY(
                       begin: 0.45,
@@ -320,22 +315,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           // =============================================================
           Text(
             'Your Private Gallery',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: muted,
-              letterSpacing: 1.4,
-            ),
-          )
-              .animate(delay: 2000.ms)
-              .slideY(begin: 0.3)
-              .fadeIn(duration: 700.ms),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: muted, letterSpacing: 1.4),
+          ).animate(delay: 2000.ms).slideY(begin: 0.3).fadeIn(duration: 700.ms),
           const SizedBox(height: AppSpacing.xxl),
 
           // =============================================================
           // Stage 5 — pulsing dot loader.
           // =============================================================
-          _PulsingDots(color: fg).animate(
-            delay: 2300.ms,
-          ).fadeIn(duration: 400.ms),
+          _PulsingDots(
+            color: fg,
+          ).animate(delay: 2300.ms).fadeIn(duration: 400.ms),
         ],
       );
     }
@@ -383,11 +374,7 @@ class _LogoMark extends StatelessWidget {
           ),
         ],
       ),
-      child: const Icon(
-        Icons.palette,
-        size: 56,
-        color: Colors.white,
-      ),
+      child: const Icon(Icons.palette, size: 56, color: Colors.white),
     );
   }
 }
@@ -430,8 +417,10 @@ class _StaggeredWordmark extends StatelessWidget {
             builder: (context) {
               final letter = Text(
                 word[i],
-                style:
-                    AppTheme.display(context, size: 40).copyWith(color: color),
+                style: AppTheme.display(
+                  context,
+                  size: 40,
+                ).copyWith(color: color),
               ).animate(delay: (900 + i * 90).ms);
               return letter
                   .slideY(begin: 0.6)
@@ -457,30 +446,31 @@ class _PulsingDots extends StatelessWidget {
         for (var i = 0; i < 3; i++)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Container(
-              width: 9,
-              height: 9,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: color.withValues(alpha: 0.8),
-              ),
-            )
-                .animate(
-                  delay: (i * 160).ms,
-                  onPlay: (controller) => controller.repeat(reverse: true),
-                )
-                .scaleXY(
-                  begin: 0.5,
-                  end: 1.15,
-                  duration: 420.ms,
-                  curve: Curves.easeInOut,
-                )
-                .then()
-                .scaleXY(
-                  end: 0.5,
-                  duration: 420.ms,
-                  curve: Curves.easeInOut,
-                ),
+            child:
+                Container(
+                      width: 9,
+                      height: 9,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: color.withValues(alpha: 0.8),
+                      ),
+                    )
+                    .animate(
+                      delay: (i * 160).ms,
+                      onPlay: (controller) => controller.repeat(reverse: true),
+                    )
+                    .scaleXY(
+                      begin: 0.5,
+                      end: 1.15,
+                      duration: 420.ms,
+                      curve: Curves.easeInOut,
+                    )
+                    .then()
+                    .scaleXY(
+                      end: 0.5,
+                      duration: 420.ms,
+                      curve: Curves.easeInOut,
+                    ),
           ),
       ],
     );

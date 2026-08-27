@@ -51,9 +51,10 @@ class _Depth3DCardState extends State<Depth3DCard>
       vsync: this,
       duration: const Duration(milliseconds: 150),
     );
-    _pressScale = Tween<double>(begin: 1.0, end: 0.97).animate(
-      CurvedAnimation(parent: _pressAnim, curve: Curves.easeOutCubic),
-    );
+    _pressScale = Tween<double>(
+      begin: 1.0,
+      end: 0.97,
+    ).animate(CurvedAnimation(parent: _pressAnim, curve: Curves.easeOutCubic));
   }
 
   @override
@@ -103,7 +104,8 @@ class _Depth3DCardState extends State<Depth3DCard>
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final radius = widget.borderRadius ?? BorderRadius.circular(AppSpacing.radiusCard);
+    final radius =
+        widget.borderRadius ?? BorderRadius.circular(AppSpacing.radiusCard);
     final shadowColor = scheme.shadow;
     final depth = widget.depth;
 
@@ -142,10 +144,7 @@ class _Depth3DCardState extends State<Depth3DCard>
                 child: ClipRRect(
                   borderRadius: radius,
                   child: CustomPaint(
-                    painter: _LightOverlayPainter(
-                      tiltX: _tiltX,
-                      tiltY: _tiltY,
-                    ),
+                    painter: _LightOverlayPainter(tiltX: _tiltX, tiltY: _tiltY),
                     child: widget.padding != null
                         ? Padding(padding: widget.padding!, child: widget.child)
                         : widget.child,
@@ -180,10 +179,7 @@ class _LightOverlayPainter extends CustomPainter {
         (lightY / size.height * 2 - 1).clamp(-1.0, 1.0),
       ),
       radius: 1.2,
-      colors: [
-        Colors.white.withValues(alpha: 0.06),
-        Colors.transparent,
-      ],
+      colors: [Colors.white.withValues(alpha: 0.06), Colors.transparent],
       stops: const [0.0, 0.6],
     );
 

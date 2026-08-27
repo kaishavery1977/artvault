@@ -39,7 +39,9 @@ class HomeScreen extends ConsumerWidget {
         .toList();
     final recent = [...paintings]
       ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-    final missingImages = paintings.where(RepairImagesScreen.needsRepair).length;
+    final missingImages = paintings
+        .where(RepairImagesScreen.needsRepair)
+        .length;
     final restore = ref.watch(restoreProgressProvider);
     final showRestore =
         restore != null && (restore.running || restore.itemsRestored > 0);
@@ -53,14 +55,15 @@ class HomeScreen extends ConsumerWidget {
       }
     });
     final hintDismissed = ref.watch(cloudSyncHintDismissedProvider);
-    final showCloudHint = failedUploads >= CloudBackend.uploadFailureHintAfter &&
-        !hintDismissed;
+    final showCloudHint =
+        failedUploads >= CloudBackend.uploadFailureHintAfter && !hintDismissed;
     final showLoading =
         paintingsAsync.isLoading && paintingsAsync.valueOrNull == null;
 
     // Adapt the aurora background height and screen padding.
     // In landscape, shrink the aurora since there's less vertical space.
-    final isLandscape = MediaQuery.sizeOf(context).width > MediaQuery.sizeOf(context).height;
+    final isLandscape =
+        MediaQuery.sizeOf(context).width > MediaQuery.sizeOf(context).height;
     final auroraHeight = context.scaled(isLandscape ? 200 : 340);
     final screenPad = context.scaledPadding(AppSpacing.screenPadding);
 
@@ -72,7 +75,9 @@ class HomeScreen extends ConsumerWidget {
           left: 0,
           right: 0,
           height: auroraHeight,
-          child: const SemanticHidden(child: IgnorePointer(child: AuroraBackground())),
+          child: const SemanticHidden(
+            child: IgnorePointer(child: AuroraBackground()),
+          ),
         ),
         CustomScrollView(
           slivers: [
@@ -250,8 +255,8 @@ class _RestoreBanner extends ConsumerWidget {
                   Text(
                     done
                         ? 'Restored ${progress.itemsRestored} '
-                            '${progress.itemsRestored == 1 ? 'file' : 'files'} '
-                            'from the cloud'
+                              '${progress.itemsRestored == 1 ? 'file' : 'files'} '
+                              'from the cloud'
                         : progress.stage,
                     style: const TextStyle(
                       fontSize: 13.5,
@@ -329,11 +334,7 @@ class _CloudSyncUnavailableHint extends ConsumerWidget {
           ),
           child: Row(
             children: [
-              Icon(
-                Icons.cloud_off_outlined,
-                size: 14,
-                color: muted,
-              ),
+              Icon(Icons.cloud_off_outlined, size: 14, color: muted),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -352,8 +353,7 @@ class _CloudSyncUnavailableHint extends ConsumerWidget {
                 tooltip: 'Dismiss',
                 visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.zero,
-                constraints:
-                    const BoxConstraints(minWidth: 28, minHeight: 28),
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
               ),
             ],
           ),
@@ -438,12 +438,7 @@ class _Header extends ConsumerWidget {
     final hPad = context.adaptiveSpace(AppSpacing.md);
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        hPad,
-        topPad,
-        hPad,
-        AppSpacing.xs,
-      ),
+      padding: EdgeInsets.fromLTRB(hPad, topPad, hPad, AppSpacing.xs),
       child: Row(
         children: [
           Expanded(
@@ -460,7 +455,10 @@ class _Header extends ConsumerWidget {
                 const SizedBox(height: 2),
                 GradientShimmerText(
                   text: 'Hello, $userName',
-                  style: AppTheme.display(context, size: context.adaptiveFont(24)),
+                  style: AppTheme.display(
+                    context,
+                    size: context.adaptiveFont(24),
+                  ),
                   colors: [scheme.primary, scheme.secondary, scheme.tertiary],
                   duration: const Duration(milliseconds: 1200),
                 ),
@@ -533,7 +531,15 @@ class _HeaderAction extends StatelessWidget {
     return Material(
       color: scheme.primary.withValues(alpha: 0.07),
       shape: const CircleBorder(),
-      child: IconButton(icon: Icon(icon), onPressed: onTap, tooltip: icon == Icons.search ? 'Search' : icon == Icons.qr_code_scanner ? 'Scan QR code' : null),
+      child: IconButton(
+        icon: Icon(icon),
+        onPressed: onTap,
+        tooltip: icon == Icons.search
+            ? 'Search'
+            : icon == Icons.qr_code_scanner
+            ? 'Scan QR code'
+            : null,
+      ),
     );
   }
 }
@@ -548,63 +554,64 @@ class _WelcomeHero extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [scheme.primary, scheme.primary.withValues(alpha: 0.75)],
-        ),
-        borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.palette, size: 44, color: scheme.onPrimary),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            'Welcome to ArtVault',
-            style: AppTheme.display(
-              context,
-              size: 26,
-            ).copyWith(color: scheme.onPrimary),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Your private gallery awaits. Add your first painting and let AI help you catalogue it beautifully.',
-            style: TextStyle(
-              color: scheme.onPrimary.withValues(alpha: 0.85),
-              height: 1.5,
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [scheme.primary, scheme.primary.withValues(alpha: 0.75)],
             ),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusXl),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          if (canEdit)
-            FilledButton.icon(
-              onPressed: onUpload,
-              style: FilledButton.styleFrom(
-                backgroundColor: scheme.onPrimary,
-                foregroundColor: scheme.primary,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.palette, size: 44, color: scheme.onPrimary),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'Welcome to ArtVault',
+                style: AppTheme.display(
+                  context,
+                  size: 26,
+                ).copyWith(color: scheme.onPrimary),
               ),
-              icon: const Icon(Icons.add),
-              label: const Text('Upload your first painting'),
-            )
-          else
-            Text(
-              'This vault is read-only for your account.',
-              style: TextStyle(
-                color: scheme.onPrimary.withValues(alpha: 0.85),
-                fontSize: 13,
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Your private gallery awaits. Add your first painting and let AI help you catalogue it beautifully.',
+                style: TextStyle(
+                  color: scheme.onPrimary.withValues(alpha: 0.85),
+                  height: 1.5,
+                ),
               ),
-            ),
-        ],
-      ),
-    )
+              const SizedBox(height: AppSpacing.lg),
+              if (canEdit)
+                FilledButton.icon(
+                  onPressed: onUpload,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: scheme.onPrimary,
+                    foregroundColor: scheme.primary,
+                  ),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Upload your first painting'),
+                )
+              else
+                Text(
+                  'This vault is read-only for your account.',
+                  style: TextStyle(
+                    color: scheme.onPrimary.withValues(alpha: 0.85),
+                    fontSize: 13,
+                  ),
+                ),
+            ],
+          ),
+        )
         // A single soft light sweep across the hero once it has landed — a
         // spotlight pass that makes the empty vault feel curated. The fade
         // + slide entrance completes first, then the shimmer sweeps the
         // settled hero (`.then()` makes the sweep wait for the entrance).
         .animate(
-          onPlay: (c) => MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
+          onPlay: (c) =>
+              MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
         )
         .fadeIn(duration: 500.ms, curve: Curves.easeOutCubic)
         .slideY(begin: 0.08, duration: 500.ms, curve: Curves.easeOutCubic)
@@ -970,7 +977,8 @@ class _PlanUsageCard extends ConsumerWidget {
     final rows = <(String, int, int)>[
       ('Paintings', stats.paintings, ProLimits.freePaintings),
       ('Artists', stats.artists, ProLimits.freeArtists),
-      ('Documents', stats.documents, ProLimits.freeDocuments),      ('Storage', usage?.countedBytes ?? 0, ProLimits.freeStorageBytes),
+      ('Documents', stats.documents, ProLimits.freeDocuments),
+      ('Storage', usage?.countedBytes ?? 0, ProLimits.freeStorageBytes),
     ];
 
     return Depth3DCard(
@@ -1097,7 +1105,9 @@ class _UsageRowState extends State<_UsageRow>
     final used = widget.used;
     final target = cap > 0 ? (used / cap).clamp(0.0, 1.0).toDouble() : 0.0;
     final atCap = target >= 1.0;
-    final color = atCap ? AppColors.error : (target >= 0.85 ? AppColors.warning : null);
+    final color = atCap
+        ? AppColors.error
+        : (target >= 0.85 ? AppColors.warning : null);
 
     return ShakeOnError(
       tick: _shakeTick,
@@ -1320,11 +1330,12 @@ class _AiInsights extends StatelessWidget {
             icon: Icons.straighten,
             label: 'Average dimensions',
             value: '$avgW × $avgH cm',
-          ),                  _InsightRow(
-                    icon: Icons.auto_graph,
-                    label: 'Upload trend',
-                    value: _trend(paintings),
-                  ),
+          ),
+          _InsightRow(
+            icon: Icons.auto_graph,
+            label: 'Upload trend',
+            value: _trend(paintings),
+          ),
         ],
       ),
     );

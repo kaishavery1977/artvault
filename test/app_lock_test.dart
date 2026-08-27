@@ -30,19 +30,19 @@ void main() {
     );
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (call) async {
-      final args = call.arguments as Map;
-      switch (call.method) {
-        case 'read':
-          return store[args['key'] as String];
-        case 'write':
-          store[args['key'] as String] = args['value'] as String;
+          final args = call.arguments as Map;
+          switch (call.method) {
+            case 'read':
+              return store[args['key'] as String];
+            case 'write':
+              store[args['key'] as String] = args['value'] as String;
+              return null;
+            case 'delete':
+              store.remove(args['key'] as String);
+              return null;
+          }
           return null;
-        case 'delete':
-          store.remove(args['key'] as String);
-          return null;
-      }
-      return null;
-    });
+        });
     // No enrolled biometrics, so AppLockScreen's `_setup` completes with
     // the PIN pad as the only unlock method (hasFingerprint/hasFaceId read
     // this channel and would otherwise throw in the test environment,
@@ -50,27 +50,24 @@ void main() {
     const biometrics = MethodChannel('plugins.flutter.io/local_auth');
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(biometrics, (call) async {
-      if (call.method == 'getAvailableBiometrics') return <String>[];
-      return null;
-    });
+          if (call.method == 'getAvailableBiometrics') return <String>[];
+          return null;
+        });
   }
 
   // Minimal router: the lock screen sits at /lock and navigates home on
   // a successful unlock. Biometrics return false under the test platform,
   // so with a passcode stored the PIN pad is the only unlock path shown.
   GoRouter lockRouter() => GoRouter(
-        initialLocation: '/lock',
-        routes: [
-          GoRoute(
-            path: '/lock',
-            builder: (_, _) => const AppLockScreen(),
-          ),
-          GoRoute(
-            path: '/home',
-            builder: (_, _) => const Scaffold(body: Text('HOME_RENDERED')),
-          ),
-        ],
-      );
+    initialLocation: '/lock',
+    routes: [
+      GoRoute(path: '/lock', builder: (_, _) => const AppLockScreen()),
+      GoRoute(
+        path: '/home',
+        builder: (_, _) => const Scaffold(body: Text('HOME_RENDERED')),
+      ),
+    ],
+  );
 
   Future<void> pumpLock(WidgetTester tester) async {
     await tester.pumpWidget(MaterialApp.router(routerConfig: lockRouter()));
@@ -91,15 +88,18 @@ void main() {
     }
   }
 
-  testWidgets('auto-submits at 4 digits and unlocks with the right PIN',
-      (tester) async {
+  testWidgets('auto-submits at 4 digits and unlocks with the right PIN', (
+    tester,
+  ) async {
     stubSecureStoragePersist();
     await AuthRepository.instance.setPasscode('1234');
     await pumpLock(tester);
 
     // PIN pad visible (only unlock path — no biometrics in tests).
-    expect(find.text('Enter your passcode to open your private gallery'),
-        findsOneWidget);
+    expect(
+      find.text('Enter your passcode to open your private gallery'),
+      findsOneWidget,
+    );
 
     await enterPin(tester, '1234');
     // Verification is async; let the success confirmation play through and
@@ -111,16 +111,16 @@ void main() {
     expect(find.text('HOME_RENDERED'), findsOneWidget);
   });
 
-  testWidgets('wrong PIN shows error message, clears dots and shakes',
-      (tester) async {
+  testWidgets('wrong PIN shows error message, clears dots and shakes', (
+    tester,
+  ) async {
     stubSecureStoragePersist();
     await AuthRepository.instance.setPasscode('1234');
     await pumpLock(tester);
 
     // Dots start empty (4 dot containers inside the pad row).
-    ShakeOnError shake() => tester.widget<ShakeOnError>(
-          find.byType(ShakeOnError),
-        );
+    ShakeOnError shake() =>
+        tester.widget<ShakeOnError>(find.byType(ShakeOnError));
     expect(shake().tick, 0);
 
     await enterPin(tester, '9999');
@@ -140,8 +140,9 @@ void main() {
     expect(find.text('HOME_RENDERED'), findsNothing);
   });
 
-  testWidgets('tapping a digit after a wrong attempt clears the error state',
-      (tester) async {
+  testWidgets('tapping a digit after a wrong attempt clears the error state', (
+    tester,
+  ) async {
     stubSecureStoragePersist();
     await AuthRepository.instance.setPasscode('1234');
     await pumpLock(tester);
@@ -156,9 +157,7 @@ void main() {
     // Error status is gone while the user retypes.
     expect(find.text('Incorrect passcode. Try again.'), findsNothing);
     expect(
-      tester
-          .widget<ShakeOnError>(find.byType(ShakeOnError))
-          .tick,
+      tester.widget<ShakeOnError>(find.byType(ShakeOnError)).tick,
       1, // the shake for the previous attempt is still shown
     );
   });

@@ -45,7 +45,8 @@ class DocumentsScreen extends ConsumerWidget {
           ? const EmptyState(
               icon: Icons.folder_open_outlined,
               title: 'No documents yet',
-              subtitle: 'Certificates, invoices and provenance files will appear here.',
+              subtitle:
+                  'Certificates, invoices and provenance files will appear here.',
             )
           : CustomScrollView(
               slivers: [
@@ -57,48 +58,53 @@ class DocumentsScreen extends ConsumerWidget {
                       context.adaptiveSpace(AppSpacing.md),
                       AppSpacing.sm,
                     ),
-                    child: Text('Documents', style: AppTheme.display(context, size: context.adaptiveFont(28))),
+                    child: Text(
+                      'Documents',
+                      style: AppTheme.display(
+                        context,
+                        size: context.adaptiveFont(28),
+                      ),
+                    ),
                   ),
                 ),
                 SliverPadding(
                   padding: AppSpacing.screenPadding,
                   sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, i) {
-                        final doc = docs[i];
-                        final tile = _DocumentTile(
-                          doc: doc,
-                          paintingTitle: titleFor(doc.paintingId),
-                          canEdit: canEdit,
-                          onOpen: () async {
-                            final file = await DocumentRepository.instance.openFile(doc);
-                            if (file != null) {
-                              await ShareService.instance.shareFile(
-                                file.path,
-                                text: doc.name,
-                              );
-                            }
-                          },
-                          onTapPainting: () {
-                            if (doc.paintingId.isNotEmpty) {
-                              context.push('/painting/${doc.paintingId}');
-                            }
-                          },
-                        );
-                        return revealListItem(
-                          tile,
-                          i,
-                          key: ValueKey(doc.id),
-                          context: context,
-                        );
-                      },
-                      childCount: docs.length,
-                    ),
+                    delegate: SliverChildBuilderDelegate((context, i) {
+                      final doc = docs[i];
+                      final tile = _DocumentTile(
+                        doc: doc,
+                        paintingTitle: titleFor(doc.paintingId),
+                        canEdit: canEdit,
+                        onOpen: () async {
+                          final file = await DocumentRepository.instance
+                              .openFile(doc);
+                          if (file != null) {
+                            await ShareService.instance.shareFile(
+                              file.path,
+                              text: doc.name,
+                            );
+                          }
+                        },
+                        onTapPainting: () {
+                          if (doc.paintingId.isNotEmpty) {
+                            context.push('/painting/${doc.paintingId}');
+                          }
+                        },
+                      );
+                      return revealListItem(
+                        tile,
+                        i,
+                        key: ValueKey(doc.id),
+                        context: context,
+                      );
+                    }, childCount: docs.length),
                   ),
                 ),
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: AppSpacing.xxl + MediaQuery.paddingOf(context).bottom,
+                    height:
+                        AppSpacing.xxl + MediaQuery.paddingOf(context).bottom,
                   ),
                 ),
               ],
@@ -156,7 +162,8 @@ class DocumentsScreen extends ConsumerWidget {
         if (context.mounted) {
           await showUpgradePrompt(
             context,
-            feature: 'Storing more than ${ProLimits.freeStorageBytes ~/ (1024 * 1024)} MB '
+            feature:
+                'Storing more than ${ProLimits.freeStorageBytes ~/ (1024 * 1024)} MB '
                 'of documents',
           );
         }
@@ -186,7 +193,10 @@ class DocumentsScreen extends ConsumerWidget {
     }
   }
 
-  static Future<Painting?> _pickPainting(BuildContext context, List<Painting> paintings) async {
+  static Future<Painting?> _pickPainting(
+    BuildContext context,
+    List<Painting> paintings,
+  ) async {
     if (paintings.isEmpty) {
       showDialog(
         context: context,
@@ -213,7 +223,11 @@ class DocumentsScreen extends ConsumerWidget {
             final p = paintings[i];
             return ListTile(
               leading: const Icon(Icons.brush),
-              title: Text(p.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+              title: Text(
+                p.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
               subtitle: Text(p.artistName),
               onTap: () => Navigator.pop(context, p),
             );
@@ -327,15 +341,15 @@ class _DocumentTile extends ConsumerWidget {
   }
 
   static IconData _icon(String type) => switch (type) {
-        'Certificate' => Icons.workspace_premium_outlined,
-        'Invoice' => Icons.receipt_long_outlined,
-        'Ownership' => Icons.gavel_outlined,
-        'Insurance' => Icons.shield_outlined,
-        'Biography' => Icons.article_outlined,
-        'Restoration Report' => Icons.healing_outlined,
-        'Appraisal' => Icons.stacked_line_chart,
-        _ => Icons.description_outlined,
-      };
+    'Certificate' => Icons.workspace_premium_outlined,
+    'Invoice' => Icons.receipt_long_outlined,
+    'Ownership' => Icons.gavel_outlined,
+    'Insurance' => Icons.shield_outlined,
+    'Biography' => Icons.article_outlined,
+    'Restoration Report' => Icons.healing_outlined,
+    'Appraisal' => Icons.stacked_line_chart,
+    _ => Icons.description_outlined,
+  };
 }
 
 /// Rename-document dialog. Owns its [TextEditingController] and disposes it

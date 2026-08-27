@@ -56,11 +56,7 @@ class SemanticAnnounce extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      liveRegion: true,
-      label: message,
-      child: child,
-    );
+    return Semantics(liveRegion: true, label: message, child: child);
   }
 }
 

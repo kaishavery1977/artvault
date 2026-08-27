@@ -28,14 +28,14 @@ abstract final class AppSpacing {
 
   // Semantic aliases for common use cases
   static const double none = space0;
-  static const double xxs = space1;    // 4
-  static const double xs = space2;     // 8
-  static const double sm = space3;     // 12
-  static const double md = space4;     // 16
-  static const double lg = space6;     // 24
-  static const double xl = space8;     // 32
-  static const double xxl = space12;   // 48
-  static const double xxxl = space16;  // 64
+  static const double xxs = space1; // 4
+  static const double xs = space2; // 8
+  static const double sm = space3; // 12
+  static const double md = space4; // 16
+  static const double lg = space6; // 24
+  static const double xl = space8; // 32
+  static const double xxl = space12; // 48
+  static const double xxxl = space16; // 64
 
   // ===========================================================================
   // BORDER RADIUS SCALE
@@ -71,18 +71,41 @@ abstract final class AppSpacing {
   static const EdgeInsets cardPaddingSm = EdgeInsets.all(12);
   static const EdgeInsets cardPaddingLg = EdgeInsets.all(24);
 
-  static const EdgeInsets buttonPadding = EdgeInsets.symmetric(horizontal: 20, vertical: 14);
-  static const EdgeInsets buttonPaddingSm = EdgeInsets.symmetric(horizontal: 16, vertical: 10);
-  static const EdgeInsets buttonPaddingLg = EdgeInsets.symmetric(horizontal: 28, vertical: 18);
+  static const EdgeInsets buttonPadding = EdgeInsets.symmetric(
+    horizontal: 20,
+    vertical: 14,
+  );
+  static const EdgeInsets buttonPaddingSm = EdgeInsets.symmetric(
+    horizontal: 16,
+    vertical: 10,
+  );
+  static const EdgeInsets buttonPaddingLg = EdgeInsets.symmetric(
+    horizontal: 28,
+    vertical: 18,
+  );
 
-  static const EdgeInsets chipPadding = EdgeInsets.symmetric(horizontal: 12, vertical: 6);
-  static const EdgeInsets chipPaddingLg = EdgeInsets.symmetric(horizontal: 16, vertical: 8);
+  static const EdgeInsets chipPadding = EdgeInsets.symmetric(
+    horizontal: 12,
+    vertical: 6,
+  );
+  static const EdgeInsets chipPaddingLg = EdgeInsets.symmetric(
+    horizontal: 16,
+    vertical: 8,
+  );
 
-  static const EdgeInsets listTilePadding = EdgeInsets.symmetric(horizontal: 16, vertical: 8);
-  static const EdgeInsets listTilePaddingSm = EdgeInsets.symmetric(horizontal: 12, vertical: 6);
+  static const EdgeInsets listTilePadding = EdgeInsets.symmetric(
+    horizontal: 16,
+    vertical: 8,
+  );
+  static const EdgeInsets listTilePaddingSm = EdgeInsets.symmetric(
+    horizontal: 12,
+    vertical: 6,
+  );
 
-  static EdgeInsets horizontal(double value) => EdgeInsets.symmetric(horizontal: value);
-  static EdgeInsets vertical(double value) => EdgeInsets.symmetric(vertical: value);
+  static EdgeInsets horizontal(double value) =>
+      EdgeInsets.symmetric(horizontal: value);
+  static EdgeInsets vertical(double value) =>
+      EdgeInsets.symmetric(vertical: value);
   static EdgeInsets all(double value) => EdgeInsets.all(value);
   static EdgeInsets symmetric({double horizontal = 0, double vertical = 0}) =>
       EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical);
@@ -91,8 +114,7 @@ abstract final class AppSpacing {
     double top = 0,
     double right = 0,
     double bottom = 0,
-  }) =>
-      EdgeInsets.fromLTRB(left, top, right, bottom);
+  }) => EdgeInsets.fromLTRB(left, top, right, bottom);
 
   // ===========================================================================
   // LAYOUT CONSTRAINTS
@@ -143,7 +165,7 @@ abstract final class AppSpacing {
   static const double elevation4 = 8;
   static const double elevation5 = 12;
 
-  static const double elevationCard = 0;      // Flat cards with border
+  static const double elevationCard = 0; // Flat cards with border
   static const double elevationCardHover = 1;
   static const double elevationCardPressed = 0;
   static const double elevationFab = 3;

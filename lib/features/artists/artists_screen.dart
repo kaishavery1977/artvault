@@ -38,7 +38,8 @@ class ArtistsScreen extends ConsumerWidget {
           ? const EmptyState(
               icon: Icons.person_outline,
               title: 'No artists yet',
-              subtitle: 'Artists are created automatically when you add paintings.',
+              subtitle:
+                  'Artists are created automatically when you add paintings.',
             )
           : CustomScrollView(
               slivers: [
@@ -50,7 +51,13 @@ class ArtistsScreen extends ConsumerWidget {
                       context.adaptiveSpace(AppSpacing.md),
                       AppSpacing.md,
                     ),
-                    child: Text('Artists', style: AppTheme.display(context, size: context.adaptiveFont(28))),
+                    child: Text(
+                      'Artists',
+                      style: AppTheme.display(
+                        context,
+                        size: context.adaptiveFont(28),
+                      ),
+                    ),
                   ),
                 ),
                 SliverPadding(
@@ -69,7 +76,8 @@ class ArtistsScreen extends ConsumerWidget {
                       childCount: artists.length,
                     ),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: AppBreakpoints.galleryColumns(context) ~/ 2 + 1,
+                      crossAxisCount:
+                          AppBreakpoints.galleryColumns(context) ~/ 2 + 1,
                       mainAxisSpacing: AppSpacing.sm,
                       crossAxisSpacing: AppSpacing.sm,
                       childAspectRatio: 0.95,
@@ -78,7 +86,8 @@ class ArtistsScreen extends ConsumerWidget {
                 ),
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height: AppSpacing.xxl + MediaQuery.paddingOf(context).bottom,
+                    height:
+                        AppSpacing.xxl + MediaQuery.paddingOf(context).bottom,
                   ),
                 ),
               ],

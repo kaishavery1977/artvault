@@ -74,11 +74,7 @@ class ConditionReportRepository {
       inspectedAt: inspectedAt,
       createdAt: DateTime.now(),
     );
-    await _db.put(
-      AppConstants.boxConditionReports,
-      report.id,
-      report.toJson(),
-    );
+    await _db.put(AppConstants.boxConditionReports, report.id, report.toJson());
     unawaited(_syncReport(report));
     BackupService.instance.scheduleAutoBackup();
     return report;
@@ -101,8 +97,7 @@ class ConditionReportRepository {
 
   Future<void> syncNow() async {
     if (!CloudBackend.instance.isReady) return;
-    final dirty =
-        readAll().where((r) => r.needsSync).toList();
+    final dirty = readAll().where((r) => r.needsSync).toList();
     for (final report in dirty) {
       await _syncReport(report);
     }
@@ -145,8 +140,7 @@ class ConditionReportRepository {
     var recovered = 0;
     for (final report in readAll()) {
       if (report.isDeleted || report.photoUrl.isEmpty) continue;
-      if (report.photoPath.isNotEmpty &&
-          File(report.photoPath).existsSync()) {
+      if (report.photoPath.isNotEmpty && File(report.photoPath).existsSync()) {
         continue;
       }
       final bytes = await cloud.downloadBytes(report.photoUrl);
@@ -190,8 +184,7 @@ class ConditionReportRepository {
         await _db.delete(AppConstants.boxConditionReports, working.id);
         return;
       }
-      final finalReport =
-          working.copyWith(needsSync: false, synced: true);
+      final finalReport = working.copyWith(needsSync: false, synced: true);
       await cloud.upsert(_collection, working.id, finalReport.toJson());
       await _db.put(
         AppConstants.boxConditionReports,

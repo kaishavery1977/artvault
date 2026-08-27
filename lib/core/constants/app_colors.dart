@@ -68,9 +68,11 @@ abstract final class AppColors {
   // ===========================================================================
   // DARK THEME SURFACES — Deep navy with blue-purple undertone
   // ===========================================================================
-  static const Color darkBackground = Color(0xFF08090F);      // Near-black with blue tint
-  static const Color darkSurface = Color(0xFF0F1019);         // Elevated surface
-  static const Color darkSurfaceVariant = Color(0xFF161825);  // Subtle elevation
+  static const Color darkBackground = Color(
+    0xFF08090F,
+  ); // Near-black with blue tint
+  static const Color darkSurface = Color(0xFF0F1019); // Elevated surface
+  static const Color darkSurfaceVariant = Color(0xFF161825); // Subtle elevation
   static const Color darkSurfaceContainer = Color(0xFF1C1F30);
   static const Color darkSurfaceContainerHigh = Color(0xFF252840);
   static const Color darkSurfaceContainerHighest = Color(0xFF30334E);
@@ -80,7 +82,7 @@ abstract final class AppColors {
   static const Color darkSurfaceTintMid = Color(0xFF181A2E);
   static const Color darkSurfaceTintHigh = Color(0xFF202240);
 
-  static const Color darkOnBackground = Color(0xFFF0F0F5);    // Crisp cool white
+  static const Color darkOnBackground = Color(0xFFF0F0F5); // Crisp cool white
   static const Color darkOnSurface = Color(0xFFF0F0F5);
   static const Color darkOnSurfaceVariant = Color(0xFFA8A8C0); // Soft lavender
   static const Color darkOutline = Color(0xFF3A3C55);

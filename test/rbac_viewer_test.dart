@@ -20,19 +20,17 @@ import 'helpers.dart';
 import 'package:artvault/core/theme/adaptive_layout.dart';
 
 AppUser _user(AppRole role, {AppPlan plan = AppPlan.free}) => AppUser(
-      uid: 'u1',
-      email: 'u@test.dev',
-      displayName: 'Tester',
-      role: role,
-      plan: plan,
-      createdAt: DateTime(2026),
-      lastLogin: DateTime(2026),
-    );
+  uid: 'u1',
+  email: 'u@test.dev',
+  displayName: 'Tester',
+  role: role,
+  plan: plan,
+  createdAt: DateTime(2026),
+  lastLogin: DateTime(2026),
+);
 
-AuthState _auth(AppRole role) => AuthState(
-      status: AuthStatus.authenticated,
-      user: _user(role),
-    );
+AuthState _auth(AppRole role) =>
+    AuthState(status: AuthStatus.authenticated, user: _user(role));
 
 void main() {
   setUpAll(disableRuntimeFontFetching);
@@ -59,7 +57,11 @@ void main() {
     });
 
     test('curator keeps edit routes but is bounced from admin routes', () {
-      for (final path in ['/painting/new', '/painting/edit/p1', '/artist/new']) {
+      for (final path in [
+        '/painting/new',
+        '/painting/edit/p1',
+        '/artist/new',
+      ]) {
         expect(
           rbacRedirect(
             path: path,
@@ -91,11 +93,7 @@ void main() {
         '/gallery',
       ]) {
         expect(
-          rbacRedirect(
-            path: path,
-            onboarded: true,
-            auth: _auth(AppRole.admin),
-          ),
+          rbacRedirect(path: path, onboarded: true, auth: _auth(AppRole.admin)),
           isNull,
           reason: '$path must stay open for an admin',
         );
@@ -160,9 +158,7 @@ void main() {
         ProviderScope(
           overrides: [
             ...appOverrides(introShown: true),
-            authProvider.overrideWith(
-              (ref) => FakeAuthController(_auth(role)),
-            ),
+            authProvider.overrideWith((ref) => FakeAuthController(_auth(role))),
             paintingsProvider.overrideWith((ref) => Stream.value(const [])),
             artistsProvider.overrideWith((ref) => Stream.value(const [])),
             documentsProvider.overrideWith((ref) => Stream.value(const [])),
@@ -174,22 +170,27 @@ void main() {
             deviceStorageProvider.overrideWith((ref) async => null),
             currencyProvider.overrideWith((ref) => 'USD'),
           ],
-          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: HomeScreen())),
+          child: AdaptiveLayout(
+            profile: testProfile,
+            child: const MaterialApp(home: HomeScreen()),
+          ),
         ),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
     }
 
-    testWidgets('viewer sees no Upload or Sync quick actions',
-        (tester) async {
+    testWidgets('viewer sees no Upload or Sync quick actions', (tester) async {
       await pumpHome(tester, AppRole.viewer);
 
       // Positive presence check: the UI has actually built before we assert
       // on the absence of edit actions (a blank screen would pass trivially).
       // The shimmer greeting paints two layers, so findsWidgets is right.
       expect(find.textContaining('Hello,'), findsWidgets);
-      expect(find.text('This vault is read-only for your account.'), findsOneWidget);
+      expect(
+        find.text('This vault is read-only for your account.'),
+        findsOneWidget,
+      );
       // The welcome hero is shown for an empty vault; its upload button must
       // NOT be there for a read-only viewer.
       expect(find.text('Upload your first painting'), findsNothing);
@@ -213,9 +214,7 @@ void main() {
             authProvider.overrideWith(
               (ref) => FakeAuthController(_auth(AppRole.admin)),
             ),
-            paintingsProvider.overrideWith(
-              (ref) => Stream.value([painting]),
-            ),
+            paintingsProvider.overrideWith((ref) => Stream.value([painting])),
             artistsProvider.overrideWith((ref) => Stream.value(const [])),
             documentsProvider.overrideWith((ref) => Stream.value(const [])),
             notificationsProvider.overrideWith((ref) => Stream.value(const [])),
@@ -226,14 +225,20 @@ void main() {
             deviceStorageProvider.overrideWith((ref) async => null),
             currencyProvider.overrideWith((ref) => 'USD'),
           ],
-          child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: HomeScreen())),
+          child: AdaptiveLayout(
+            profile: testProfile,
+            child: const MaterialApp(home: HomeScreen()),
+          ),
         ),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
     }
 
-    Painting painting({String? coverImagePath, List<String> images = const []}) {
+    Painting painting({
+      String? coverImagePath,
+      List<String> images = const [],
+    }) {
       final now = DateTime(2026, 1, 1, 12);
       return Painting(
         id: 'p1',
@@ -247,8 +252,9 @@ void main() {
       );
     }
 
-    testWidgets('shows the banner when an artwork is missing its image',
-        (tester) async {
+    testWidgets('shows the banner when an artwork is missing its image', (
+      tester,
+    ) async {
       await pumpHomeWith(
         tester,
         painting(
@@ -257,10 +263,7 @@ void main() {
         ),
       );
 
-      expect(
-        find.text('1 artwork needs its image back'),
-        findsOneWidget,
-      );
+      expect(find.text('1 artwork needs its image back'), findsOneWidget);
       expect(find.text('Tap to re-pick from your gallery'), findsOneWidget);
     });
 

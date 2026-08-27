@@ -241,122 +241,124 @@ class _GalleryHeader extends StatelessWidget {
     final hPad = context.adaptiveSpace(AppSpacing.md);
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        hPad,
-        topPad,
-        hPad,
-        AppSpacing.xs,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+          padding: EdgeInsets.fromLTRB(hPad, topPad, hPad, AppSpacing.xs),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(
-                  'Gallery',
-                  style: AppTheme.display(context, size: context.adaptiveFont(28)),
-                ),
-              ),
-              IconButton(
-                tooltip: 'Favorites',
-                onPressed: onFavoritesToggle,
-                icon: Icon(
-                  favoritesOnly ? Icons.favorite : Icons.favorite_border,
-                  color: favoritesOnly ? const Color(0xFFFF6B6B) : null,
-                ),
-              ),
-              PopupMenuButton<GallerySort>(
-                tooltip: 'Sort',
-                onSelected: onSortChanged,
-                itemBuilder: (context) => const [
-                  PopupMenuItem(
-                    value: GallerySort.newest,
-                    child: Text('Newest first'),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Gallery',
+                      style: AppTheme.display(
+                        context,
+                        size: context.adaptiveFont(28),
+                      ),
+                    ),
                   ),
-                  PopupMenuItem(
-                    value: GallerySort.oldest,
-                    child: Text('Oldest first'),
+                  IconButton(
+                    tooltip: 'Favorites',
+                    onPressed: onFavoritesToggle,
+                    icon: Icon(
+                      favoritesOnly ? Icons.favorite : Icons.favorite_border,
+                      color: favoritesOnly ? const Color(0xFFFF6B6B) : null,
+                    ),
                   ),
-                  PopupMenuItem(
-                    value: GallerySort.title,
-                    child: Text('Title (A–Z)'),
+                  PopupMenuButton<GallerySort>(
+                    tooltip: 'Sort',
+                    onSelected: onSortChanged,
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(
+                        value: GallerySort.newest,
+                        child: Text('Newest first'),
+                      ),
+                      PopupMenuItem(
+                        value: GallerySort.oldest,
+                        child: Text('Oldest first'),
+                      ),
+                      PopupMenuItem(
+                        value: GallerySort.title,
+                        child: Text('Title (A–Z)'),
+                      ),
+                      PopupMenuItem(
+                        value: GallerySort.priceHigh,
+                        child: Text('Price: high to low'),
+                      ),
+                      PopupMenuItem(
+                        value: GallerySort.priceLow,
+                        child: Text('Price: low to high'),
+                      ),
+                    ],
+                    icon: const Icon(Icons.sort),
                   ),
-                  PopupMenuItem(
-                    value: GallerySort.priceHigh,
-                    child: Text('Price: high to low'),
-                  ),
-                  PopupMenuItem(
-                    value: GallerySort.priceLow,
-                    child: Text('Price: low to high'),
+                  SegmentedButton<GalleryView>(
+                    showSelectedIcon: false,
+                    segments: const [
+                      ButtonSegment(
+                        value: GalleryView.grid,
+                        icon: Icon(Icons.grid_view, size: 18),
+                      ),
+                      ButtonSegment(
+                        value: GalleryView.list,
+                        icon: Icon(Icons.view_agenda_outlined, size: 18),
+                      ),
+                      ButtonSegment(
+                        value: GalleryView.masonry,
+                        icon: Icon(
+                          Icons.dashboard_customize_outlined,
+                          size: 18,
+                        ),
+                      ),
+                    ],
+                    selected: {view},
+                    onSelectionChanged: (s) => onViewChanged(s.first),
+                    style: SegmentedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                    ),
                   ),
                 ],
-                icon: const Icon(Icons.sort),
               ),
-              SegmentedButton<GalleryView>(
-                showSelectedIcon: false,
-                segments: const [
-                  ButtonSegment(
-                    value: GalleryView.grid,
-                    icon: Icon(Icons.grid_view, size: 18),
+              const SizedBox(height: AppSpacing.sm),
+              Material(
+                color: scheme.primary.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                  onTap: onSearchTap,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm + 2,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.search,
+                          size: 18,
+                          color: scheme.onSurface.withValues(alpha: 0.6),
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          'Search paintings, artists, colors…',
+                          style: TextStyle(
+                            color: scheme.onSurface.withValues(alpha: 0.6),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  ButtonSegment(
-                    value: GalleryView.list,
-                    icon: Icon(Icons.view_agenda_outlined, size: 18),
-                  ),
-                  ButtonSegment(
-                    value: GalleryView.masonry,
-                    icon: Icon(Icons.dashboard_customize_outlined, size: 18),
-                  ),
-                ],
-                selected: {view},
-                onSelectionChanged: (s) => onViewChanged(s.first),
-                style: SegmentedButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Material(
-            color: scheme.primary.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-              onTap: onSearchTap,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm + 2,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.search,
-                      size: 18,
-                      color: scheme.onSurface.withValues(alpha: 0.6),
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Text(
-                      'Search paintings, artists, colors…',
-                      style: TextStyle(
-                        color: scheme.onSurface.withValues(alpha: 0.6),
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    )
+        )
         // Header settles in as one unit, then the search bar follows — the
         // toolbar choreography every list screen in the app shares.
         .animate(
           key: ValueKey('gallery-header'),
-          onPlay: (c) => MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
+          onPlay: (c) =>
+              MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
         )
         .fadeIn(duration: 420.ms, curve: Curves.easeOutCubic)
         .slideY(begin: 0.04, duration: 420.ms, curve: Curves.easeOutCubic);

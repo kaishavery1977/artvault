@@ -34,24 +34,25 @@ void main() {
     bool synced = false,
     bool isFavorite = false,
     DateTime? updatedAt,
-  }) =>
-      Painting(
-        id: id ?? PaintingRepository.newId(),
-        title: title,
-        artistId: 'a1',
-        artistName: 'Whistler',
-        createdAt: DateTime(2024, 1, 1),
-        updatedAt: updatedAt ?? DateTime(2024, 1, 1),
-        isDeleted: isDeleted,
-        needsSync: needsSync,
-        synced: synced,
-        isFavorite: isFavorite,
-      );
+  }) => Painting(
+    id: id ?? PaintingRepository.newId(),
+    title: title,
+    artistId: 'a1',
+    artistName: 'Whistler',
+    createdAt: DateTime(2024, 1, 1),
+    updatedAt: updatedAt ?? DateTime(2024, 1, 1),
+    isDeleted: isDeleted,
+    needsSync: needsSync,
+    synced: synced,
+    isFavorite: isFavorite,
+  );
 
-  test('cloud is not ready — this file genuinely exercises no-network mode',
-      () {
-    expect(CloudBackend.instance.isReady, isFalse);
-  });
+  test(
+    'cloud is not ready — this file genuinely exercises no-network mode',
+    () {
+      expect(CloudBackend.instance.isReady, isFalse);
+    },
+  );
 
   test('save lands locally and stays dirty with no network', () async {
     final saved = await PaintingRepository.instance.save(makePainting());
@@ -69,10 +70,12 @@ void main() {
 
   test('reads and writes never require a network connection', () async {
     final repo = PaintingRepository.instance;
-    final a =
-        await repo.save(makePainting(title: 'A', updatedAt: DateTime(2024, 1, 1)));
-    final b =
-        await repo.save(makePainting(title: 'B', updatedAt: DateTime(2024, 1, 2)));
+    final a = await repo.save(
+      makePainting(title: 'A', updatedAt: DateTime(2024, 1, 1)),
+    );
+    final b = await repo.save(
+      makePainting(title: 'B', updatedAt: DateTime(2024, 1, 2)),
+    );
 
     // readAll sorts by updatedAt desc — later saves first.
     expect(repo.readAll().map((p) => p.id), [b.id, a.id]);
@@ -110,8 +113,7 @@ void main() {
 
     // The sync queue holds a purge tombstone so a later pull can't
     // resurrect the painting (offline purge protection).
-    final tombstones =
-        LocalDatabase.instance.getAll(AppConstants.boxSyncQueue);
+    final tombstones = LocalDatabase.instance.getAll(AppConstants.boxSyncQueue);
     expect(tombstones, hasLength(1));
     expect(tombstones.single['id'], painting.id);
   });
@@ -132,8 +134,7 @@ void main() {
     expect(repo.get(painting.id)!.isFavorite, isFalse);
   });
 
-  test('syncNow with no network returns 0 and keeps records dirty',
-      () async {
+  test('syncNow with no network returns 0 and keeps records dirty', () async {
     final repo = PaintingRepository.instance;
     await repo.save(makePainting());
     await repo.save(makePainting(title: 'Second'));

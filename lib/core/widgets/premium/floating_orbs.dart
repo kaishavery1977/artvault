@@ -56,7 +56,9 @@ class _FloatingOrbsState extends State<FloatingOrbs>
       final palette = widget.colors ?? defaultColors;
       return _OrbData(
         color: palette[i % palette.length],
-        size: widget.minSize + rng.nextDouble() * (widget.maxSize - widget.minSize),
+        size:
+            widget.minSize +
+            rng.nextDouble() * (widget.maxSize - widget.minSize),
         speedX: 0.3 + rng.nextDouble() * 0.7,
         speedY: 0.2 + rng.nextDouble() * 0.5,
         phaseX: rng.nextDouble() * math.pi * 2,
@@ -112,10 +114,7 @@ class _FloatingOrbsState extends State<FloatingOrbs>
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: RadialGradient(
-              colors: [
-                orb.color,
-                orb.color.withValues(alpha: 0),
-              ],
+              colors: [orb.color, orb.color.withValues(alpha: 0)],
               stops: const [0.0, 0.7],
             ),
           ),

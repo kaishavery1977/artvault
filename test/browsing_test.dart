@@ -31,17 +31,22 @@ Widget _searchApp(List<Painting> paintings) {
       paintingsProvider.overrideWith((ref) => Stream.value(paintings)),
       artistsProvider.overrideWith((ref) => Stream.value(const [])),
     ],
-    child: AdaptiveLayout(profile: testProfile, child: const MaterialApp(home: SearchScreen())),
+    child: AdaptiveLayout(
+      profile: testProfile,
+      child: const MaterialApp(home: SearchScreen()),
+    ),
   );
 }
 
 void main() {
   group('instant search', () {
     testWidgets('debounces input and updates results live', (tester) async {
-      await tester.pumpWidget(_searchApp([
-        _painting('p1', 'Sunset Study'),
-        _painting('p2', 'Blue Hour'),
-      ]));
+      await tester.pumpWidget(
+        _searchApp([
+          _painting('p1', 'Sunset Study'),
+          _painting('p2', 'Blue Hour'),
+        ]),
+      );
       await tester.pump(); // let the providers deliver
 
       // Suggestions show before any query.
@@ -62,9 +67,7 @@ void main() {
     });
 
     testWidgets('clearing the field returns to suggestions', (tester) async {
-      await tester.pumpWidget(_searchApp([
-        _painting('p1', 'Sunset Study'),
-      ]));
+      await tester.pumpWidget(_searchApp([_painting('p1', 'Sunset Study')]));
       await tester.pump();
 
       await tester.enterText(find.byType(TextField), 'sunset');
@@ -82,18 +85,18 @@ void main() {
   });
 
   group('lightbox', () {
-    testWidgets('hero tag and counter follow the initial painting',
-        (tester) async {
+    testWidgets('hero tag and counter follow the initial painting', (
+      tester,
+    ) async {
       final paintings = [
         _painting('p1', 'Sunset Study'),
         _painting('p2', 'Blue Hour'),
       ];
-      await tester.pumpWidget(MaterialApp(
-        home: PaintingLightboxScreen(
-          paintings: paintings,
-          initialIndex: 1,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PaintingLightboxScreen(paintings: paintings, initialIndex: 1),
         ),
-      ));
+      );
       await tester.pump();
 
       final hero = tester.widget<Hero>(find.byType(Hero));
@@ -106,12 +109,11 @@ void main() {
         _painting('p1', 'Sunset Study'),
         _painting('p2', 'Blue Hour'),
       ];
-      await tester.pumpWidget(MaterialApp(
-        home: PaintingLightboxScreen(
-          paintings: paintings,
-          initialIndex: 0,
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PaintingLightboxScreen(paintings: paintings, initialIndex: 0),
         ),
-      ));
+      );
       await tester.pump();
 
       expect(tester.widget<Hero>(find.byType(Hero)).tag, 'painting-p1');
@@ -125,29 +127,32 @@ void main() {
   });
 
   group('gallery grid', () {
-    testWidgets('renders painting cards with a staggered entrance',
-        (tester) async {
+    testWidgets('renders painting cards with a staggered entrance', (
+      tester,
+    ) async {
       final paintings = [
         _painting('p1', 'Sunset Study'),
         _painting('p2', 'Blue Hour'),
         _painting('p3', 'Golden Field'),
       ];
-      await tester.pumpWidget(ProviderScope(
-        overrides: [
-          paintingsProvider.overrideWith((ref) => Stream.value(paintings)),
-        ],
-        child: MaterialApp.router(
-          routerConfig: GoRouter(
-            initialLocation: '/gallery',
-            routes: [
-              GoRoute(
-                path: '/gallery',
-                builder: (_, _) => const GalleryScreen(),
-              ),
-            ],
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            paintingsProvider.overrideWith((ref) => Stream.value(paintings)),
+          ],
+          child: MaterialApp.router(
+            routerConfig: GoRouter(
+              initialLocation: '/gallery',
+              routes: [
+                GoRoute(
+                  path: '/gallery',
+                  builder: (_, _) => const GalleryScreen(),
+                ),
+              ],
+            ),
           ),
         ),
-      ));
+      );
       await tester.pump();
       await tester.pump();
 

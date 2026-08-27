@@ -42,12 +42,10 @@ class PaintingRepository {
     return list;
   }
 
-  List<Painting> readActive() =>
-      readAll().where((p) => !p.isDeleted).toList();
+  List<Painting> readActive() => readAll().where((p) => !p.isDeleted).toList();
 
   /// Paintings currently in the trash (soft-deleted, restorable).
-  List<Painting> readTrash() =>
-      readAll().where((p) => p.isDeleted).toList();
+  List<Painting> readTrash() => readAll().where((p) => p.isDeleted).toList();
 
   int countTrash() => readTrash().length;
 
@@ -72,7 +70,9 @@ class PaintingRepository {
       final storage = FileStorageService.instance;
       final imported = <String>[];
       final thumbs = <String>[];
-      for (final file in newImageFiles.take(AppConstants.maxImagesPerPainting)) {
+      for (final file in newImageFiles.take(
+        AppConstants.maxImagesPerPainting,
+      )) {
         final path = await storage.importImage(file);
         imported.add(path);
         final thumb = await storage.makeThumbnail(path);
@@ -121,7 +121,9 @@ class PaintingRepository {
       id,
       painting.copyWith(isDeleted: true, needsSync: true).toJson(),
     );
-    unawaited(_syncPainting(painting.copyWith(isDeleted: true, needsSync: true)));
+    unawaited(
+      _syncPainting(painting.copyWith(isDeleted: true, needsSync: true)),
+    );
     await NotificationService.instance.notify(
       'Painting moved to trash',
       '${painting.title} can be restored anytime.',
@@ -144,11 +146,10 @@ class PaintingRepository {
     // Tombstone the id (fire-and-forget cloud delete) so an offline purge
     // can't be re-created by the next pull. Removed once the cloud delete
     // is confirmed (see _removeRemote / _retryPurgedRemovals).
-    await _db.put(
-      AppConstants.boxSyncQueue,
-      id,
-      {'id': id, 'purgedAt': DateTime.now().toIso8601String()},
-    );
+    await _db.put(AppConstants.boxSyncQueue, id, {
+      'id': id,
+      'purgedAt': DateTime.now().toIso8601String(),
+    });
     unawaited(_removeRemote(painting));
     await NotificationService.instance.notify(
       'Painting deleted',
@@ -228,7 +229,9 @@ class PaintingRepository {
       final hasLocal = painting.images.any((p) => File(p).existsSync());
       final hasUrls = painting.imageUrls.any((u) => u.isNotEmpty);
       if (hasLocal && !hasUrls) {
-        debugPrint('PaintingRepository.syncNow: uploading images for ${painting.title}');
+        debugPrint(
+          'PaintingRepository.syncNow: uploading images for ${painting.title}',
+        );
         await _syncPainting(painting.copyWith(needsSync: true));
       }
     }
@@ -256,7 +259,8 @@ class PaintingRepository {
       if (painting.isDeleted) continue;
       final urls = painting.imageUrls;
       if (urls.isEmpty && painting.coverImageUrl.isEmpty) continue;
-      final allLocal = painting.images.isNotEmpty &&
+      final allLocal =
+          painting.images.isNotEmpty &&
           painting.images.every((p) => File(p).existsSync()) &&
           (painting.coverImagePath.isEmpty ||
               File(painting.coverImagePath).existsSync());
@@ -303,10 +307,7 @@ class PaintingRepository {
   /// next pull. Cleared once the remote delete succeeds.
   Set<String> _tombstones() {
     final raw = _db.getAll(AppConstants.boxSyncQueue);
-    return raw
-        .map((e) => e['id'] as String?)
-        .whereType<String>()
-        .toSet();
+    return raw.map((e) => e['id'] as String?).whereType<String>().toSet();
   }
 
   Future<void> _retryPurgedRemovals() async {
@@ -365,10 +366,14 @@ class PaintingRepository {
         // Missing remote mirrors for some images — keep dirty.
         working = working.copyWith(imageUrls: urls, needsSync: true);
       } else {
-        working = working.copyWith(
-          imageUrls: urls,
-          coverImageUrl: urls.isNotEmpty ? urls.first : working.coverImageUrl,
-        ).markSynced();
+        working = working
+            .copyWith(
+              imageUrls: urls,
+              coverImageUrl: urls.isNotEmpty
+                  ? urls.first
+                  : working.coverImageUrl,
+            )
+            .markSynced();
       }
       await cloud.upsert(_collection, working.id, working.toJson());
       await _db.put(AppConstants.boxPaintings, working.id, working.toJson());
@@ -384,14 +389,20 @@ class PaintingRepository {
       if (uid.isEmpty) return;
       final tombstones = _tombstones();
       final remote = await cloud.fetchAll(_collection, owner: uid);
-      debugPrint('PaintingRepository._pullRemote: fetched ${remote.length} paintings from Firestore');
+      debugPrint(
+        'PaintingRepository._pullRemote: fetched ${remote.length} paintings from Firestore',
+      );
       for (final data in remote) {
         final painting = Painting.fromJson(data);
         // Never resurrect a painting purged locally (offline purge).
         if (tombstones.contains(painting.id)) continue;
         final local = get(painting.id);
         if (local == null || painting.updatedAt.isAfter(local.updatedAt)) {
-          await _db.put(AppConstants.boxPaintings, painting.id, painting.toJson());
+          await _db.put(
+            AppConstants.boxPaintings,
+            painting.id,
+            painting.toJson(),
+          );
         }
       }
     } catch (e) {

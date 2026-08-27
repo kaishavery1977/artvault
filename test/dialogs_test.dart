@@ -69,9 +69,9 @@ void main() {
   });
 
   Widget wrap(Widget home, {List<Override> extra = const []}) => ProviderScope(
-        overrides: [...appOverrides(introShown: true), ...extra],
-        child: MaterialApp(home: home),
-      );
+    overrides: [...appOverrides(introShown: true), ...extra],
+    child: MaterialApp(home: home),
+  );
 
   /// Lets the dialog's open transition play out and lands on its content.
   Future<void> settleOpen(WidgetTester tester) async {
@@ -88,30 +88,34 @@ void main() {
   }
 
   group('Library location dialog', () {
-    testWidgets('edits the location and closes with no disposed-controller crash',
-        (tester) async {
-      await tester.pumpWidget(wrap(const SettingsScreen()));
-      await settleOpen(tester);
+    testWidgets(
+      'edits the location and closes with no disposed-controller crash',
+      (tester) async {
+        await tester.pumpWidget(wrap(const SettingsScreen()));
+        await settleOpen(tester);
 
-      await tester.tap(find.text('Library location'));
-      await settleOpen(tester);
+        await tester.tap(find.text('Library location'));
+        await settleOpen(tester);
 
-      // Dialog is up with a single editable field.
-      expect(find.text('Library location'), findsWidgets);
-      expect(find.byType(TextField), findsOneWidget);
+        // Dialog is up with a single editable field.
+        expect(find.text('Library location'), findsWidgets);
+        expect(find.byType(TextField), findsOneWidget);
 
-      await tester.enterText(find.byType(TextField), 'Vault Room 2');
-      await tester.tap(find.text('Save'));
-      await settleClose(tester);
+        await tester.enterText(find.byType(TextField), 'Vault Room 2');
+        await tester.tap(find.text('Save'));
+        await settleClose(tester);
 
-      // Dialog fully gone, value persisted, and — critically — no exception
-      // during the exit transition (the leak-fix invariant).
-      expect(find.byType(TextField), findsNothing);
-      expect(SettingsRepository.instance.libraryLocation, 'Vault Room 2');
-      expect(tester.takeException(), isNull);
-    });
+        // Dialog fully gone, value persisted, and — critically — no exception
+        // during the exit transition (the leak-fix invariant).
+        expect(find.byType(TextField), findsNothing);
+        expect(SettingsRepository.instance.libraryLocation, 'Vault Room 2');
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-    testWidgets('Cancel closes the dialog cleanly without saving', (tester) async {
+    testWidgets('Cancel closes the dialog cleanly without saving', (
+      tester,
+    ) async {
       await tester.pumpWidget(wrap(const SettingsScreen()));
       await settleOpen(tester);
 
@@ -124,19 +128,22 @@ void main() {
       await settleClose(tester);
 
       expect(find.byType(TextField), findsNothing);
-      expect(SettingsRepository.instance.libraryLocation, isNot('Should Not Persist'));
+      expect(
+        SettingsRepository.instance.libraryLocation,
+        isNot('Should Not Persist'),
+      );
       expect(tester.takeException(), isNull);
     });
   });
 
   group('Rename document dialog', () {
-    testWidgets('Save pops the edited name and survives the exit transition',
-        (tester) async {
+    testWidgets('Save pops the edited name and survives the exit transition', (
+      tester,
+    ) async {
       String? popped;
-      await tester.pumpWidget(wrap(_DialogHost(
-        initial: 'Old name.pdf',
-        onResult: (r) => popped = r,
-      )));
+      await tester.pumpWidget(
+        wrap(_DialogHost(initial: 'Old name.pdf', onResult: (r) => popped = r)),
+      );
 
       await tester.tap(find.text('open'));
       await settleOpen(tester);
@@ -152,13 +159,13 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('Cancel pops null and survives the exit transition',
-        (tester) async {
+    testWidgets('Cancel pops null and survives the exit transition', (
+      tester,
+    ) async {
       String? popped = 'sentinel';
-      await tester.pumpWidget(wrap(_DialogHost(
-        initial: 'Keep me.pdf',
-        onResult: (r) => popped = r,
-      )));
+      await tester.pumpWidget(
+        wrap(_DialogHost(initial: 'Keep me.pdf', onResult: (r) => popped = r)),
+      );
 
       await tester.tap(find.text('open'));
       await settleOpen(tester);

@@ -5,36 +5,42 @@ import 'package:artvault/core/widgets/motion.dart';
 
 void main() {
   testWidgets(
-      'GradientShimmerText keeps a visible base in every animation state',
-      (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: Center(
-            child: GradientShimmerText(
-              text: 'Hello, Kais Havery',
-              style: const TextStyle(fontSize: 20),
-              colors: const [Colors.blue, Colors.purple, Colors.teal],
+    'GradientShimmerText keeps a visible base in every animation state',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: GradientShimmerText(
+                text: 'Hello, Kais Havery',
+                style: const TextStyle(fontSize: 20),
+                colors: const [Colors.blue, Colors.purple, Colors.teal],
+              ),
             ),
           ),
         ),
-      ),
-    );
-
-    // Mid-flight and after completion the base layer must remain on screen
-    // and nothing may sit behind an opacity-0 gate.
-    for (final t in [Duration.zero, const Duration(milliseconds: 600), const Duration(milliseconds: 1600)]) {
-      await tester.pump(t);
-      expect(find.text('Hello, Kais Havery'), findsWidgets);
-      expect(
-        find.byWidgetPredicate((w) => w is Opacity && w.opacity == 0),
-        findsNothing,
       );
-    }
-  });
 
-  testWidgets('GradientShimmerText renders statically under reduced motion',
-      (tester) async {
+      // Mid-flight and after completion the base layer must remain on screen
+      // and nothing may sit behind an opacity-0 gate.
+      for (final t in [
+        Duration.zero,
+        const Duration(milliseconds: 600),
+        const Duration(milliseconds: 1600),
+      ]) {
+        await tester.pump(t);
+        expect(find.text('Hello, Kais Havery'), findsWidgets);
+        expect(
+          find.byWidgetPredicate((w) => w is Opacity && w.opacity == 0),
+          findsNothing,
+        );
+      }
+    },
+  );
+
+  testWidgets('GradientShimmerText renders statically under reduced motion', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         // Override the view's MediaQuery from inside so the widget sees
@@ -64,16 +70,17 @@ void main() {
 
   group('RevealEntrance', () {
     Opacity gate(WidgetTester tester) => tester.widget<Opacity>(
-          find
-              .descendant(
-                of: find.byType(RevealEntrance),
-                matching: find.byType(Opacity),
-              )
-              .first,
-        );
+      find
+          .descendant(
+            of: find.byType(RevealEntrance),
+            matching: find.byType(Opacity),
+          )
+          .first,
+    );
 
-    testWidgets('animates in from the delay gate to fully visible',
-        (tester) async {
+    testWidgets('animates in from the delay gate to fully visible', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -116,16 +123,18 @@ void main() {
     });
   });
 
-  testWidgets('staggerReveal children all become visible after their delays',
-      (tester) async {
+  testWidgets('staggerReveal children all become visible after their delays', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
           body: Column(
-            children: staggerReveal([
-              const Text('first'),
-              const Text('second'),
-            ], initialDelay: const Duration(milliseconds: 50), interval: const Duration(milliseconds: 90)),
+            children: staggerReveal(
+              [const Text('first'), const Text('second')],
+              initialDelay: const Duration(milliseconds: 50),
+              interval: const Duration(milliseconds: 90),
+            ),
           ),
         ),
       ),
@@ -144,8 +153,9 @@ void main() {
     );
   });
 
-  testWidgets('ShakeOnError stays quiet on mount and replays per tick',
-      (tester) async {
+  testWidgets('ShakeOnError stays quiet on mount and replays per tick', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(body: ShakeOnError(tick: 0, child: Text('pin pad'))),

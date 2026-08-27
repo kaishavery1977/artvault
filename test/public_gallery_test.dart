@@ -22,22 +22,21 @@ Painting _paint(
   String coverPath = '',
   String coverUrl = '',
   String? dateCreated,
-}) =>
-    Painting(
-      id: id,
-      title: title.isEmpty ? id : title,
-      artistId: '',
-      artistName: artistName,
-      medium: medium,
-      location: location,
-      price: price,
-      currency: currency,
-      coverImagePath: coverPath,
-      coverImageUrl: coverUrl,
-      dateCreated: dateCreated,
-      createdAt: DateTime(2024),
-      updatedAt: DateTime(2024),
-    );
+}) => Painting(
+  id: id,
+  title: title.isEmpty ? id : title,
+  artistId: '',
+  artistName: artistName,
+  medium: medium,
+  location: location,
+  price: price,
+  currency: currency,
+  coverImagePath: coverPath,
+  coverImageUrl: coverUrl,
+  dateCreated: dateCreated,
+  createdAt: DateTime(2024),
+  updatedAt: DateTime(2024),
+);
 
 void main() {
   final service = PublicGalleryService.instance;
@@ -126,8 +125,10 @@ void main() {
 
   group('PublicGalleryService revocable links', () {
     test('storage path embeds owner uid and secret token', () {
-      final path =
-          PublicGalleryService.storagePathFor('user-1', 'secret-token');
+      final path = PublicGalleryService.storagePathFor(
+        'user-1',
+        'secret-token',
+      );
       expect(path, 'public_galleries/user-1/secret-token/page.html');
       // The token sits between the owner segment and the file, so the
       // storage rule can match it with a wildcard.
@@ -135,12 +136,17 @@ void main() {
     });
 
     test('newToken produces unique, URL-safe, unpadded secrets', () {
-      final tokens = {for (var i = 0; i < 50; i++) PublicGalleryService.newToken()};
+      final tokens = {
+        for (var i = 0; i < 50; i++) PublicGalleryService.newToken(),
+      };
       expect(tokens.length, 50);
       for (final token in tokens) {
         expect(token, isNotEmpty);
-        expect(token.length >= 20, isTrue,
-            reason: 'token should be unguessable (>= ~120 bits)');
+        expect(
+          token.length >= 20,
+          isTrue,
+          reason: 'token should be unguessable (>= ~120 bits)',
+        );
         expect(token, matches(RegExp(r'^[A-Za-z0-9_-]+$')));
         expect(token, isNot(contains('=')));
       }
@@ -154,8 +160,11 @@ void main() {
       expect(path, startsWith('public_galleries/'));
       expect(path, endsWith('.html'));
       // The path should not contain token parameters (Supabase uses RLS, not tokens)
-      expect(path, isNot(contains('token=')),
-          reason: 'Supabase uses RLS policies, not tokenized URLs');
+      expect(
+        path,
+        isNot(contains('token=')),
+        reason: 'Supabase uses RLS policies, not tokenized URLs',
+      );
     });
 
     test('different owners and tokens produce distinct paths', () {

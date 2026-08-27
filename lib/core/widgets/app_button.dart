@@ -41,10 +41,7 @@ class AppButton extends StatelessWidget {
             ),
           )
         else ...[
-          if (icon != null) ...[
-            Icon(icon, size: 20),
-            const SizedBox(width: 8),
-          ],
+          if (icon != null) ...[Icon(icon, size: 20), const SizedBox(width: 8)],
           Flexible(
             child: Text(
               label,
@@ -65,7 +62,10 @@ class AppButton extends StatelessWidget {
     Widget button;
 
     if (ghost) {
-      button = TextButton(onPressed: enabled ? onPressed : null, child: content);
+      button = TextButton(
+        onPressed: enabled ? onPressed : null,
+        child: content,
+      );
     } else if (secondary) {
       button = OutlinedButton(
         onPressed: enabled ? onPressed : null,
@@ -75,7 +75,9 @@ class AppButton extends StatelessWidget {
     } else {
       button = ElevatedButton(
         onPressed: enabled ? onPressed : null,
-        style: ElevatedButton.styleFrom(backgroundColor: color ?? scheme.primary),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color ?? scheme.primary,
+        ),
         child: content,
       );
     }

@@ -124,7 +124,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final paintings = ref.watch(paintingsProvider).valueOrNull ?? const [];
-    final results = _query == null ? <Painting>[] : AiService.instance.applyQuery(paintings, _query!);
+    final results = _query == null
+        ? <Painting>[]
+        : AiService.instance.applyQuery(paintings, _query!);
 
     return Scaffold(
       appBar: AppBar(
@@ -165,25 +167,28 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         children: [
           if (_listening)
             Container(
-              width: double.infinity,
-              color: scheme.primary.withValues(alpha: 0.08),
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              child: Row(
-                children: [
-                  Icon(Icons.graphic_eq, color: scheme.primary),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: Text(
-                      _spoken.isEmpty ? 'Listening…' : _spoken,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                  width: double.infinity,
+                  color: scheme.primary.withValues(alpha: 0.08),
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  child: Row(
+                    children: [
+                      Icon(Icons.graphic_eq, color: scheme.primary),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          _spoken.isEmpty ? 'Listening…' : _spoken,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ).animate(
-              onPlay: (c) => MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
-            ).fadeIn(),
+                )
+                .animate(
+                  onPlay: (c) =>
+                      MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
+                )
+                .fadeIn(),
           if (_query == null)
             Expanded(
               child: _Suggestions(
@@ -198,7 +203,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               child: EmptyState(
                 icon: Icons.search_off,
                 title: 'No matches',
-                subtitle: 'Try different words — artist names, mediums, colors or sizes.',
+                subtitle:
+                    'Try different words — artist names, mediums, colors or sizes.',
               ),
             )
           else
@@ -268,7 +274,9 @@ class _Suggestions extends StatelessWidget {
           style: TextStyle(
             fontSize: 13,
             height: 1.5,
-            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.65),
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.65),
           ),
         ),
         const SizedBox(height: AppSpacing.lg),

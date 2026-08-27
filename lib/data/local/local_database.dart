@@ -97,8 +97,9 @@ class LocalDatabase {
 
   // ---- Generic CRUD -------------------------------------------------------
 
-  List<Map<String, dynamic>> getAll(String boxName) =>
-      box(boxName).values.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  List<Map<String, dynamic>> getAll(String boxName) => box(
+    boxName,
+  ).values.map((e) => Map<String, dynamic>.from(e as Map)).toList();
 
   Map<String, dynamic>? getById(String boxName, String id) {
     final value = box(boxName).get(id);

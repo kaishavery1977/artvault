@@ -70,8 +70,7 @@ class RepairImagesScreen extends ConsumerStatefulWidget {
   }
 
   @override
-  ConsumerState<RepairImagesScreen> createState() =>
-      _RepairImagesScreenState();
+  ConsumerState<RepairImagesScreen> createState() => _RepairImagesScreenState();
 }
 
 class _RepairImagesScreenState extends ConsumerState<RepairImagesScreen> {
@@ -94,15 +93,16 @@ class _RepairImagesScreenState extends ConsumerState<RepairImagesScreen> {
     if (!mounted) return;
     final paintings =
         ref.read(paintingsProvider).valueOrNull ?? const <Painting>[];
-    final artists =
-        ref.read(artistsProvider).valueOrNull ?? const <Artist>[];
+    final artists = ref.read(artistsProvider).valueOrNull ?? const <Artist>[];
     final docs =
         ref.read(documentsProvider).valueOrNull ?? const <ArtDocument>[];
     setState(() {
-      _brokenPaintings = paintings.where(RepairImagesScreen.needsRepair).toList()
-        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-      _brokenArtists = artists.where(RepairImagesScreen.artistPhotoMissing).toList()
-        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      _brokenPaintings =
+          paintings.where(RepairImagesScreen.needsRepair).toList()
+            ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      _brokenArtists =
+          artists.where(RepairImagesScreen.artistPhotoMissing).toList()
+            ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       _brokenDocs = docs.where(RepairImagesScreen.documentMissing).toList()
         ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       _scanning = false;
@@ -120,7 +120,9 @@ class _RepairImagesScreenState extends ConsumerState<RepairImagesScreen> {
       );
       if (file == null) return; // cancelled
 
-      final path = await FileStorageService.instance.importImage(File(file.path));
+      final path = await FileStorageService.instance.importImage(
+        File(file.path),
+      );
       await AuthRepository.instance.updateProfile(photoPath: path);
       await ref.read(authProvider.notifier).refreshProfile();
       if (!mounted) return;
@@ -193,10 +195,7 @@ class _RepairImagesScreenState extends ConsumerState<RepairImagesScreen> {
       );
       if (file == null) return; // cancelled
 
-      await ArtistRepository.instance.save(
-        artist,
-        photoFile: File(file.path),
-      );
+      await ArtistRepository.instance.save(artist, photoFile: File(file.path));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -255,9 +254,7 @@ class _RepairImagesScreenState extends ConsumerState<RepairImagesScreen> {
   }
 
   int get _totalBroken =>
-      _brokenPaintings.length +
-      _brokenArtists.length +
-      _brokenDocs.length;
+      _brokenPaintings.length + _brokenArtists.length + _brokenDocs.length;
 
   @override
   Widget build(BuildContext context) {
@@ -288,7 +285,10 @@ class _RepairImagesScreenState extends ConsumerState<RepairImagesScreen> {
                   Expanded(
                     child: Text(
                       'Repair files',
-                      style: AppTheme.display(context, size: context.adaptiveFont(26)),
+                      style: AppTheme.display(
+                        context,
+                        size: context.adaptiveFont(26),
+                      ),
                     ),
                   ),
                 ],
@@ -302,8 +302,8 @@ class _RepairImagesScreenState extends ConsumerState<RepairImagesScreen> {
                     : _totalBroken == 0 && !profileMissing
                     ? 'Everything has its files. 🎉'
                     : '${_totalBroken + (profileMissing ? 1 : 0)} '
-                        '${_totalBroken + (profileMissing ? 1 : 0) == 1 ? 'file needs' : 'files need'} '
-                        'a replacement — pick from your gallery or files.',
+                          '${_totalBroken + (profileMissing ? 1 : 0) == 1 ? 'file needs' : 'files need'} '
+                          'a replacement — pick from your gallery or files.',
                 style: TextStyle(
                   fontSize: 13,
                   color: scheme.onSurface.withValues(alpha: 0.6),
@@ -342,42 +342,45 @@ class _RepairImagesScreenState extends ConsumerState<RepairImagesScreen> {
     final items = <Widget>[];
 
     if (RepairImagesScreen.profilePhotoMissing(user)) {
-      items.add(_ProfilePhotoCard(
-        busy: _busy,
-        onFix: _fixProfilePhoto,
-      ));
+      items.add(_ProfilePhotoCard(busy: _busy, onFix: _fixProfilePhoto));
     }
 
     for (final artist in _brokenArtists) {
-      items.add(_RepairCard(
-        icon: Icons.person_off_outlined,
-        title: artist.name,
-        subtitle: 'Artist profile photo missing',
-        busy: _busy,
-        onFix: () => _repairArtist(artist),
-      ));
+      items.add(
+        _RepairCard(
+          icon: Icons.person_off_outlined,
+          title: artist.name,
+          subtitle: 'Artist profile photo missing',
+          busy: _busy,
+          onFix: () => _repairArtist(artist),
+        ),
+      );
     }
 
     for (final doc in _brokenDocs) {
-      items.add(_RepairCard(
-        icon: Icons.description_outlined,
-        title: doc.name,
-        subtitle: 'Document file missing',
-        busy: _busy,
-        onFix: () => _repairDocument(doc),
-      ));
+      items.add(
+        _RepairCard(
+          icon: Icons.description_outlined,
+          title: doc.name,
+          subtitle: 'Document file missing',
+          busy: _busy,
+          onFix: () => _repairDocument(doc),
+        ),
+      );
     }
 
     for (final painting in _brokenPaintings) {
-      items.add(_RepairCard(
-        icon: Icons.broken_image_outlined,
-        title: painting.title,
-        subtitle: painting.artistName.isEmpty
-            ? 'Artwork image missing'
-            : '${painting.artistName} — artwork image missing',
-        busy: _busy,
-        onFix: () => _repairPainting(painting),
-      ));
+      items.add(
+        _RepairCard(
+          icon: Icons.broken_image_outlined,
+          title: painting.title,
+          subtitle: painting.artistName.isEmpty
+              ? 'Artwork image missing'
+              : '${painting.artistName} — artwork image missing',
+          busy: _busy,
+          onFix: () => _repairPainting(painting),
+        ),
+      );
     }
 
     return items;

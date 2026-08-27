@@ -75,8 +75,7 @@ class _AppShellState extends ConsumerState<AppShell>
         oldWidget.navigationShell.currentIndex !=
         widget.navigationShell.currentIndex;
     // Respect reduced motion: keep the switch instant for those users.
-    if (changed &&
-        !MediaQuery.disableAnimationsOf(context)) {
+    if (changed && !MediaQuery.disableAnimationsOf(context)) {
       _tabIn.forward(from: 0);
     }
   }
@@ -106,12 +105,13 @@ class _AppShellState extends ConsumerState<AppShell>
       child: FadeTransition(
         opacity: _tabIn,
         child: SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, 0.008),
-            end: Offset.zero,
-          ).animate(
-            CurvedAnimation(parent: _tabIn, curve: Curves.easeOutCubic),
-          ),
+          position:
+              Tween<Offset>(
+                begin: const Offset(0, 0.008),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: _tabIn, curve: Curves.easeOutCubic),
+              ),
           child: shell,
         ),
       ),

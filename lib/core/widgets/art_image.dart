@@ -45,7 +45,8 @@ class ArtImage extends StatelessWidget {
           ],
         ),
       ),
-      child: placeholder ??
+      child:
+          placeholder ??
           Center(
             child: Icon(
               Icons.brush_outlined,

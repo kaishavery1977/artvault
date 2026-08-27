@@ -13,21 +13,24 @@ Future<bool> showUpgradePrompt(
   final result = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      icon: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [scheme.primary, scheme.secondary],
-          ),
-        ),
-        child: const Icon(Icons.workspace_premium, color: Colors.white, size: 28),
-      )
-          .animate()
-          .scale(
+      icon:
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [scheme.primary, scheme.secondary],
+              ),
+            ),
+            child: const Icon(
+              Icons.workspace_premium,
+              color: Colors.white,
+              size: 28,
+            ),
+          ).animate().scale(
             begin: const Offset(0.7, 0.7),
             duration: 420.ms,
             curve: Curves.easeOutBack,

@@ -62,21 +62,14 @@ class PaintingGridCard extends ConsumerWidget {
     // (role change, plan change, login, etc.).
     final canEdit = ref.watch(authProvider.select((a) => a.canEdit));
     final cover = _effectiveCover(painting);
-    final image = ArtImage(
-      path: cover.path,
-      url: cover.url,
-      fit: BoxFit.cover,
-    );
+    final image = ArtImage(path: cover.path, url: cover.url, fit: BoxFit.cover);
 
     Widget card = ClipRRect(
       borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
       child: Stack(
         fit: StackFit.expand,
         children: [
-          if (heroTag != null)
-            Hero(tag: heroTag!, child: image)
-          else
-            image,
+          if (heroTag != null) Hero(tag: heroTag!, child: image) else image,
           // Bottom scrim for readability.
           Positioned.fill(
             child: DecoratedBox(
@@ -131,8 +124,7 @@ class PaintingGridCard extends ConsumerWidget {
           Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap:
-                  onTap ?? () => context.push('/painting/${painting.id}'),
+              onTap: onTap ?? () => context.push('/painting/${painting.id}'),
               onLongPress: canEdit
                   ? () => context.push('/painting/edit/${painting.id}')
                   : null,

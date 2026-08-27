@@ -27,8 +27,10 @@ class BackupService {
   /// The settings Hive box stores primitive values (bool/string/int) keyed
   /// by name — not JSON maps — so it is exported as a plain map instead of
   /// going through [LocalDatabase.getAll] (which would crash on a cast).
-  Map<String, dynamic> _settingsBundle() =>
-      {for (final key in LocalDatabase.instance.box(AppConstants.boxSettings).keys) key: LocalDatabase.instance.getSetting(key)};
+  Map<String, dynamic> _settingsBundle() => {
+    for (final key in LocalDatabase.instance.box(AppConstants.boxSettings).keys)
+      key: LocalDatabase.instance.getSetting(key),
+  };
 
   Future<File> exportLocalBackup() async {
     final db = LocalDatabase.instance;
@@ -41,10 +43,12 @@ class BackupService {
       'documents': db.getAll(AppConstants.boxDocuments),
       'settings': _settingsBundle(),
     };
-    final file = File(p.join(
-      FileStorageService.instance.exportsDir.path,
-      'artvault_backup_${Formatters.fileStamp(DateTime.now())}.json',
-    ));
+    final file = File(
+      p.join(
+        FileStorageService.instance.exportsDir.path,
+        'artvault_backup_${Formatters.fileStamp(DateTime.now())}.json',
+      ),
+    );
     await file.writeAsString(
       const JsonEncoder.withIndent('  ').convert(bundle),
     );
@@ -52,7 +56,8 @@ class BackupService {
   }
 
   Future<void> restoreLocalBackup(File file) async {
-    final decoded = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+    final decoded =
+        jsonDecode(await file.readAsString()) as Map<String, dynamic>;
     final db = LocalDatabase.instance;
 
     if (decoded['paintings'] is List) {
@@ -127,7 +132,9 @@ class BackupService {
     final paintingCount = (data['paintings'] as List?)?.length ?? 0;
     final artistCount = (data['artists'] as List?)?.length ?? 0;
     final docCount = (data['documents'] as List?)?.length ?? 0;
-    debugPrint('BackupService.restoreCloudBackup: paintings=$paintingCount artists=$artistCount docs=$docCount');
+    debugPrint(
+      'BackupService.restoreCloudBackup: paintings=$paintingCount artists=$artistCount docs=$docCount',
+    );
     if (data['paintings'] is List) {
       await db.putAll(
         AppConstants.boxPaintings,

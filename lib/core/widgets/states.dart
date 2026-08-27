@@ -22,7 +22,11 @@ class LoadingView extends StatelessWidget {
             Shimmer.fromColors(
               baseColor: scheme.primary.withValues(alpha: 0.25),
               highlightColor: scheme.primary.withValues(alpha: 0.6),
-              child: Icon(Icons.palette_outlined, size: 56, color: scheme.primary),
+              child: Icon(
+                Icons.palette_outlined,
+                size: 56,
+                color: scheme.primary,
+              ),
             ),
             const SizedBox(height: AppSpacing.md),
             Text(message, style: Theme.of(context).textTheme.bodyMedium),
@@ -122,7 +126,11 @@ class ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.cloud_off_outlined, size: 44, color: Colors.orange),
+            const Icon(
+              Icons.cloud_off_outlined,
+              size: 44,
+              color: Colors.orange,
+            ),
             const SizedBox(height: AppSpacing.md),
             Text(message, textAlign: TextAlign.center),
             if (onRetry != null) ...[

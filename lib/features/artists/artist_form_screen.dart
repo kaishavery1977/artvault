@@ -71,7 +71,14 @@ class _ArtistFormScreenState extends ConsumerState<ArtistFormScreen> {
   @override
   void dispose() {
     for (final c in [
-      _name, _nationality, _phone, _email, _website, _instagram, _facebook, _bio,
+      _name,
+      _nationality,
+      _phone,
+      _email,
+      _website,
+      _instagram,
+      _facebook,
+      _bio,
     ]) {
       c.dispose();
     }
@@ -95,11 +102,11 @@ class _ArtistFormScreenState extends ConsumerState<ArtistFormScreen> {
     if (isNew && !ref.read(authProvider).isPro) {
       final active =
           ref
-                  .read(artistsProvider)
-                  .valueOrNull
-                  ?.where((a) => !a.isDeleted)
-                  .length ??
-              ArtistRepository.instance.readAll().where((a) => !a.isDeleted).length;
+              .read(artistsProvider)
+              .valueOrNull
+              ?.where((a) => !a.isDeleted)
+              .length ??
+          ArtistRepository.instance.readAll().where((a) => !a.isDeleted).length;
       if (active >= ProLimits.freeArtists) {
         await showUpgradePrompt(
           context,
@@ -181,7 +188,11 @@ class _ArtistFormScreenState extends ConsumerState<ArtistFormScreen> {
                         onTap: _pickPhoto,
                         child: const Padding(
                           padding: EdgeInsets.all(8),
-                          child: Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                          child: Icon(
+                            Icons.camera_alt,
+                            size: 16,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -256,7 +267,11 @@ class _ArtistFormScreenState extends ConsumerState<ArtistFormScreen> {
               padding: AppSpacing.cardPadding,
               child: AppTagsField(
                 tags: _awards,
-                onChanged: (tags) => setState(() => _awards..clear()..addAll(tags)),
+                onChanged: (tags) => setState(
+                  () => _awards
+                    ..clear()
+                    ..addAll(tags),
+                ),
                 hint: 'Add an award and press Enter',
               ),
             ),
@@ -266,7 +281,11 @@ class _ArtistFormScreenState extends ConsumerState<ArtistFormScreen> {
               padding: AppSpacing.cardPadding,
               child: AppTagsField(
                 tags: _exhibitions,
-                onChanged: (tags) => setState(() => _exhibitions..clear()..addAll(tags)),
+                onChanged: (tags) => setState(
+                  () => _exhibitions
+                    ..clear()
+                    ..addAll(tags),
+                ),
                 hint: 'Add an exhibition and press Enter',
               ),
             ),

@@ -51,8 +51,9 @@ Future<void> showConfettiCelebration(
   // the exception: every one is a fresh achievement worth celebrating.
   if (!shouldFireCelebration(
     replay: replay,
-    wasCelebratedRecently:
-        SettingsRepository.instance.wasCelebratedRecently(id),
+    wasCelebratedRecently: SettingsRepository.instance.wasCelebratedRecently(
+      id,
+    ),
   )) {
     return;
   }
@@ -88,10 +89,8 @@ Future<void> showConfettiCelebration(
         iconLabel: iconLabel,
         colors: colors,
       ),
-      transitionsBuilder: (context, animation, _, child) => FadeTransition(
-        opacity: animation,
-        child: child,
-      ),
+      transitionsBuilder: (context, animation, _, child) =>
+          FadeTransition(opacity: animation, child: child),
     ),
   );
 }
@@ -102,8 +101,7 @@ Future<void> showConfettiCelebration(
 bool shouldFireCelebration({
   required bool replay,
   required bool wasCelebratedRecently,
-}) =>
-    replay || !wasCelebratedRecently;
+}) => replay || !wasCelebratedRecently;
 
 /// Shorthand for the Pro-unlock celebration (kept for call-site clarity).
 Future<void> showProCelebration(BuildContext context) {
@@ -111,7 +109,8 @@ Future<void> showProCelebration(BuildContext context) {
     context,
     id: 'pro-unlock',
     title: 'Welcome to Pro!',
-    message: 'Unlimited capacity, gallery analytics and watermarking '
+    message:
+        'Unlimited capacity, gallery analytics and watermarking '
         'are now unlocked.',
     icon: Icons.workspace_premium,
     iconLabel: 'Pro unlocked',
@@ -191,28 +190,26 @@ class _CelebrationDialogState extends State<_CelebrationDialog> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 84,
-                  height: 84,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [scheme.primary, scheme.secondary],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: scheme.primary.withValues(alpha: 0.45),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
+                      width: 84,
+                      height: 84,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [scheme.primary, scheme.secondary],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: scheme.primary.withValues(alpha: 0.45),
+                            blurRadius: 24,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Icon(widget.icon, color: Colors.white, size: 40),
-                )
-                    .animate(
-                      onPlay: (c) => reduced ? c.stop() : c.forward(),
+                      child: Icon(widget.icon, color: Colors.white, size: 40),
                     )
+                    .animate(onPlay: (c) => reduced ? c.stop() : c.forward())
                     .scale(
                       begin: const Offset(0.5, 0.5),
                       curve: Curves.easeOutBack,
@@ -221,7 +218,10 @@ class _CelebrationDialogState extends State<_CelebrationDialog> {
                 const SizedBox(height: AppSpacing.lg),
                 GradientShimmerText(
                   text: widget.title,
-                  style: AppTheme.display(context, size: context.adaptiveFont(24)),
+                  style: AppTheme.display(
+                    context,
+                    size: context.adaptiveFont(24),
+                  ),
                   colors: [scheme.primary, scheme.secondary, scheme.tertiary],
                   duration: const Duration(milliseconds: 1300),
                 ),

@@ -20,25 +20,24 @@ Painting _paint({
   double brightness = 0.5,
   double contrast = 0.5,
   bool isDeleted = false,
-}) =>
-    Painting(
-      id: id,
-      title: id,
-      artistId: '',
-      artistName: 'Test Artist',
-      category: category,
-      medium: medium,
-      style: style,
-      tags: tags,
-      aiTags: aiTags,
-      dominantColors: colors,
-      aiHash: hash,
-      brightness: brightness,
-      contrast: contrast,
-      isDeleted: isDeleted,
-      createdAt: DateTime(2024),
-      updatedAt: DateTime(2024),
-    );
+}) => Painting(
+  id: id,
+  title: id,
+  artistId: '',
+  artistName: 'Test Artist',
+  category: category,
+  medium: medium,
+  style: style,
+  tags: tags,
+  aiTags: aiTags,
+  dominantColors: colors,
+  aiHash: hash,
+  brightness: brightness,
+  contrast: contrast,
+  isDeleted: isDeleted,
+  createdAt: DateTime(2024),
+  updatedAt: DateTime(2024),
+);
 
 void main() {
   group('AiService.findSimilar', () {
@@ -67,7 +66,11 @@ void main() {
         colors: ['#7BA05B', '#E8E3C9'],
       );
 
-      final result = AiService.instance.findSimilar(base, [base, twin, landscape]);
+      final result = AiService.instance.findSimilar(base, [
+        base,
+        twin,
+        landscape,
+      ]);
 
       expect(result, isNotEmpty);
       expect(result.first.painting.id, 'b');
@@ -119,14 +122,20 @@ void main() {
         category: 'Painting',
       );
 
-      final strict =
-          AiService.instance.findSimilar(base, [base, weak, strong], threshold: 0.9);
+      final strict = AiService.instance.findSimilar(base, [
+        base,
+        weak,
+        strong,
+      ], threshold: 0.9);
       // Weak (palette-less) match is filtered; the strong palette twin stays.
       expect(strict.map((m) => m.painting.id), ['c']);
 
       final limited = AiService.instance.findSimilar(
         base,
-        List.generate(10, (i) => _paint(id: 'p$i', colors: ['#111111'], tags: ['same'])),
+        List.generate(
+          10,
+          (i) => _paint(id: 'p$i', colors: ['#111111'], tags: ['same']),
+        ),
         limit: 3,
       );
       expect(limited.length, lessThanOrEqualTo(3));

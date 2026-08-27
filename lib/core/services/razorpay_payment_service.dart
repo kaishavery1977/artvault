@@ -78,8 +78,8 @@ class RazorpayPaymentService {
     } catch (_) {
       return ProPurchaseResult.error;
     }
-    final entityId = created[
-        isSubscription ? 'subscriptionId' : 'orderId'] as String?;
+    final entityId =
+        created[isSubscription ? 'subscriptionId' : 'orderId'] as String?;
     if (entityId == null || entityId.isEmpty) {
       return ProPurchaseResult.error;
     }
@@ -96,36 +96,36 @@ class RazorpayPaymentService {
       if (!completer.isCompleted) completer.complete(result);
     }
 
-    razorpay.on(
-      Razorpay.EVENT_PAYMENT_SUCCESS,
-      (PaymentSuccessResponse res) async {
-        // 3. Verify server-side and let the backend grant the plan.
-        //    For subscriptions the payment references the subscription id
-        //    (Razorpay returns `razorpay_subscription_id` in the payload).
-        final paymentId = res.paymentId;
-        final signature = res.signature;
-        final paidSubscriptionId = (res.data?['razorpay_subscription_id']
-                as String?) ??
-            entityId;
-        final idKey = isSubscription ? 'subscriptionId' : 'orderId';
-        if (paymentId == null || signature == null) {
-          settle(ProPurchaseResult.error);
-          return;
-        }
-        try {
-          await functions.httpsCallable(
-            isSubscription ? 'verifyProSubscription' : 'verifyProPayment',
-          ).call({
-            idKey: paidSubscriptionId,
-            'paymentId': paymentId,
-            'signature': signature,
-          });
-          settle(ProPurchaseResult.purchased);
-        } catch (_) {
-          settle(ProPurchaseResult.error);
-        }
-      },
-    );
+    razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, (
+      PaymentSuccessResponse res,
+    ) async {
+      // 3. Verify server-side and let the backend grant the plan.
+      //    For subscriptions the payment references the subscription id
+      //    (Razorpay returns `razorpay_subscription_id` in the payload).
+      final paymentId = res.paymentId;
+      final signature = res.signature;
+      final paidSubscriptionId =
+          (res.data?['razorpay_subscription_id'] as String?) ?? entityId;
+      final idKey = isSubscription ? 'subscriptionId' : 'orderId';
+      if (paymentId == null || signature == null) {
+        settle(ProPurchaseResult.error);
+        return;
+      }
+      try {
+        await functions
+            .httpsCallable(
+              isSubscription ? 'verifyProSubscription' : 'verifyProPayment',
+            )
+            .call({
+              idKey: paidSubscriptionId,
+              'paymentId': paymentId,
+              'signature': signature,
+            });
+        settle(ProPurchaseResult.purchased);
+      } catch (_) {
+        settle(ProPurchaseResult.error);
+      }
+    });
     razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, (PaymentFailureResponse res) {
       settle(
         res.code == Razorpay.PAYMENT_CANCELLED ? null : ProPurchaseResult.error,
@@ -138,7 +138,10 @@ class RazorpayPaymentService {
     try {
       razorpay.open({
         'key': keyId,
-        if (isSubscription) 'subscription_id': entityId else 'order_id': entityId,
+        if (isSubscription)
+          'subscription_id': entityId
+        else
+          'order_id': entityId,
         'name': 'ArtVault',
         'description': isSubscription
             ? 'ArtVault Pro — ₹99/month, cancel anytime'

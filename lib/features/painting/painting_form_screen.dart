@@ -152,8 +152,16 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
   @override
   void dispose() {
     for (final c in [
-      _title, _artistName, _description, _width, _height, _depth,
-      _weight, _price, _location, _dateCreated,
+      _title,
+      _artistName,
+      _description,
+      _width,
+      _height,
+      _depth,
+      _weight,
+      _price,
+      _location,
+      _dateCreated,
     ]) {
       c.dispose();
     }
@@ -200,7 +208,8 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
       if (current + file.lengthSync() > ProLimits.freeStorageBytes) {
         await showUpgradePrompt(
           context,
-          feature: 'Storing more than ${ProLimits.freeStorageBytes ~/ (1024 * 1024)} MB '
+          feature:
+              'Storing more than ${ProLimits.freeStorageBytes ~/ (1024 * 1024)} MB '
               'of original artwork files',
         );
         return;
@@ -247,7 +256,9 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
     );
     if (type == null || !mounted) return;
     setState(() {
-      _pendingDocs.add(_PendingDoc(type: type, name: file.name, file: File(path)));
+      _pendingDocs.add(
+        _PendingDoc(type: type, name: file.name, file: File(path)),
+      );
     });
   }
 
@@ -273,11 +284,17 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
   }
 
   String _suggestedTitle() {
-    final mood = _brightness > 0.6 ? 'Bright' : _brightness < 0.35 ? 'Moody' : '';
+    final mood = _brightness > 0.6
+        ? 'Bright'
+        : _brightness < 0.35
+        ? 'Moody'
+        : '';
     final style = _contrast > 0.6 ? 'High Contrast' : '';
-    return [mood, style, _suggestedTags.isEmpty ? 'Untitled Artwork' : _suggestedTags.first]
-        .where((s) => s.isNotEmpty)
-        .join(' ');
+    return [
+      mood,
+      style,
+      _suggestedTags.isEmpty ? 'Untitled Artwork' : _suggestedTags.first,
+    ].where((s) => s.isNotEmpty).join(' ');
   }
 
   // --------------------------------------------------------------- Save --
@@ -335,7 +352,8 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
       }
     }
     final originalCover = _existing?.coverImagePath ?? '';
-    final keptCover = originalCover.isNotEmpty && !_removedImages.contains(originalCover)
+    final keptCover =
+        originalCover.isNotEmpty && !_removedImages.contains(originalCover)
         ? originalCover
         : (keptImages.isNotEmpty ? keptImages.first : '');
 
@@ -398,7 +416,9 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
     }
 
     // AI duplicate detection for new uploads.
-    final duplicates = await PaintingRepository.instance.detectDuplicates(saved);
+    final duplicates = await PaintingRepository.instance.detectDuplicates(
+      saved,
+    );
     setState(() => _saving = false);
 
     if (!mounted) return;
@@ -429,7 +449,11 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
         if (!mounted) return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(isEdit ? 'Painting updated' : 'Painting added to your vault')),
+        SnackBar(
+          content: Text(
+            isEdit ? 'Painting updated' : 'Painting added to your vault',
+          ),
+        ),
       );
       context.pop();
     }
@@ -439,7 +463,11 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            icon: const Icon(Icons.content_copy, color: Colors.orange, size: 32),
+            icon: const Icon(
+              Icons.content_copy,
+              color: Colors.orange,
+              size: 32,
+            ),
             title: const Text('Possible duplicate found'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
@@ -497,15 +525,19 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
               tooltip: 'Duplicate scan',
               icon: const Icon(Icons.auto_fix_high),
               onPressed: () async {
-                final dups = await PaintingRepository.instance.detectDuplicates(_existing!);
+                final dups = await PaintingRepository.instance.detectDuplicates(
+                  _existing!,
+                );
                 if (!context.mounted) return;
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text('Duplicate scan'),
-                    content: Text(dups.isEmpty
-                        ? 'No likely duplicates found in your collection.'
-                        : 'Found ${dups.length} possible duplicate(s):\n${dups.map((d) => '• ${d.painting.title} (${Formatters.percent(d.similarity)})').join('\n')}'),
+                    content: Text(
+                      dups.isEmpty
+                          ? 'No likely duplicates found in your collection.'
+                          : 'Found ${dups.length} possible duplicate(s):\n${dups.map((d) => '• ${d.painting.title} (${Formatters.percent(d.similarity)})').join('\n')}',
+                    ),
                   ),
                 );
               },
@@ -589,29 +621,35 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
             SectionHeader(title: 'Dimensions & weight'),
             Row(
               children: [
-                Expanded(child: AppTextField(
-                  controller: _width,
-                  label: 'Width',
-                  icon: Icons.swap_horiz,
-                  keyboardType: TextInputType.number,
-                  validator: Validators.positiveNumber,
-                )),
+                Expanded(
+                  child: AppTextField(
+                    controller: _width,
+                    label: 'Width',
+                    icon: Icons.swap_horiz,
+                    keyboardType: TextInputType.number,
+                    validator: Validators.positiveNumber,
+                  ),
+                ),
                 const SizedBox(width: AppSpacing.sm),
-                Expanded(child: AppTextField(
-                  controller: _height,
-                  label: 'Height',
-                  icon: Icons.swap_vert,
-                  keyboardType: TextInputType.number,
-                  validator: Validators.positiveNumber,
-                )),
+                Expanded(
+                  child: AppTextField(
+                    controller: _height,
+                    label: 'Height',
+                    icon: Icons.swap_vert,
+                    keyboardType: TextInputType.number,
+                    validator: Validators.positiveNumber,
+                  ),
+                ),
                 const SizedBox(width: AppSpacing.sm),
-                Expanded(child: AppTextField(
-                  controller: _depth,
-                  label: 'Depth',
-                  icon: Icons.straighten,
-                  keyboardType: TextInputType.number,
-                  validator: Validators.positiveNumber,
-                )),
+                Expanded(
+                  child: AppTextField(
+                    controller: _depth,
+                    label: 'Depth',
+                    icon: Icons.straighten,
+                    keyboardType: TextInputType.number,
+                    validator: Validators.positiveNumber,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -670,7 +708,8 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
               items: AppConstants.availabilityOptions,
               labelFor: (v) => v,
               icon: Icons.sell_outlined,
-              onChanged: (v) => setState(() => _availability = v ?? 'Available'),
+              onChanged: (v) =>
+                  setState(() => _availability = v ?? 'Available'),
             ),
             const SizedBox(height: AppSpacing.md),
             AppTextField(
@@ -752,7 +791,9 @@ class _ImagePickerGrid extends StatelessWidget {
       children: [
         Text(
           'Images',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: AppSpacing.sm),
         GridView.count(
@@ -767,7 +808,10 @@ class _ImagePickerGrid extends StatelessWidget {
               Stack(
                 fit: StackFit.expand,
                 children: [
-                  ArtImage(path: path, borderRadius: BorderRadius.circular(AppSpacing.radiusSm)),
+                  ArtImage(
+                    path: path,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                  ),
                   Positioned(
                     top: 2,
                     right: 2,
@@ -819,7 +863,8 @@ class _ImagePickerGrid extends StatelessWidget {
                     ),
                 ],
               ),
-            if (existingPaths.length + allNew < AppConstants.maxImagesPerPainting)
+            if (existingPaths.length + allNew <
+                AppConstants.maxImagesPerPainting)
               _PickTile(onPick: onPick),
           ],
         ),
@@ -841,39 +886,40 @@ class _PickTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       child: InkWell(
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-        onTap: () => showModalBottomSheet<_ImageSource>(
-          context: context,
-          showDragHandle: true,
-          builder: (context) => SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.photo_library_outlined),
-                  title: const Text('Photo gallery'),
-                  onTap: () => Navigator.pop(context, _ImageSource.gallery),
+        onTap: () =>
+            showModalBottomSheet<_ImageSource>(
+              context: context,
+              showDragHandle: true,
+              builder: (context) => SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.photo_library_outlined),
+                      title: const Text('Photo gallery'),
+                      onTap: () => Navigator.pop(context, _ImageSource.gallery),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.photo_camera_outlined),
+                      title: const Text('Camera'),
+                      onTap: () => Navigator.pop(context, _ImageSource.camera),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.cloud_outlined),
+                      title: const Text('Google Drive'),
+                      onTap: () => Navigator.pop(context, _ImageSource.drive),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.cloud_download_outlined),
+                      title: const Text('Dropbox'),
+                      onTap: () => Navigator.pop(context, _ImageSource.dropbox),
+                    ),
+                  ],
                 ),
-                ListTile(
-                  leading: const Icon(Icons.photo_camera_outlined),
-                  title: const Text('Camera'),
-                  onTap: () => Navigator.pop(context, _ImageSource.camera),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.cloud_outlined),
-                  title: const Text('Google Drive'),
-                  onTap: () => Navigator.pop(context, _ImageSource.drive),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.cloud_download_outlined),
-                  title: const Text('Dropbox'),
-                  onTap: () => Navigator.pop(context, _ImageSource.dropbox),
-                ),
-              ],
-            ),
-          ),
-        ).then((source) {
-          if (source != null) onPick(source);
-        }),
+              ),
+            ).then((source) {
+              if (source != null) onPick(source);
+            }),
         child: const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -922,7 +968,10 @@ class _AiTagBanner extends StatelessWidget {
               const SizedBox(width: AppSpacing.xs),
               Text(
                 'AI detected',
-                style: TextStyle(fontWeight: FontWeight.w700, color: scheme.primary),
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: scheme.primary,
+                ),
               ),
             ],
           ),
@@ -932,10 +981,7 @@ class _AiTagBanner extends StatelessWidget {
             runSpacing: AppSpacing.xs,
             children: [
               for (final tag in tags)
-                ActionChip(
-                  label: Text(tag),
-                  onPressed: () => onAccept(tag),
-                ),
+                ActionChip(label: Text(tag), onPressed: () => onAccept(tag)),
               for (final hex in colors)
                 Tooltip(
                   message: 'Add colour ${hex.toUpperCase()}',
@@ -1000,7 +1046,11 @@ class _PendingDoc {
   final String name;
   final File file;
 
-  const _PendingDoc({required this.type, required this.name, required this.file});
+  const _PendingDoc({
+    required this.type,
+    required this.name,
+    required this.file,
+  });
 }
 
 /// Document upload section inside the painting form.
@@ -1053,8 +1103,16 @@ class _DocumentsPicker extends StatelessWidget {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 dense: true,
-                leading: Icon(Icons.description_outlined, size: 20, color: scheme.primary),
-                title: Text(doc.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                leading: Icon(
+                  Icons.description_outlined,
+                  size: 20,
+                  color: scheme.primary,
+                ),
+                title: Text(
+                  doc.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 subtitle: Text(doc.type, style: const TextStyle(fontSize: 11)),
                 trailing: IconButton(
                   tooltip: 'Remove document',

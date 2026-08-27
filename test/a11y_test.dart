@@ -75,9 +75,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: SemanticHidden(
-              child: const Text('Decorative background'),
-            ),
+            body: SemanticHidden(child: const Text('Decorative background')),
           ),
         ),
       );
@@ -112,11 +110,7 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: DecorativeImage(
-              child: Container(
-                width: 100,
-                height: 100,
-                color: Colors.blue,
-              ),
+              child: Container(width: 100, height: 100, color: Colors.blue),
             ),
           ),
         ),
