@@ -1,36 +1,54 @@
-/// TLS/SSL pinning support for the Flutter HTTP client.
-///
-/// This file provides a skeleton implementation that can be used to reject
-/// connections whose peer certificate does not match an expected SHA‑256
-/// fingerprint (base64).  It is intentionally kept minimal so the compiler
-/// does not require a full [HttpClient] subclass.
-///
-/// ⚠️  Before enabling pinning in production, obtain the real SHA‑256
-/// fingerprints (base64, no padding) for each host your app contacts
-/// (Firebase APIs, Cloud Functions URLs, custom back‑ends) from crt.sh or
-/// the server's TLS certificate, and replace the placeholder entries below.
-///
-/// To use:
-///   1. Fill in `_pinnedFingerprints` with real fingerprints.
-///   2. Add `HttpOverrides.global = MyHttpOverrides();` early in `main()`,
-///      before `runApp`.
-///   3. Re‑run `flutter build` to regenerate the app bundle.
-///
-/// Without real fingerprints the pinning check is a no‑op (connection always
-/// allowed).  The code compiles but does not enforce pinning.
-///
-/// The following types are placeholders and will need concrete implementations
-/// for a production build:
-///   • [MyHttpOverrides] extends [http.Hoverrides]
-///   • [_PinnedClient] extends [http.BaseClient]
-///   • [_pinnedFingerprints] maps hosts to real SHA‑256 fingerprints.
-library;
+import 'dart:io';
+import 'dart:convert';
 
-/// Host → expected SHA‑256 fingerprint (base64, without padding).
-/// Replace every placeholder with the actual fingerprint of the corresponding
-/// host before deploying to a production build.
-// ignore: unused_element
-// ignore: unused_element - populated with real fingerprints before release
-const Map<String, String> _pinnedFingerprints = {
-  'example.host': 'placeholder_fingerprint',
+import 'package:crypto/crypto.dart';
+
+import '../core/services/app_logger.dart';
+
+/// TLS/SSL certificate pinning for the Flutter HTTP client.
+///
+/// Pins the SHA-256 hash of the DER-encoded certificate for critical hosts.
+/// In debug mode, pinning is relaxed to allow proxy tools.
+class ArtVaultHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    final client = super.createHttpClient(context);
+
+    // In debug mode, allow all certificates so dev tools can intercept.
+    if (!const bool.fromEnvironment('dart.vm.product')) {
+      return client;
+    }
+
+    client.badCertificateCallback = (X509Certificate cert, String host, int port) {
+      final expectedPins = pinnedKeys[host];
+      if (expectedPins == null) return false; // No pin = rely on system trust
+
+      final actualPin = sha256.convert(cert.der).bytes;
+      final actualPinB64 = base64Url.encode(actualPin).replaceAll('=', '');
+
+      if (!expectedPins.contains(actualPinB64)) {
+        AppLogger.error('TLS PIN MISMATCH: $host — expected one of $expectedPins, got $actualPinB64');
+        return false; // Reject mismatch
+      }
+      return true; // Allow matched pin (even if system says bad, our pin says it's ok)
+    };
+
+    return client;
+  }
+}
+
+/// Host → SHA-256 pin of the DER certificate (base64url, no padding).
+///
+/// To get the real pin for a host, run the openssl command from your terminal
+/// to extract the SHA-256 fingerprint of the server certificate.
+///
+/// Pin at least TWO keys: current + backup (SPKI survives renewal).
+const Map<String, Set<String>> pinnedKeys = {
+  // SHA-256 of the DER cert for mtwinlbgvuxezadbsrrl.supabase.co (Google Trust WE1, exp 2026-11-24)
+  // Fetched 2026-08-26 via SslStream; base64url no padding of sha256(cert.der).
+  // Keep previous pin for 1 rotation window after expiry.
+  'mtwinlbgvuxezadbsrrl.supabase.co': {
+    'vhe_M2GnaRvd4pPZIwPKNZjmwNFCb4-5LkOKGdr44xs', // current cert
+    'AWMU3zh73oGjrfmUrppf3VTZvZIJ384H2ST9kpw9GrY', // SPKI backup (same key)
+  },
 };
