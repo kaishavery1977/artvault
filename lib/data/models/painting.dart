@@ -30,6 +30,10 @@ class Painting {
   final String currency;
   final String availability;
   final String location;
+  final double? lat;
+  final double? lng;
+  final List<Map<String, dynamic>> provenance;
+  final List<Map<String, dynamic>> priceHistory;
 
   // Media
   final String coverImagePath; // local file path
@@ -78,6 +82,10 @@ class Painting {
     this.currency = 'USD',
     this.availability = 'Available',
     this.location = '',
+    this.lat,
+    this.lng,
+    this.provenance = const [],
+    this.priceHistory = const [],
     this.coverImagePath = '',
     this.coverImageUrl = '',
     this.images = const [],
@@ -120,6 +128,10 @@ class Painting {
     String? currency,
     String? availability,
     String? location,
+    double? lat,
+    double? lng,
+    List<Map<String, dynamic>>? provenance,
+    List<Map<String, dynamic>>? priceHistory,
     String? coverImagePath,
     String? coverImageUrl,
     List<String>? images,
@@ -161,6 +173,10 @@ class Painting {
       currency: currency ?? this.currency,
       availability: availability ?? this.availability,
       location: location ?? this.location,
+      lat: lat ?? this.lat,
+      lng: lng ?? this.lng,
+      provenance: provenance ?? this.provenance,
+      priceHistory: priceHistory ?? this.priceHistory,
       coverImagePath: coverImagePath ?? this.coverImagePath,
       coverImageUrl: coverImageUrl ?? this.coverImageUrl,
       images: images ?? this.images,
@@ -212,6 +228,10 @@ class Painting {
     'currency': currency,
     'availability': availability,
     'location': location,
+    'lat': lat,
+    'lng': lng,
+    'provenance': provenance,
+    'priceHistory': priceHistory,
     'coverImagePath': coverImagePath,
     'coverImageUrl': coverImageUrl,
     'images': images,
@@ -255,6 +275,10 @@ class Painting {
     currency: (json['currency'] as String?) ?? 'USD',
     availability: (json['availability'] as String?) ?? 'Available',
     location: (json['location'] as String?) ?? '',
+    lat: _double(json['lat']),
+    lng: _double(json['lng']),
+    provenance: _listMap(json['provenance']),
+    priceHistory: _listMap(json['priceHistory']),
     coverImagePath: (json['coverImagePath'] as String?) ?? '',
     coverImageUrl: (json['coverImageUrl'] as String?) ?? '',
     images: _list(json['images']),
@@ -280,6 +304,11 @@ class Painting {
 
   static List<String> _list(dynamic v) {
     if (v is List) return v.whereType<String>().toList();
+    return const [];
+  }
+
+  static List<Map<String, dynamic>> _listMap(dynamic v) {
+    if (v is List) return v.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
     return const [];
   }
 

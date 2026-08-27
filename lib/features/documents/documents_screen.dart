@@ -290,9 +290,18 @@ class _DocumentTile extends ConsumerWidget {
           ),
           child: Icon(_icon(doc.type), color: scheme.primary, size: 22),
         ),
-        title: Text(doc.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+        title: Row(
+          children: [
+            Expanded(child: Text(doc.name, maxLines: 1, overflow: TextOverflow.ellipsis)),
+            if (paintingTitle == 'Unknown artwork' && doc.paintingId.isNotEmpty)
+              Tooltip(
+                message: 'Unlinked — painting deleted',
+                child: Icon(Icons.link_off, size: 16, color: scheme.error),
+              ),
+          ],
+        ),
         subtitle: Text(
-          '${doc.type} · ${Formatters.bytes(doc.sizeBytes)} · ${Formatters.date(doc.createdAt)}',
+          '${doc.type} · ${Formatters.bytes(doc.sizeBytes)} · ${Formatters.date(doc.createdAt)}${paintingTitle == 'Unknown artwork' && doc.paintingId.isNotEmpty ? ' · Unlinked' : ''}',
           style: const TextStyle(fontSize: 11),
         ),
         isThreeLine: false,

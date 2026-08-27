@@ -12,6 +12,8 @@ import '../../core/constants/pro_limits.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/services/ai_service.dart';
 import '../../core/services/file_storage_service.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../core/utils/formatters.dart';
 import '../../core/utils/image_utils.dart';
 import '../../core/utils/validators.dart';
@@ -59,6 +61,8 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
   final _weight = TextEditingController();
   final _price = TextEditingController();
   final _location = TextEditingController();
+  final _lat = TextEditingController();
+  final _lng = TextEditingController();
   final _dateCreated = TextEditingController();
 
   // Selections
@@ -132,6 +136,8 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
     _weight.text = p.weight?.toString() ?? '';
     _price.text = p.price?.toString() ?? '';
     _location.text = p.location;
+    _lat.text = p.lat?.toString() ?? '';
+    _lng.text = p.lng?.toString() ?? '';
     _dateCreated.text = p.dateCreated ?? '';
     _category = p.category;
     _medium = p.medium;
@@ -161,11 +167,25 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
       _weight,
       _price,
       _location,
+      _lat,
+      _lng,
       _dateCreated,
     ]) {
       c.dispose();
     }
     super.dispose();
+  }
+
+  List<Map<String, dynamic>> _buildPriceHistory(Painting? existing, double? newPrice) {
+    if (existing == null || newPrice == null || newPrice == existing.price) {
+      return existing?.priceHistory ?? const [];
+    }
+    final entry = {
+      'date': DateTime.now().toIso8601String(),
+      'value': newPrice,
+      'currency': _currency,
+    };
+    return [...existing.priceHistory, entry];
   }
 
   // ------------------------------------------------------------- Images --
@@ -377,6 +397,10 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
       currency: _currency,
       availability: _availability,
       location: _location.text.trim(),
+      lat: double.tryParse(_lat.text),
+      lng: double.tryParse(_lng.text),
+      provenance: _existing?.provenance ?? const [],
+      priceHistory: _buildPriceHistory(_existing, double.tryParse(_price.text)),
       coverImagePath: keptCover,
       coverImageUrl: _existing?.coverImageUrl ?? '',
       images: keptImages,
@@ -718,6 +742,44 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
               icon: Icons.location_on_outlined,
               hint: 'Studio, gallery, storage…',
             ),
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                Expanded(
+                  child: AppTextField(
+                    controller: _lat,
+                    label: 'Latitude',
+                    icon: Icons.map_outlined,
+                    hint: 'e.g. 48.86',
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: AppTextField(
+                    controller: _lng,
+                    label: 'Longitude',
+                    icon: Icons.map_outlined,
+                    hint: 'e.g. 2.33',
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                  ),
+                ),
+              ],
+            ),
+            if (_lat.text.isNotEmpty && _lng.text.isNotEmpty)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () {
+                    final lat = _lat.text.trim();
+                    final lng = _lng.text.trim();
+                    // ignore: deprecated_member_use
+                    launchUrl(Uri.parse('https://www.openstreetmap.org/?mlat=$lat&mlon=$lng#map=15/$lat/$lng'));
+                  },
+                  icon: const Icon(Icons.open_in_new, size: 16),
+                  label: const Text('Open in map'),
+                ),
+              ),
             const SizedBox(height: AppSpacing.md),
             AppTextField(
               controller: _dateCreated,

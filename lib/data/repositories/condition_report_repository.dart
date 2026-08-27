@@ -6,6 +6,8 @@ import 'package:uuid/uuid.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/services/backup_service.dart';
 import '../../core/services/file_storage_service.dart';
+import '../../core/services/notification_service.dart';
+import 'painting_repository.dart';
 import '../local/local_database.dart';
 import '../models/condition_report.dart';
 import '../remote/cloud_backend.dart';
@@ -77,6 +79,16 @@ class ConditionReportRepository {
     await _db.put(AppConstants.boxConditionReports, report.id, report.toJson());
     unawaited(_syncReport(report));
     BackupService.instance.scheduleAutoBackup();
+    // 6-month re-inspect reminder
+    try {
+      final painting = PaintingRepository.instance.get(report.paintingId);
+      final title = painting?.title ?? 'Painting';
+      await NotificationService.instance.scheduleConditionReminder(
+        report.paintingId,
+        title,
+        report.inspectedAt.add(const Duration(days: 180)),
+      );
+    } catch (_) {}
     return report;
   }
 
