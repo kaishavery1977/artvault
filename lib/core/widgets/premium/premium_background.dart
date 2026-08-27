@@ -41,6 +41,9 @@ class _PremiumBackgroundState extends State<PremiumBackground>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final mq = MediaQuery.maybeOf(context);
+    final reduceMotion = mq?.disableAnimations ?? false;
+    final isLowEnd = (mq?.devicePixelRatio ?? 3.0) < 2.5 || reduceMotion;
 
     final defaultColors = isDark
         ? [
@@ -85,8 +88,8 @@ class _PremiumBackgroundState extends State<PremiumBackground>
           },
         ),
 
-        // Floating light rays
-        if (widget.showRays && !isDark)
+        // Floating light rays — hidden on low-end / reduced motion
+        if (widget.showRays && !isDark && !isLowEnd)
           Positioned.fill(
             child: AnimatedBuilder(
               animation: _controller,

@@ -74,7 +74,10 @@ class _FloatingOrbsState extends State<FloatingOrbs>
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.animated) {
+    final mq = MediaQuery.maybeOf(context);
+    final reduceMotion = mq?.disableAnimations ?? false;
+    final isLowEnd = (mq?.devicePixelRatio ?? 3.0) < 2.5 || reduceMotion;
+    if (!widget.animated || isLowEnd) {
       return Stack(children: _buildOrbs(0));
     }
 
