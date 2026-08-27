@@ -1,21 +1,12 @@
 -- Harden ArtVault — storage RLS + atomic role/revoke
 -- Apply: supabase db push
 
--- A) Storage RLS for av-* buckets (owner folder = auth.uid())
-alter table storage.objects enable row level security;
-drop policy if exists "av read own" on storage.objects;
-drop policy if exists "av insert own" on storage.objects;
-drop policy if exists "av update own" on storage.objects;
-drop policy if exists "av delete own" on storage.objects;
-
-create policy "av read own" on storage.objects for select to authenticated
-  using (bucket_id in ('av-profile','av-paintings','av-documents') and auth.uid()::text = (storage.foldername(name))[1]);
-create policy "av insert own" on storage.objects for insert to authenticated
-  with check (bucket_id in ('av-profile','av-paintings','av-documents') and auth.uid()::text = (storage.foldername(name))[1]);
-create policy "av update own" on storage.objects for update to authenticated
-  using (bucket_id in ('av-profile','av-paintings','av-documents') and auth.uid()::text = (storage.foldername(name))[1]);
-create policy "av delete own" on storage.objects for delete to authenticated
-  using (bucket_id in ('av-profile','av-paintings','av-documents') and auth.uid()::text = (storage.foldername(name))[1]);
+-- A) Storage RLS for av-* buckets — MUST be set via Dashboard → Storage → Policies
+-- (alter table storage.objects requires owner, fails via db push)
+-- Create in Dashboard: bucket av-profile/paintings/documents, public=false,
+-- then add 4 policies on storage.objects for authenticated:
+--   using (bucket_id in ('av-profile','av-paintings','av-documents') and auth.uid()::text = (storage.foldername(name))[1])
+-- See supabase/storage_policies.sql for the exact SQL to paste in Dashboard SQL editor.
 
 -- B) Atomic revoke / update_role to close read-then-write races
 create or replace function revoke_user_atomic(target_uid text, target_email text, target_name text, old_role text)
