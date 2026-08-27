@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -6,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/constants/app_constants.dart';
 import 'core/theme/adaptive_layout.dart';
 import 'core/theme/app_theme.dart';
+import 'utils/http_overrides.dart';
 import 'core/widgets/ambient_background.dart';
 import 'core/widgets/resume_intro_observer.dart';
 import 'core/providers/providers.dart';
@@ -20,6 +23,7 @@ import 'data/remote/cloud_backend.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  HttpOverrides.global = ArtVaultHttpOverrides();
 
   // Offline-first boot: local storage + services first, Firebase best-effort.
   try {
