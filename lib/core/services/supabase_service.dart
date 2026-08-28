@@ -23,24 +23,24 @@ class SupabaseService {
     }
   }
 
-  Future<Map<String, dynamic>?> safeFetchOne(String table, String id) async {
+  Future<Map<String, dynamic>?> safeFetchOne(String table, String id, {String pk = 'id'}) async {
     try {
-      final data = await _db.from(table).select().eq('id', id).single();
+      final data = await _db.from(table).select().eq(pk, id).single();
       return Map<String, dynamic>.from(data as Map);
     } catch (_) {
       return null;
     }
   }
 
-  Future<void> safeUpsert(String table, String id, Map<String, dynamic> data) async {
+  Future<void> safeUpsert(String table, String id, Map<String, dynamic> data, {String pk = 'id'}) async {
     try {
-      await _db.from(table).upsert({...data, 'id': id});
+      await _db.from(table).upsert({...data, pk: id});
     } catch (_) {}
   }
 
-  Future<void> safeDelete(String table, String id) async {
+  Future<void> safeDelete(String table, String id, {String pk = 'id'}) async {
     try {
-      await _db.from(table).delete().eq('id', id);
+      await _db.from(table).delete().eq(pk, id);
     } catch (_) {}
   }
 
@@ -52,8 +52,8 @@ class SupabaseService {
     }
   }
 
-  Stream<List<Map<String, dynamic>>> watchTable(String table) {
+  Stream<List<Map<String, dynamic>>> watchTable(String table, {String pk = 'id'}) {
     if (!ready) return const Stream.empty();
-    return _db.from(table).stream(primaryKey: ['id']).map((l) => l.cast<Map<String, dynamic>>());
+    return _db.from(table).stream(primaryKey: [pk]).map((l) => l.cast<Map<String, dynamic>>());
   }
 }

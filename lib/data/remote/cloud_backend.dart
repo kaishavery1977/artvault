@@ -200,20 +200,21 @@ class CloudBackend {
 
   // -------------------------------------------------------------- Supabase DB --
 
-  /// Upserts a row into [collection] (Supabase table) keyed by `id`.
+  /// Upserts a row into [collection] (Supabase table) keyed by [pk].
   Future<void> upsert(
     String collection,
     String id,
-    Map<String, dynamic> data,
-  ) async {
+    Map<String, dynamic> data, {
+    String pk = 'id',
+  }) async {
     if (!_ready) return;
-    await _db.from(collection).upsert({...data, 'id': id});
+    await _db.from(collection).upsert({...data, pk: id});
   }
 
-  /// Deletes a row from [collection] by `id`.
-  Future<void> remove(String collection, String id) async {
+  /// Deletes a row from [collection] by [pk].
+  Future<void> remove(String collection, String id, {String pk = 'id'}) async {
     if (!_ready) return;
-    await _db.from(collection).delete().eq('id', id);
+    await _db.from(collection).delete().eq(pk, id);
   }
 
   /// Inserts a row with an auto-generated id.
@@ -223,9 +224,9 @@ class CloudBackend {
   }
 
   /// Removes a single field by setting it to null.
-  Future<void> deleteField(String collection, String id, String field) async {
+  Future<void> deleteField(String collection, String id, String field, {String pk = 'id'}) async {
     if (!_ready) return;
-    await _db.from(collection).update({field: null}).eq('id', id);
+    await _db.from(collection).update({field: null}).eq(pk, id);
   }
 
   /// Calls a Postgres RPC (atomic DB function) — used for revoke/update_role.
@@ -248,11 +249,11 @@ class CloudBackend {
     return List<Map<String, dynamic>>.from(data);
   }
 
-  /// Fetches a single row by id, or null when it doesn't exist.
-  Future<Map<String, dynamic>?> fetchDoc(String collection, String id) async {
+  /// Fetches a single row by [pk], or null when it doesn't exist.
+  Future<Map<String, dynamic>?> fetchDoc(String collection, String id, {String pk = 'id'}) async {
     if (!_ready) return null;
     try {
-      final data = await _db.from(collection).select().eq('id', id).single();
+      final data = await _db.from(collection).select().eq(pk, id).single();
       return Map<String, dynamic>.from(data);
     } catch (_) {
       return null; // not found or error
@@ -260,24 +261,24 @@ class CloudBackend {
   }
 
   /// Live stream of every row in [collection].
-  Stream<List<Map<String, dynamic>>> watchCollection(String collection) {
+  Stream<List<Map<String, dynamic>>> watchCollection(String collection, {String pk = 'id'}) {
     if (!_ready) return const Stream.empty();
     return _db
         .from(collection)
-        .stream(primaryKey: ['id'])
+        .stream(primaryKey: [pk])
         .map((list) => list.cast<Map<String, dynamic>>());
   }
 
   /// Live list of every registered user's profile.
-  Stream<List<Map<String, dynamic>>> watchUsers() => watchCollection('users');
+  Stream<List<Map<String, dynamic>>> watchUsers() => watchCollection('users', pk: 'uid');
 
   /// Live stream of a single row.
-  Stream<Map<String, dynamic>?> watchDoc(String collection, String id) {
+  Stream<Map<String, dynamic>?> watchDoc(String collection, String id, {String pk = 'id'}) {
     if (!_ready) return const Stream.empty();
     return _db
         .from(collection)
-        .stream(primaryKey: ['id'])
-        .eq('id', id)
+        .stream(primaryKey: [pk])
+        .eq(pk, id)
         .map((list) => list.isEmpty ? null : list.first);
   }
 

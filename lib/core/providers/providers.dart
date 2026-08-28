@@ -224,7 +224,7 @@ class AuthController extends StateNotifier<AuthState> {
     if (user.uid.isEmpty) return;
     try {
       _profileSub = CloudBackend.instance
-          .watchDoc('users', user.uid)
+          .watchDoc('users', user.uid, pk: 'uid')
           .listen(
             _applyProfileSnapshot,
             onError: (e, _) {

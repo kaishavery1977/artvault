@@ -115,9 +115,9 @@ class AuthRepository {
         if (wantsAdmin) {
           data['bootstrapCode'] = adminCode;
         }
-        await cloud.upsert('users', user.uid, data);
+        await cloud.upsert('users', user.uid, data, pk: 'uid');
         if (wantsAdmin) {
-          await cloud.deleteField('users', user.uid, 'bootstrapCode');
+          await cloud.deleteField('users', user.uid, 'bootstrapCode', pk: 'uid');
         }
         await _persistUser(profile);
         return profile;
@@ -267,7 +267,7 @@ class AuthRepository {
     // never by re-creating the profile from defaults (which would clobber
     // an existing role/plan and is rejected by the rules for Pro/admin).
     try {
-      final doc = await CloudBackend.instance.fetchDoc('users', uid);
+      final doc = await CloudBackend.instance.fetchDoc('users', uid, pk: 'uid');
       if (doc != null && doc['uid'] == uid) {
         return AppUser.fromJson(doc).copyWith(lastLogin: DateTime.now());
       }
@@ -285,7 +285,7 @@ class AuthRepository {
       createdAt: DateTime.now(),
       lastLogin: DateTime.now(),
     );
-    await CloudBackend.instance.upsert('users', uid, profile.toFirestoreJson());
+    await CloudBackend.instance.upsert('users', uid, profile.toFirestoreJson(), pk: 'uid');
     return profile;
   }
 
@@ -313,7 +313,7 @@ class AuthRepository {
     } catch (_) {
       // Fallback for offline or pre-migration builds: old read-then-write
       final oldRole = await _roleOf(uid);
-      await CloudBackend.instance.upsert('users', uid, {'role': role.wire});
+      await CloudBackend.instance.upsert('users', uid, {'role': role.wire}, pk: 'uid');
       try {
         await CloudBackend.instance.addDoc('role_audit', {
           'uid': uid,
@@ -338,7 +338,7 @@ class AuthRepository {
   /// the previous local knowledge when offline).
   static Future<String> _roleOf(String uid) async {
     try {
-      final doc = await CloudBackend.instance.fetchDoc('users', uid);
+      final doc = await CloudBackend.instance.fetchDoc('users', uid, pk: 'uid');
       if (doc != null && doc['role'] is String) return doc['role'] as String;
     } catch (_) {}
     return 'unknown';
@@ -376,7 +376,7 @@ class AuthRepository {
         'byUid': me.uid,
         'byEmail': me.email,
       });
-      await CloudBackend.instance.remove('users', uid);
+      await CloudBackend.instance.remove('users', uid, pk: 'uid');
       try {
         await CloudBackend.instance.addDoc('role_audit', {
           'uid': uid,
@@ -470,7 +470,7 @@ class AuthRepository {
   /// keep the local-first fallback.
   Future<void> updatePlan(String uid, AppPlan plan) async {
     try {
-      await CloudBackend.instance.upsert('users', uid, {'plan': plan.wire});
+      await CloudBackend.instance.upsert('users', uid, {'plan': plan.wire}, pk: 'uid');
     } catch (e) {
       final msg = e.toString();
       if (msg.contains('permission-denied') ||
@@ -561,7 +561,7 @@ class AuthRepository {
       'photoPath': updated.photoPath,
       'photoUrl': updated.photoUrl,
       'email': AppUser.maskedEmail(updated.email),
-    });
+    }, pk: 'uid');
     CloudBackend.instance.setUser(me.uid, me.email);
   }
 
