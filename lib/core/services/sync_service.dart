@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../../core/constants/app_constants.dart';
 import '../../data/local/local_database.dart';
 import '../../data/remote/cloud_backend.dart';
 import '../../data/repositories/painting_repository.dart';
@@ -25,7 +26,7 @@ class SyncService {
   Timer? _periodicTimer;
   bool _syncing = false;
 
-  static const String _boxQueue = 'av_sync_pending';
+  static const String _boxQueue = AppConstants.boxSyncQueue;
 
   /// Queues an operation for retry.
   Future<void> enqueue(
