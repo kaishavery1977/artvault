@@ -589,7 +589,7 @@ final revokedProvider = StreamProvider<List<RevokedAccount>>((ref) async* {
     return;
   }
   yield* cloud
-      .watchCollection('revoked')
+      .watchCollection('revoked', pk: 'uid')
       .map(
         (list) =>
             list.map(RevokedAccount.fromJson).toList()

@@ -249,7 +249,7 @@ class AuthRepository {
 
     // A revoked account must not silently come back as a fresh curator.
     try {
-      final revoked = await CloudBackend.instance.fetchDoc('revoked', uid);
+      final revoked = await CloudBackend.instance.fetchDoc('revoked', uid, pk: 'uid');
       if (revoked != null) {
         throw AuthException(
           'This account has been revoked by an administrator.',
@@ -375,7 +375,7 @@ class AuthRepository {
         'revokedAt': DateTime.now().toIso8601String(),
         'byUid': me.uid,
         'byEmail': me.email,
-      });
+      }, pk: 'uid');
       await CloudBackend.instance.remove('users', uid, pk: 'uid');
       try {
         await CloudBackend.instance.addDoc('role_audit', {
@@ -403,12 +403,12 @@ class AuthRepository {
     // Remember the old role for the audit before deleting the marker.
     String oldRole = 'revoked';
     try {
-      final marker = await CloudBackend.instance.fetchDoc('revoked', uid);
+      final marker = await CloudBackend.instance.fetchDoc('revoked', uid, pk: 'uid');
       if (marker != null && marker['role'] is String) {
         oldRole = marker['role'] as String;
       }
     } catch (_) {}
-    await CloudBackend.instance.remove('revoked', uid);
+    await CloudBackend.instance.remove('revoked', uid, pk: 'uid');
     try {
       await CloudBackend.instance.addDoc('role_audit', {
         'uid': uid,
@@ -430,7 +430,7 @@ class AuthRepository {
   Future<({int restored, int failed})> restoreAllUsers() async {
     final me = cachedUser;
     final markers = await CloudBackend.instance
-        .watchCollection('revoked')
+        .watchCollection('revoked', pk: 'uid')
         .first;
     var restored = 0;
     var failed = 0;
@@ -441,7 +441,7 @@ class AuthRepository {
         continue;
       }
       try {
-        await CloudBackend.instance.remove('revoked', uid);
+        await CloudBackend.instance.remove('revoked', uid, pk: 'uid');
         try {
           await CloudBackend.instance.addDoc('role_audit', {
             'uid': uid,
