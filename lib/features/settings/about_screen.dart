@@ -359,92 +359,171 @@ class AboutScreen extends ConsumerWidget {
         const SizedBox(height: AppSpacing.xl),
 
         // ------------------------------------------------------------------
-        // FOOTER — credit signature + closing line
+        // FOOTER — Developer card + tech stack + copyright
         // ------------------------------------------------------------------
-        // Professional signature card
-        Center(
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-              border: Border.all(color: scheme.primary.withValues(alpha: 0.25)),
-              color: scheme.primary.withValues(alpha: 0.06),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Avatar circle with initials
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [scheme.primary, scheme.secondary],
+        GlassCard(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            children: [
+              // --- Developer identity ---
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [scheme.primary, scheme.secondary],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: scheme.primary.withValues(alpha: 0.3),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Text(
+                    'KH',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.5,
                     ),
                   ),
-                  child: const Center(
-                    child: Text(
-                      'KH',
+                ),
+              ),
+              const SizedBox(height: 12),
+              GradientShimmerText(
+                text: 'Kais Havery',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+                colors: [scheme.primary, scheme.secondary, scheme.tertiary],
+                duration: const Duration(milliseconds: 1400),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Founder & Lead Developer',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: scheme.primary.withValues(alpha: 0.8),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Architecting ArtVault — your private digital gallery',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontStyle: FontStyle.italic,
+                  color: scheme.onSurface.withValues(alpha: 0.55),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // --- Decorative divider ---
+              Container(
+                width: 60,
+                height: 1.5,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      scheme.primary.withValues(alpha: 0.0),
+                      scheme.primary.withValues(alpha: 0.4),
+                      scheme.primary.withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // --- Tech stack badges ---
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                alignment: WrapAlignment.center,
+                children: [
+                  _TechBadge(label: 'Flutter', icon: Icons.phone_android),
+                  _TechBadge(label: 'Dart', icon: Icons.code),
+                  _TechBadge(label: 'Supabase', icon: Icons.storage),
+                  _TechBadge(label: 'Firebase', icon: Icons.local_fire_department),
+                  _TechBadge(label: 'Hive', icon: Icons.cabin),
+                  _TechBadge(label: 'Riverpod', icon: Icons.water_drop),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // --- Build info ---
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                  color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.build_circle_outlined, size: 13, color: scheme.onSurface.withValues(alpha: 0.5)),
+                    const SizedBox(width: 6),
+                    Text(
+                      'v$appVersion · Build $appBuild · $engineLabel',
                       style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: scheme.onSurface.withValues(alpha: 0.55),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(height: 10),
-                // Name
-                GradientShimmerText(
-                  text: 'Kais Havery',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
-                  colors: [scheme.primary, scheme.secondary, scheme.tertiary],
-                  duration: const Duration(milliseconds: 1400),
-                ),
-                const SizedBox(height: 2),
-                // Role
-                Text(
-                  'Founder & Developer',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: scheme.primary.withValues(alpha: 0.75),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // Divider
-                Container(
-                  width: 40,
-                  height: 1.5,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        scheme.primary.withValues(alpha: 0.0),
-                        scheme.primary.withValues(alpha: 0.4),
-                        scheme.primary.withValues(alpha: 0.0),
-                      ],
+              ),
+              const SizedBox(height: 14),
+
+              // --- Contact links ---
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _FooterIconButton(
+                    icon: Icons.mail_outline,
+                    tooltip: 'Email',
+                    onTap: () => _launch(
+                      'mailto:${AppConstants.supportEmail}'
+                      '?subject=ArtVault%20Feedback',
                     ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                // Tagline
-                Text(
-                  'Crafted with precision & passion',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontStyle: FontStyle.italic,
-                    color: scheme.onSurface.withValues(alpha: 0.5),
+                  const SizedBox(width: 12),
+                  _FooterIconButton(
+                    icon: Icons.star_border,
+                    tooltip: 'Rate on Play Store',
+                    onTap: () => _launch(AppConstants.playStoreUrl),
                   ),
+                  const SizedBox(width: 12),
+                  _FooterIconButton(
+                    icon: Icons.ios_share,
+                    tooltip: 'Share ArtVault',
+                    onTap: () => ShareService.instance.shareText(
+                      'Discover ArtVault — your private digital gallery. '
+                      '${AppConstants.playStoreUrl}',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+
+              // --- Copyright ---
+              Text(
+                '© 2026 Kais Havery. All rights reserved.',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: scheme.onSurface.withValues(alpha: 0.4),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: AppSpacing.xl),
@@ -724,6 +803,69 @@ class _CelebrationRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Small chip showing a technology used in the app.
+class _TechBadge extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  const _TechBadge({required this.label, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.2)),
+        color: scheme.primary.withValues(alpha: 0.06),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: scheme.primary.withValues(alpha: 0.7)),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurface.withValues(alpha: 0.7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Circular icon button used in the footer contact row.
+class _FooterIconButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
+  const _FooterIconButton({required this.icon, required this.tooltip, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: scheme.primary.withValues(alpha: 0.08),
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Icon(icon, size: 18, color: scheme.primary),
+          ),
+        ),
       ),
     );
   }
