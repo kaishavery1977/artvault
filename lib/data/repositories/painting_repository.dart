@@ -327,6 +327,14 @@ class PaintingRepository {
     try {
       final uid = cloud.currentUid;
       if (uid.isEmpty) return;
+      // Skip empty paintings that have no title and no images — they
+      // should never reach the cloud.
+      if (painting.title.trim().isEmpty &&
+          painting.images.isEmpty &&
+          painting.imageUrls.isEmpty &&
+          painting.coverImageUrl.isEmpty) {
+        return;
+      }
       var working = painting.copyWith(ownerUid: uid);
 
       // Soft-deleted: remove the remote copy and keep the local record in

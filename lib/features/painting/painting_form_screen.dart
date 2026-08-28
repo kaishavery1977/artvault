@@ -371,9 +371,30 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final isNew = _existing == null;
+
+    // Block empty paintings: require at least a title or an image.
+    if (isNew) {
+      final hasTitle = _title.text.trim().isNotEmpty;
+      final hasImages = _newImages.isNotEmpty;
+      // Keep existing images that were not removed.
+      final existingKept = (_existing?.images ?? const []).any(
+        (p) => p.isNotEmpty && !_removedImages.contains(p),
+      );
+      if (!hasTitle && !hasImages && !existingKept) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Add a title or at least one image'),
+            ),
+          );
+        }
+        return;
+      }
+    }
+
     // Free-tier capacity gate: block new paintings past the cap and point
     // the user at the upgrade flow.
-    final isNew = _existing == null;
     if (isNew && !ref.read(authProvider).isPro) {
       final active =
           ref.read(paintingsProvider).valueOrNull?.length ??
