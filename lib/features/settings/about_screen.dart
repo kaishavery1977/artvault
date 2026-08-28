@@ -33,6 +33,15 @@ class AboutScreen extends ConsumerWidget {
     (Icons.link, 'Public gallery links'),
     (Icons.ios_share, 'Catalogue export'),
     (Icons.fingerprint, 'App lock & biometrics'),
+    (Icons.verified_user, 'Role-based access'),
+    (Icons.workspace_premium_outlined, 'Pro billing & upgrades'),
+    (Icons.celebration_outlined, 'Celebrations & confetti'),
+    (Icons.history, '6-month condition reminders'),
+    (Icons.restore, 'Full vault cloud restore'),
+    (Icons.photo_library_outlined, 'Image repair & recovery'),
+    (Icons.water_drop_outlined, 'Gallery link expiry & reminders'),
+    (Icons.price_check, 'Price history tracking'),
+    (Icons.map_outlined, 'Location & provenance map'),
   ];
 
   @override
@@ -196,10 +205,13 @@ class AboutScreen extends ConsumerWidget {
               _cardTitle(context, Icons.auto_awesome_outlined, 'About'),
               const SizedBox(height: AppSpacing.sm),
               Text(
-                'ArtVault is a private digital gallery for collectors, curators '
-                'and galleries. Every artwork lives on-device first, with '
-                'optional encrypted cloud sync, smart duplicate detection, '
-                'QR identification, provenance documents and full catalogue '
+                'ArtVault is a professional-grade private digital gallery '
+                'built for collectors, curators and galleries. Every artwork '
+                'lives on-device first with AES-256 encryption, with optional '
+                'cloud sync, smart duplicate detection, QR identification, '
+                'provenance tracking, condition reports, role-based access '
+                'control, real Pro billing via Google Play, revocable public '
+                'gallery links with expiry and analytics, and full catalogue '
                 'export — so your collection is organised, analysed and '
                 'protected wherever you are.',
                 style: TextStyle(
@@ -253,8 +265,9 @@ class AboutScreen extends ConsumerWidget {
               _infoRow(
                 context,
                 'Data model',
-                'Offline-first · Firebase optional',
+                'Offline-first · Supabase + Firebase',
               ),
+              _infoRow(context, 'Security', 'AES-256 · PBKDF2 · App Check'),
               _infoRow(context, 'Plan', plan.isPro ? 'Pro' : 'Free'),
             ],
           ),
@@ -348,42 +361,89 @@ class AboutScreen extends ConsumerWidget {
         // ------------------------------------------------------------------
         // FOOTER — credit signature + closing line
         // ------------------------------------------------------------------
+        // Professional signature card
         Center(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: scheme.primary.withValues(alpha: 0.35)),
-              color: scheme.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+              border: Border.all(color: scheme.primary.withValues(alpha: 0.25)),
+              color: scheme.primary.withValues(alpha: 0.06),
             ),
-            child: Row(
+            child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.brush, size: 15, color: scheme.primary),
-                const SizedBox(width: 8),
-                // The credit shimmers in brand colors — a small signature
-                // moment at the end of the page.
+                // Avatar circle with initials
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [scheme.primary, scheme.secondary],
+                    ),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'KH',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                // Name
                 GradientShimmerText(
-                  text: 'Built by Kais Havery',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: scheme.primary,
+                  text: 'Kais Havery',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
                   ),
                   colors: [scheme.primary, scheme.secondary, scheme.tertiary],
-                  duration: const Duration(milliseconds: 1200),
+                  duration: const Duration(milliseconds: 1400),
+                ),
+                const SizedBox(height: 2),
+                // Role
+                Text(
+                  'Founder & Developer',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: scheme.primary.withValues(alpha: 0.75),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Divider
+                Container(
+                  width: 40,
+                  height: 1.5,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        scheme.primary.withValues(alpha: 0.0),
+                        scheme.primary.withValues(alpha: 0.4),
+                        scheme.primary.withValues(alpha: 0.0),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Tagline
+                Text(
+                  'Crafted with precision & passion',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                    color: scheme.onSurface.withValues(alpha: 0.5),
+                  ),
                 ),
               ],
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Center(
-          child: Text(
-            'Every masterpiece starts with a single brushstroke.',
-            style: TextStyle(
-              fontSize: 12,
-              color: scheme.onSurface.withValues(alpha: 0.4),
             ),
           ),
         ),
