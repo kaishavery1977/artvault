@@ -37,6 +37,32 @@ class _PaintingLightboxScreenState extends State<PaintingLightboxScreen> {
   late final PageController _controller;
   late int _index;
   bool _showChrome = true;
+  final Map<int, TransformationController> _zoomControllers = {};
+
+  /// Returns (or lazily creates) the [TransformationController] for page [i].
+  TransformationController _zoomControllerFor(int i) {
+    return _zoomControllers.putIfAbsent(i, () => TransformationController());
+  }
+
+  /// Double-tap toggles between 1× and 2.5× zoom, centered on the tap point.
+  void _handleDoubleTap(TapDownDetails details, int pageIndex) {
+    final vc = _zoomControllerFor(pageIndex);
+    final matrix = vc.value;
+    final currentScale = matrix.getMaxScaleOnAxis();
+    final targetScale = currentScale > 1.3 ? 1.0 : 2.5;
+
+    // Compute the tap position in the image's coordinate space.
+    final renderBox = context.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+    final local = renderBox.globalToLocal(details.globalPosition);
+
+    final endMatrix = Matrix4.identity()
+      ..translateByDouble(local.dx, local.dy, 0.0, 1.0)
+      ..scaleByDouble(targetScale, targetScale, 1.0, 1.0)
+      ..translateByDouble(-local.dx, -local.dy, 0.0, 1.0);
+
+    vc.value = endMatrix;
+  }
 
   @override
   void initState() {
@@ -47,6 +73,9 @@ class _PaintingLightboxScreenState extends State<PaintingLightboxScreen> {
 
   @override
   void dispose() {
+    for (final vc in _zoomControllers.values) {
+      vc.dispose();
+    }
     _controller.dispose();
     super.dispose();
   }
@@ -82,10 +111,14 @@ class _PaintingLightboxScreenState extends State<PaintingLightboxScreen> {
                     ? <String>[p.coverImageUrl]
                     : p.imageUrls;
                 return GestureDetector(
+                  onDoubleTapDown: (d) => _handleDoubleTap(d, i),
                   onTap: () => setState(() => _showChrome = !_showChrome),
                   child: InteractiveViewer(
-                    maxScale: 5,
-                    minScale: 0.8,
+                    transformationController: _zoomControllerFor(i),
+                    maxScale: 6,
+                    minScale: 0.5,
+                    panEnabled: true,
+                    scaleEnabled: true,
                     // Each artwork settles into place as it arrives — a
                     // quiet museum-frame zoom instead of a hard cut.
                     child: KenBurns(

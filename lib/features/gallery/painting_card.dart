@@ -92,6 +92,11 @@ class PaintingGridCard extends ConsumerWidget {
             child: _FavoriteButton(painting: painting),
           ),
           Positioned(
+            top: AppSpacing.xs,
+            left: AppSpacing.xs,
+            child: _SyncBadge(painting: painting),
+          ),
+          Positioned(
             left: AppSpacing.sm,
             right: AppSpacing.sm,
             bottom: AppSpacing.sm,
@@ -176,6 +181,54 @@ class _FavoriteButton extends ConsumerWidget {
           HapticFeedback.mediumImpact();
           PaintingRepository.instance.toggleFavorite(painting.id);
         },
+      ),
+    );
+  }
+}
+
+/// Small badge showing the cloud-sync status of a painting.
+class _SyncBadge extends StatelessWidget {
+  final Painting painting;
+  const _SyncBadge({required this.painting});
+
+  @override
+  Widget build(BuildContext context) {
+    final synced = painting.synced && !painting.needsSync;
+    final hasCloud = painting.imageUrls.isNotEmpty ||
+        painting.coverImageUrl.isNotEmpty;
+
+    // Decide which icon + tooltip to show.
+    final IconData icon;
+    final String tooltip;
+    final Color color;
+
+    if (synced && hasCloud) {
+      icon = Icons.cloud_done;
+      tooltip = 'Backed up';
+      color = const Color(0xFF34D399); // green
+    } else if (painting.needsSync) {
+      icon = Icons.sync;
+      tooltip = 'Syncing…';
+      color = const Color(0xFFFBBF24); // amber
+    } else if (hasCloud) {
+      icon = Icons.cloud;
+      tooltip = 'In cloud';
+      color = const Color(0xFF8AB4F8); // blue
+    } else {
+      icon = Icons.cloud_off;
+      tooltip = 'Local only — not backed up';
+      color = Colors.white.withValues(alpha: 0.6);
+    }
+
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.black.withValues(alpha: 0.45),
+        shape: const CircleBorder(),
+        child: Padding(
+          padding: const EdgeInsets.all(5),
+          child: Icon(icon, size: 14, color: color),
+        ),
       ),
     );
   }

@@ -316,8 +316,8 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
                           itemCount: images.length,
                           onPageChanged: (i) => setState(() => _imageIndex = i),
                           itemBuilder: (context, i) => InteractiveViewer(
-                            minScale: 0.8,
-                            maxScale: 4,
+                            minScale: 0.5,
+                            maxScale: 5,
                             child: ArtImage(
                               path: images[i],
                               url: i < urls.length ? urls[i] : null,
