@@ -93,6 +93,10 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
 
     return Scaffold(
       body: RefreshIndicator(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        color: Theme.of(context).colorScheme.primary,
+        strokeWidth: 2.5,
+        displacement: 60,
         onRefresh: () async {
           HapticFeedback.mediumImpact();
           ref.invalidate(paintingsProvider);

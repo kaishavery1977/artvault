@@ -107,7 +107,11 @@ class EmptyState extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ).animate().fadeIn(duration: 350.ms).slideY(
+          begin: 0.08,
+          duration: 350.ms,
+          curve: Curves.easeOutCubic,
+        );
   }
 }
 

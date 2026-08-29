@@ -57,8 +57,8 @@ final rootNavigatorKey = GlobalKey<NavigatorState>();
 Page<void> _page(Widget child) {
   return CustomTransitionPage<void>(
     child: child,
-    transitionDuration: const Duration(milliseconds: 400),
-    reverseTransitionDuration: const Duration(milliseconds: 320),
+    transitionDuration: const Duration(milliseconds: 280),
+    reverseTransitionDuration: const Duration(milliseconds: 240),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       final curved = CurvedAnimation(
         parent: animation,

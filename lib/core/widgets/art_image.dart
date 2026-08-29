@@ -68,15 +68,12 @@ class ArtImage extends StatelessWidget {
 
     Widget? child;
     if (hasPath) {
-      child = Image.file(
-        File(path!),
+      child = _FadeInImage(
+        file: File(path!),
         width: width,
         height: height,
         fit: fit,
-        filterQuality: FilterQuality.low,
-        // errorBuilder handles non-existent files, permission errors, etc.
-        errorBuilder: (_, _, _) =>
-            hasUrl ? _networkImage(context) : _fallback(context),
+        fallback: hasUrl ? _networkImage(context) : _fallback(context),
       );
     } else if (hasUrl) {
       child = _networkImage(context);
@@ -101,6 +98,56 @@ class ArtImage extends StatelessWidget {
 }
 
 /// Simple spacer used in scrollviews to respect safe areas.
+
+/// Local file image with a smooth fade-in on first paint.
+class _FadeInImage extends StatefulWidget {
+  final File file;
+  final double? width;
+  final double? height;
+  final BoxFit fit;
+  final Widget fallback;
+
+  const _FadeInImage({
+    required this.file,
+    this.width,
+    this.height,
+    required this.fit,
+    required this.fallback,
+  });
+
+  @override
+  State<_FadeInImage> createState() => _FadeInImageState();
+}
+
+class _FadeInImageState extends State<_FadeInImage> {
+  double _opacity = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Delay the fade-in to the next frame so the image has time to decode.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _opacity = 1);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      opacity: _opacity,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+      child: Image.file(
+        widget.file,
+        width: widget.width,
+        height: widget.height,
+        fit: widget.fit,
+        filterQuality: FilterQuality.low,
+        errorBuilder: (_, _, _) => widget.fallback,
+      ),
+    );
+  }
+}
 class BottomSpacer extends StatelessWidget {
   const BottomSpacer({super.key});
 

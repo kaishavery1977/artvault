@@ -39,7 +39,23 @@ class _PressScaleState extends State<PressScale> {
         scale: _pressed ? widget.pressedScale : 1.0,
         duration: widget.duration,
         curve: Curves.easeOutCubic,
-        child: widget.child,
+        child: AnimatedContainer(
+          duration: widget.duration,
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: _pressed
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ]
+                : [],
+          ),
+          child: widget.child,
+        ),
       ),
     );
   }

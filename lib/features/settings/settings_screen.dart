@@ -252,8 +252,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ],
         ),
       ],
-      initialDelay: const Duration(milliseconds: 60),
-      interval: const Duration(milliseconds: 60),
+      initialDelay: const Duration(milliseconds: 30),
+      interval: const Duration(milliseconds: 35),
       context: context,
     );
 

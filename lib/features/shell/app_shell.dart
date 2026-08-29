@@ -52,13 +52,17 @@ const _shellDestinations = [
 
 class _AppShellState extends ConsumerState<AppShell>
     with SingleTickerProviderStateMixin {
-  /// Drives a quick fade+drift whenever the active tab changes. The indexed
-  /// stack keeps every branch's state alive; this controller just re-runs a
-  /// subtle content settle so switching tabs feels considered, not instant.
+  /// Drives a quick fade+drift whenever the active tab changes.
   late final AnimationController _tabIn = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 260),
     value: 1,
+  );
+
+  /// Drives a gentle pulse on the FAB when the gallery is empty.
+  late final AnimationController _fabPulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1200),
   );
 
   void _go(int index) {
@@ -81,8 +85,27 @@ class _AppShellState extends ConsumerState<AppShell>
   }
 
   @override
+  void initState() {
+    super.initState();
+    // Start FAB pulse loop after first frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startFabPulseIfNeeded();
+    });
+  }
+
+  void _startFabPulseIfNeeded() {
+    final paintingsAsync = ref.read(paintingsProvider);
+    final paintings = paintingsAsync.valueOrNull ?? [];
+    final hasPaintings = paintings.any((p) => !p.isDeleted);
+    if (!hasPaintings && !MediaQuery.disableAnimationsOf(context)) {
+      _fabPulse.repeat(reverse: true);
+    }
+  }
+
+  @override
   void dispose() {
     _tabIn.dispose();
+    _fabPulse.dispose();
     super.dispose();
   }
 
@@ -153,11 +176,21 @@ class _AppShellState extends ConsumerState<AppShell>
               ),
             ),
       floatingActionButton: canEdit && !isOwnFabTab
-          ? FloatingActionButton.extended(
-              heroTag: 'quick_add',
-              onPressed: () => context.push('/painting/new'),
-              icon: const Icon(Icons.add),
-              label: const Text('Upload'),
+          ? AnimatedBuilder(
+              animation: _fabPulse,
+              builder: (context, child) {
+                final scale = 1.0 + _fabPulse.value * 0.04;
+                return Transform.scale(
+                  scale: scale,
+                  child: child,
+                );
+              },
+              child: FloatingActionButton.extended(
+                heroTag: 'quick_add',
+                onPressed: () => context.push('/painting/new'),
+                icon: const Icon(Icons.add),
+                label: const Text('Upload'),
+              ),
             )
           : null,
     );
