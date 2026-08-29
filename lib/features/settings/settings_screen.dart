@@ -804,50 +804,67 @@ class _ProBadge extends StatelessWidget {
 }
 
 class _ThemeSelector extends ConsumerWidget {
+  static const _options = [
+    ('auto', Icons.schedule, 'Auto'),
+    ('system', Icons.brightness_auto, 'System'),
+    ('light', Icons.light_mode, 'Light'),
+    ('dark', Icons.dark_mode, 'Dark'),
+  ];
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final stored = SettingsRepository.instance.themeModeKey;
     final isAuto = stored == 'auto';
     final currentMode = ref.watch(themeModeProvider);
-    return SegmentedButton<String>(
-      showSelectedIcon: false,
-      segments: const [
-        ButtonSegment(
-          value: 'auto',
-          icon: Icon(Icons.schedule, size: 16),
-          label: Text('Auto'),
+    final currentKey = isAuto ? 'auto' : currentMode.name;
+    final currentLabel = _options.firstWhere((o) => o.$1 == currentKey).$3;
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => _showThemeSheet(context, ref, currentKey),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(_options.firstWhere((o) => o.$1 == currentKey).$2, size: 16),
+            const SizedBox(width: 4),
+            Text(currentLabel, style: const TextStyle(fontSize: 12)),
+            const SizedBox(width: 2),
+            const Icon(Icons.arrow_drop_down, size: 16),
+          ],
         ),
-        ButtonSegment(
-          value: 'system',
-          icon: Icon(Icons.brightness_auto, size: 16),
-          label: Text('System'),
-        ),
-        ButtonSegment(
-          value: 'light',
-          icon: Icon(Icons.light_mode, size: 16),
-          label: Text('Light'),
-        ),
-        ButtonSegment(
-          value: 'dark',
-          icon: Icon(Icons.dark_mode, size: 16),
-          label: Text('Dark'),
-        ),
-      ],
-      selected: {isAuto ? 'auto' : currentMode.name},
-      onSelectionChanged: (selection) {
-        HapticFeedback.selectionClick();
-        final key = selection.first;
-        SettingsRepository.instance.setThemeMode(
-          key == 'auto' ? ThemeMode.system : ThemeMode.values.firstWhere((m) => m.name == key),
-        );
-        // For 'auto', store the key directly so themeMode getter can detect it.
-        if (key == 'auto') {
-          SettingsRepository.instance.setThemeModeKey('auto');
-        }
-        // Refresh the provider with the computed theme.
-        ref.read(themeModeProvider.notifier).state = SettingsRepository.instance.themeMode;
-      },
-      style: SegmentedButton.styleFrom(visualDensity: VisualDensity.compact),
+      ),
     );
+  }
+
+  static void _showThemeSheet(BuildContext context, WidgetRef ref, String current) {
+    showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            for (final option in _options)
+              ListTile(
+                leading: Icon(option.$2),
+                title: Text(option.$3),
+                trailing: current == option.$1 ? const Icon(Icons.check) : null,
+                onTap: () => Navigator.pop(context, option.$1),
+              ),
+          ],
+        ),
+      ),
+    ).then((selected) {
+      if (selected == null || !context.mounted) return;
+      HapticFeedback.selectionClick();
+      SettingsRepository.instance.setThemeMode(
+        selected == 'auto' ? ThemeMode.system : ThemeMode.values.firstWhere((m) => m.name == selected),
+      );
+      if (selected == 'auto') {
+        SettingsRepository.instance.setThemeModeKey('auto');
+      }
+      ref.read(themeModeProvider.notifier).state = SettingsRepository.instance.themeMode;
+    });
   }
 }
