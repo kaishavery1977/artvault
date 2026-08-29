@@ -1,5 +1,6 @@
-// Widget tests for the branded boot sequence: the icon-on-black splash
-// with a purple glow on every launch, and a reduced-motion static render.
+// Widget tests for the branded boot sequence: the full cinematic splash
+// (shockwave ring + letter stagger) on pure black, and a static render
+// when the system requests reduced motion.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,7 +17,7 @@ void main() {
     await initTestHive();
   });
 
-  testWidgets('App boots to the icon splash on first launch', (
+  testWidgets('App boots to the full splash on first launch', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -27,21 +28,21 @@ void main() {
     );
     await tester.pump();
 
-    // The splash shows the palette icon and the "ArtVault" wordmark.
-    expect(find.byIcon(Icons.palette_rounded), findsOneWidget);
-    expect(find.text('ArtVault'), findsOneWidget);
+    // The wordmark reveals letter-by-letter, so each letter is its own Text.
+    expect(find.text('A'), findsOneWidget);
+    expect(find.text('V'), findsOneWidget);
+    expect(find.text('Your Private Gallery'), findsOneWidget);
 
-    // Drain the splash screen's intro (2200ms) and fade-out exit (450ms),
+    // Drain the splash screen's intro (3400ms) and push-out exit (560ms),
     // then give the router time to navigate to onboarding.
     await tester.pump(const Duration(milliseconds: 2400));
-    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pump(const Duration(milliseconds: 1600));
     await tester.pump(const Duration(milliseconds: 900));
 
-    // The splash hands off into onboarding.
     expect(find.text('Curate Your Collection'), findsOneWidget);
   });
 
-  testWidgets('Every launch plays the icon splash intro', (
+  testWidgets('Every launch plays the full cinematic intro', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -52,9 +53,12 @@ void main() {
     );
     await tester.pump();
 
-    // Repeat launches get the same icon splash (shorter cut).
+    // Repeat launches get the full choreography.
+    expect(find.text('Your Private Gallery'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 300));
     expect(find.byIcon(Icons.palette_rounded), findsOneWidget);
-    expect(find.text('ArtVault'), findsOneWidget);
+    expect(find.text('A'), findsOneWidget);
+    expect(find.text('V'), findsOneWidget);
 
     await pumpToOnboarding(tester);
 
@@ -73,12 +77,10 @@ void main() {
     await pumpToOnboarding(tester);
     expect(find.text('Curate Your Collection'), findsOneWidget);
 
-    // Background the app (like switching apps), then bring it back.
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
 
-    // The app stays on the current screen — no splash replay.
     expect(find.text('Curate Your Collection'), findsOneWidget);
   });
 
@@ -93,12 +95,10 @@ void main() {
     );
     await pumpToOnboarding(tester);
 
-    // A notification shade pull only moves through inactive — stays put.
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
 
-    // App stays on the current screen.
     expect(find.text('Curate Your Collection'), findsOneWidget);
   });
 
@@ -119,13 +119,11 @@ void main() {
     );
     await tester.pump();
 
-    // Static icon + wordmark on black background, no tagline.
+    // Static icon + wordmark, no tagline.
     expect(find.byIcon(Icons.palette_rounded), findsOneWidget);
     expect(find.text('ArtVault'), findsOneWidget);
     expect(find.text('Your Private Gallery'), findsNothing);
 
-    // 200ms static hold, direct hand-off (no exit), route transition,
-    // then drain the onboarding mount timers.
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pump(const Duration(milliseconds: 900));
