@@ -97,6 +97,19 @@ class _ArtistFormScreenState extends ConsumerState<ArtistFormScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Prevent duplicate artist names.
+    final name = _name.text.trim();
+    if (ArtistRepository.instance.existsByName(name, excludeId: _existing?.id)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('An artist named "$name" already exists.'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      return;
+    }
+
     // Free-tier capacity gate for new artists.
     final isNew = _existing == null;
     if (isNew && !ref.read(authProvider).isPro) {

@@ -1142,33 +1142,127 @@ class _AiTagBanner extends StatelessWidget {
   }
 }
 
-class _ArtistField extends StatelessWidget {
+class _ArtistField extends ConsumerWidget {
   final TextEditingController controller;
   final VoidCallback onManageArtists;
 
   const _ArtistField({required this.controller, required this.onManageArtists});
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final artists = ref.watch(artistsProvider).valueOrNull ?? const [];
+    final activeArtists =
+        artists.where((a) => !a.isDeleted).toList()
+          ..sort((a, b) => a.name.compareTo(b.name));
+
+    final scheme = Theme.of(context).colorScheme;
+
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: AppTextField(
-            controller: controller,
-            label: 'Artist / painter',
-            icon: Icons.person_outline,
-            hint: 'Type a name or pick from artists',
-            capitalization: TextCapitalization.words,
+        Autocomplete<Artist>(
+          initialValue: TextEditingValue(
+            text: controller.text,
+            selection: TextSelection.collapsed(offset: controller.text.length),
           ),
+          displayStringForOption: (a) => a.name,
+          optionsBuilder: (textEditingValue) {
+            final query = textEditingValue.text.toLowerCase();
+            if (query.isEmpty) return activeArtists;
+            return activeArtists
+                .where((a) => a.name.toLowerCase().contains(query))
+                .toList();
+          },
+          onSelected: (artist) {
+            controller.text = artist.name;
+          },
+          fieldViewBuilder:
+              (context, textController, focusNode, onSubmitted) {
+            // Sync external controller changes (e.g. from edit mode)
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (textController.text != controller.text) {
+                textController.text = controller.text;
+                textController.selection = TextSelection.collapsed(
+                  offset: controller.text.length,
+                );
+              }
+            });
+            return TextFormField(
+              controller: textController,
+              focusNode: focusNode,
+              textCapitalization: TextCapitalization.words,
+              onChanged: (value) {
+                // Keep external controller in sync as user types
+                controller.text = value;
+              },
+              decoration: InputDecoration(
+                labelText: 'Artist / painter',
+                hintText: activeArtists.isEmpty
+                    ? 'Type a name or add artists first'
+                    : 'Start typing to search existing artists',
+                prefixIcon: const Icon(Icons.person_outline),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+          },
+          optionsViewBuilder: (context, onSelected, options) {
+            return Align(
+              alignment: Alignment.topLeft,
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(12),
+                clipBehavior: Clip.antiAlias,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 250),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.zero,
+                    itemCount: options.length,
+                    itemBuilder: (context, index) {
+                      final artist = options.elementAt(index);
+                      return ListTile(
+                        dense: true,
+                        leading: CircleAvatar(
+                          radius: 16,
+                          backgroundColor: scheme.primaryContainer,
+                          child: Text(
+                            artist.name.isNotEmpty
+                                ? artist.name[0].toUpperCase()
+                                : '?',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: scheme.onPrimaryContainer,
+                            ),
+                          ),
+                        ),
+                        title: Text(
+                          artist.name,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        subtitle: artist.nationality.isNotEmpty
+                            ? Text(
+                                artist.nationality,
+                                style: const TextStyle(fontSize: 11),
+                              )
+                            : null,
+                        onTap: () => onSelected(artist),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
         ),
-        const SizedBox(width: AppSpacing.xs),
-        SizedBox(
-          height: 56,
-          child: OutlinedButton.icon(
+        const SizedBox(height: AppSpacing.xs),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
             onPressed: onManageArtists,
-            icon: const Icon(Icons.person_add, size: 18),
-            label: const Text('New'),
+            icon: const Icon(Icons.person_add, size: 16),
+            label: const Text('Create new artist', style: TextStyle(fontSize: 12)),
           ),
         ),
       ],

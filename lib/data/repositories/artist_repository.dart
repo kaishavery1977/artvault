@@ -46,6 +46,16 @@ class ArtistRepository {
     return null;
   }
 
+  /// Returns true if an active artist with [name] exists, excluding [excludeId].
+  bool existsByName(String name, {String? excludeId}) {
+    final needle = name.trim().toLowerCase();
+    for (final artist in readActive()) {
+      if (artist.id == excludeId) continue;
+      if (artist.name.toLowerCase() == needle) return true;
+    }
+    return false;
+  }
+
   Future<Artist> save(Artist artist, {File? photoFile}) async {
     var working = artist;
     if (photoFile != null) {
