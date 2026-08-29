@@ -393,6 +393,18 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
       }
     }
 
+    // Require an artist name for new paintings.
+    if (isNew && _artistName.text.trim().isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select or create an artist for this painting'),
+          ),
+        );
+      }
+      return;
+    }
+
     // Free-tier capacity gate: block new paintings past the cap and point
     // the user at the upgrade flow.
     if (isNew && !ref.read(authProvider).isPro) {
@@ -1148,18 +1160,94 @@ class _ArtistField extends ConsumerWidget {
 
   const _ArtistField({required this.controller, required this.onManageArtists});
 
+  /// Returns the most recently used artist names (unique, newest first)
+  /// by scanning the latest paintings sorted by updatedAt.
+  List<String> _recentArtistNames(List<dynamic> paintings) {
+    final seen = <String>{};
+    final result = <String>[];
+    // paintings come sorted from provider; iterate newest first
+    for (final p in paintings.reversed) {
+      final name = (p as dynamic).artistName as String;
+      if (name.isNotEmpty && !seen.contains(name.toLowerCase())) {
+        seen.add(name.toLowerCase());
+        result.add(name);
+      }
+      if (result.length >= 5) break;
+    }
+    return result;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final artists = ref.watch(artistsProvider).valueOrNull ?? const [];
+    final paintings = ref.watch(paintingsProvider).valueOrNull ?? const [];
     final activeArtists =
         artists.where((a) => !a.isDeleted).toList()
           ..sort((a, b) => a.name.compareTo(b.name));
+
+    final recentNames = _recentArtistNames(paintings);
+    // Map recent names to actual Artist objects when available
+    final recentArtists = recentNames
+        .map((name) => activeArtists.firstWhere(
+              (a) => a.name.toLowerCase() == name.toLowerCase(),
+              orElse: () => Artist(
+                id: '',
+                name: name,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+              ),
+            ))
+        .toList();
 
     final scheme = Theme.of(context).colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Recently used artists chips (shown when field is empty)
+        if (recentArtists.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 6),
+            child: Text(
+              'Recently used',
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          SizedBox(
+            height: 34,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: recentArtists.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final artist = recentArtists[index];
+                return ActionChip(
+                  avatar: CircleAvatar(
+                    radius: 10,
+                    backgroundColor: scheme.primaryContainer,
+                    child: Text(
+                      artist.name[0].toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: scheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ),
+                  label: Text(artist.name, style: const TextStyle(fontSize: 12)),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () {
+                    controller.text = artist.name;
+                  },
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+        ],
         Autocomplete<Artist>(
           initialValue: TextEditingValue(
             text: controller.text,
@@ -1196,7 +1284,7 @@ class _ArtistField extends ConsumerWidget {
                 controller.text = value;
               },
               decoration: InputDecoration(
-                labelText: 'Artist / painter',
+                labelText: 'Artist / painter *',
                 hintText: activeArtists.isEmpty
                     ? 'Type a name or add artists first'
                     : 'Start typing to search existing artists',
