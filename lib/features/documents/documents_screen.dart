@@ -336,6 +336,19 @@ class _DocumentTile extends ConsumerWidget {
                       }
                     case 'delete':
                       await repo.delete(doc.id);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context)
+                          ..hideCurrentSnackBar()
+                          ..showSnackBar(
+                            SnackBar(
+                              content: Text('"${doc.name}" deleted'),
+                              action: SnackBarAction(
+                                label: 'Undo',
+                                onPressed: () => repo.restore(doc.id),
+                              ),
+                            ),
+                          );
+                      }
                   }
                 },
                 itemBuilder: (context) => const [

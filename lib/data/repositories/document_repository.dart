@@ -94,7 +94,19 @@ class DocumentRepository {
       doc.copyWith(isDeleted: true, needsSync: true).toJson(),
     );
     unawaited(_syncDocument(doc.copyWith(isDeleted: true, needsSync: true)));
-    await FileStorageService.instance.deleteFile(doc.localPath);
+    BackupService.instance.scheduleAutoBackup();
+  }
+
+  /// Restores a soft-deleted document (undo delete).
+  Future<void> restore(String id) async {
+    final doc = get(id);
+    if (doc == null || !doc.isDeleted) return;
+    await _db.put(
+      AppConstants.boxDocuments,
+      id,
+      doc.copyWith(isDeleted: false, needsSync: true).toJson(),
+    );
+    unawaited(_syncDocument(doc.copyWith(isDeleted: false, needsSync: true)));
     BackupService.instance.scheduleAutoBackup();
   }
 

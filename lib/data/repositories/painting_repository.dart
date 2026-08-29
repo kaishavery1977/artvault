@@ -9,6 +9,7 @@ import '../../core/services/ai_service.dart';
 import '../../core/services/app_logger.dart';
 import '../../core/services/backup_service.dart';
 import '../../core/services/file_storage_service.dart';
+import '../../core/utils/image_utils.dart';
 import '../../core/services/notification_service.dart';
 import '../local/local_database.dart';
 import '../models/painting.dart';
@@ -363,9 +364,13 @@ class PaintingRepository {
         final file = File(local);
         if (!await file.exists()) continue;
         final name = local.split(Platform.pathSeparator).last;
+        // Compress before uploading to save bandwidth.
+        final raw = await file.readAsBytes();
+        final compressed = await ImageUtils.compress(file, maxDimension: 2048, quality: 85);
+        final bytes = compressed.existsSync() ? await compressed.readAsBytes() : raw;
         final url = await cloud.uploadBytes(
           'paintings/${working.id}/$name',
-          await file.readAsBytes(),
+          bytes,
           contentType: 'image/jpeg',
         );
         if (url != null) urls.add(url);
@@ -384,11 +389,14 @@ class PaintingRepository {
             .markSynced();
       }
       await cloud.upsert(_collection, working.id, working.toJson());
-      await _db.put(AppConstants.boxPaintings, working.id, working.toJson());
-    } catch (_) {
-      // Network failure — leave dirty, retried on next sync.
+      await _db.put(AppConstants.boxPaintings, working.id, working.toJson());    } catch (e) {
+      AppLogger.warning(
+        'PaintingRepository._syncPainting failed for "${painting.title}"',
+        error: e,
+      );
     }
   }
+
 
   Future<void> _pullRemote() async {
     final cloud = CloudBackend.instance;

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -33,6 +34,8 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
   bool _appLock = false;
   bool _passcodeSet = false;
   bool _loading = true;
+  Duration _faceLockRemaining = Duration.zero;
+  int _autoLockTimeout = 0; // seconds
 
   @override
   void initState() {
@@ -47,11 +50,16 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
     final enabled = await AuthRepository.instance.biometricEnabled;
     final faceEnabled = await AuthRepository.instance.faceLockEnabled;
     final appLock = SettingsRepository.instance.appLockEnabled;
+    final autoLock = SettingsRepository.instance.autoLockTimeoutSeconds;
     // Secure storage can fail (lockout, plugin hiccup) — never freeze the
     // whole screen on a spinner because of it.
     var passcodeSet = false;
     try {
       passcodeSet = await AuthRepository.instance.passcodeSet;
+    } catch (_) {}
+    var faceLockRemaining = Duration.zero;
+    try {
+      faceLockRemaining = await AuthRepository.instance.faceLockRemaining();
     } catch (_) {}
     if (mounted) {
       setState(() {
@@ -62,12 +70,15 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
         _faceAvailable = availability.face;
         _appLock = appLock;
         _passcodeSet = passcodeSet;
+        _faceLockRemaining = faceLockRemaining;
+        _autoLockTimeout = autoLock;
         _loading = false;
       });
     }
   }
 
   Future<void> _toggleBiometric(bool value) async {
+    HapticFeedback.lightImpact();
     if (value) {
       // Fingerprint-only prompt (BIOMETRIC_STRONG) — never the device PIN.
       final ok = await AuthRepository.instance.verifyFingerprint();
@@ -85,6 +96,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
   }
 
   Future<void> _toggleFaceLock(bool value) async {
+    HapticFeedback.lightImpact();
     if (value) {
       // Enroll: capture the owner's face and store its embedding.
       final emb = await context.push<List<double>>(
@@ -128,6 +140,29 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
           content: Text('Face lock set up. Only your face can unlock.'),
         ),
       );
+    }
+    // Disabling face lock requires confirmation.
+    if (!value) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Remove Face lock?'),
+          content: const Text(
+            'You will need a passcode or fingerprint to unlock ArtVault.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Keep enabled'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Remove'),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) return;
     }
     await AuthRepository.instance.setFaceLockEnabled(value);
     if (mounted) setState(() => _faceLock = value);
@@ -246,6 +281,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
   }
 
   Future<void> _togglePasscode(bool value) async {
+    HapticFeedback.lightImpact();
     if (value) {
       // Enabling requires the user to pick a new passcode.
       final pin = await _showSetPasscodeDialog();
@@ -299,6 +335,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
   }
 
   Future<void> _toggleAppLock(bool value) async {
+    HapticFeedback.lightImpact();
     if (value && !_available && !_passcodeSet) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -310,6 +347,29 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
         );
       }
       return;
+    }
+    // Disabling App Lock requires confirmation to prevent accidental removal.
+    if (!value) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Disable App Lock?'),
+          content: const Text(
+            'ArtVault will no longer require authentication to open.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Keep enabled'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Disable'),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) return;
     }
     await SettingsRepository.instance.setAppLockEnabled(value);
     if (mounted) setState(() => _appLock = value);
@@ -357,7 +417,10 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                   _Row(
                     icon: Icons.face_retouching_natural,
                     title: 'Unlock with Face lock',
-                    subtitle: _faceLock
+                    subtitle: _faceLockRemaining > Duration.zero
+                        ? 'Locked — try again in '
+                            '${_faceLockRemaining.inSeconds}s'
+                        : _faceLock
                         ? 'On — tap to re-scan or remove your face'
                         : _faceAvailable
                         ? 'Scan your face with the camera to unlock'
@@ -434,6 +497,17 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                           ),
                     onTap: _passcodeSet ? _changePasscode : null,
                   ),
+                  if (_appLock) ...[
+                    const Divider(height: 16),
+                    _AutoLockRow(
+                      currentSeconds: _autoLockTimeout,
+                      onChanged: (seconds) async {
+                        await SettingsRepository.instance
+                            .setAutoLockTimeout(seconds);
+                        if (mounted) setState(() => _autoLockTimeout = seconds);
+                      },
+                    ),
+                  ],
                   if (_available ||
                       _faceAvailable ||
                       _fingerprintAvailable ||
@@ -571,9 +645,11 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
   }
 }
 
-/// Set-passcode dialog. Owns its TextEditingControllers so they are disposed
-/// only when the dialog route fully unmounts (after the exit transition) —
-/// never while the fields are still animating out.
+/// Professional two-step passcode setup dialog with PIN-dot entry.
+///
+/// Step 1: enter new passcode → Step 2: confirm passcode.
+/// Shows circular dot indicators and a numeric keypad, matching the
+/// lock-screen PIN pad style for visual consistency.
 class _SetPasscodeDialog extends StatefulWidget {
   const _SetPasscodeDialog();
 
@@ -582,62 +658,129 @@ class _SetPasscodeDialog extends StatefulWidget {
 }
 
 class _SetPasscodeDialogState extends State<_SetPasscodeDialog> {
-  final _pin = TextEditingController();
-  final _confirm = TextEditingController();
+  String _pin = '';
 
-  @override
-  void dispose() {
-    _pin.dispose();
-    _confirm.dispose();
-    super.dispose();
+  bool _isConfirmStep = false;
+  bool _error = false;
+  String _firstPin = '';
+
+  void _onDigit(String digit) {
+    if (_pin.length >= AppConstants.kPasscodeLength) return;
+    HapticFeedback.selectionClick();
+    if (_error) setState(() => _error = false);
+    final next = _pin + digit;
+    setState(() => _pin = next);
+    if (next.length == AppConstants.kPasscodeLength) {
+      _onComplete(next);
+    }
   }
 
-  void _save() {
-    final digitsOnly = RegExp(r'^[0-9]+$');
-    if (_pin.text.length != AppConstants.kPasscodeLength ||
-        !digitsOnly.hasMatch(_pin.text) ||
-        _pin.text != _confirm.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Passcodes must be 4 digits and match')),
-      );
-      return;
+  void _onBackspace() {
+    if (_pin.isEmpty) return;
+    setState(() => _pin = _pin.substring(0, _pin.length - 1));
+  }
+
+  void _onComplete(String pin) {
+    if (!_isConfirmStep) {
+      // First step done — move to confirm.
+      setState(() {
+        _firstPin = pin;
+        _pin = '';
+        _isConfirmStep = true;
+      });
+    } else {
+      // Confirm step — check match.
+      if (pin == _firstPin) {
+        Navigator.pop(context, pin);
+      } else {
+        HapticFeedback.vibrate();
+        setState(() {
+          _error = true;
+          _pin = '';
+          _isConfirmStep = false;
+          _firstPin = '';
+        });
+      }
     }
-    Navigator.pop(context, _pin.text);
   }
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final dotColor = _error ? scheme.error : scheme.primary;
+    final mutedColor = scheme.onSurface.withValues(alpha: 0.25);
+
     return AlertDialog(
-      title: const Text('Set passcode'),
+      contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+      title: Text(
+        _isConfirmStep ? 'Confirm passcode' : 'Set passcode',
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+      ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            'Choose a ${AppConstants.kPasscodeLength}-digit passcode to unlock '
-            'ArtVault when biometrics are unavailable or fail.',
-          ),
-          const SizedBox(height: AppSpacing.md),
-          TextField(
-            controller: _pin,
-            autofocus: true,
-            obscureText: true,
-            keyboardType: TextInputType.number,
-            maxLength: AppConstants.kPasscodeLength,
-            decoration: const InputDecoration(
-              labelText: 'Passcode',
-              counterText: '',
+          Text(
+            _error
+                ? 'Passcodes did not match. Try again.'
+                : _isConfirmStep
+                    ? 'Re-enter your new passcode'
+                    : 'Choose a ${AppConstants.kPasscodeLength}-digit passcode',
+            style: TextStyle(
+              fontSize: 13,
+              color: _error ? scheme.error : scheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          TextField(
-            controller: _confirm,
-            obscureText: true,
-            keyboardType: TextInputType.number,
-            maxLength: AppConstants.kPasscodeLength,
-            decoration: const InputDecoration(
-              labelText: 'Confirm passcode',
-              counterText: '',
+          const SizedBox(height: 24),
+          // Dot indicators
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(AppConstants.kPasscodeLength, (i) {
+              final filled = i < _pin.length;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 13,
+                  height: 13,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: filled ? dotColor : Colors.transparent,
+                    border: Border.all(
+                      color: filled ? dotColor : mutedColor,
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 28),
+          // Numeric keypad
+          for (final row in const [
+            ['1', '2', '3'],
+            ['4', '5', '6'],
+            ['7', '8', '9'],
+          ])
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final d in row)
+                    _DialogKey(label: d, onTap: () => _onDigit(d)),
+                ],
+              ),
             ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(width: 60),
+              _DialogKey(label: '0', onTap: () => _onDigit('0')),
+              _DialogKey(
+                label: '⌫',
+                onTap: _pin.isNotEmpty ? _onBackspace : null,
+              ),
+            ],
           ),
         ],
       ),
@@ -646,14 +789,13 @@ class _SetPasscodeDialogState extends State<_SetPasscodeDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
-        FilledButton(onPressed: _save, child: const Text('Save')),
       ],
     );
   }
 }
 
-/// Verify-current-passcode dialog; same controller-ownership pattern as
-/// [_SetPasscodeDialog].
+/// Verify-current-passcode dialog with PIN-dot entry UI.
+/// Matches the lock-screen style for visual consistency.
 class _VerifyPasscodeDialog extends StatefulWidget {
   final String title;
 
@@ -664,41 +806,258 @@ class _VerifyPasscodeDialog extends StatefulWidget {
 }
 
 class _VerifyPasscodeDialogState extends State<_VerifyPasscodeDialog> {
-  final _pin = TextEditingController();
+  String _pin = '';
+  bool _error = false;
+  bool _verifying = false;
 
-  @override
-  void dispose() {
-    _pin.dispose();
-    super.dispose();
+  void _onDigit(String digit) {
+    if (_verifying || _pin.length >= AppConstants.kPasscodeLength) return;
+    HapticFeedback.selectionClick();
+    if (_error) setState(() => _error = false);
+    final next = _pin + digit;
+    setState(() => _pin = next);
+    if (next.length == AppConstants.kPasscodeLength) _verify(next);
   }
 
-  Future<void> _verify() async {
-    final valid = await AuthRepository.instance.verifyPasscode(_pin.text);
-    if (mounted) Navigator.pop(context, valid);
+  void _onBackspace() {
+    if (_pin.isEmpty) return;
+    setState(() => _pin = _pin.substring(0, _pin.length - 1));
+  }
+
+  Future<void> _verify(String pin) async {
+    setState(() => _verifying = true);
+    final valid = await AuthRepository.instance.verifyPasscode(pin);
+    if (mounted) {
+      if (valid) {
+        Navigator.pop(context, true);
+      } else {
+        HapticFeedback.vibrate();
+        setState(() {
+          _error = true;
+          _verifying = false;
+          _pin = '';
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final dotColor = _error ? scheme.error : scheme.primary;
+    final mutedColor = scheme.onSurface.withValues(alpha: 0.25);
+
     return AlertDialog(
-      title: Text(widget.title),
-      content: TextField(
-        controller: _pin,
-        autofocus: true,
-        obscureText: true,
-        keyboardType: TextInputType.number,
-        maxLength: AppConstants.kPasscodeLength,
-        decoration: const InputDecoration(
-          labelText: 'Passcode',
-          counterText: '',
-        ),
+      contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+      title: Text(
+        widget.title,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_error)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(
+                'Incorrect passcode. Try again.',
+                style: TextStyle(fontSize: 13, color: scheme.error),
+              ),
+            ),
+          // Dot indicators
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(AppConstants.kPasscodeLength, (i) {
+              final filled = i < _pin.length;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 13,
+                  height: 13,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: filled ? dotColor : Colors.transparent,
+                    border: Border.all(
+                      color: filled ? dotColor : mutedColor,
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 28),
+          // Numeric keypad
+          for (final row in const [
+            ['1', '2', '3'],
+            ['4', '5', '6'],
+            ['7', '8', '9'],
+          ])
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final d in row)
+                    _DialogKey(label: d, onTap: () => _onDigit(d)),
+                ],
+              ),
+            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(width: 60),
+              _DialogKey(label: '0', onTap: () => _onDigit('0')),
+              _DialogKey(
+                label: '⌫',
+                onTap: _pin.isNotEmpty && !_verifying ? _onBackspace : null,
+              ),
+            ],
+          ),
+        ],
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
           child: const Text('Cancel'),
         ),
-        FilledButton(onPressed: _verify, child: const Text('Verify')),
       ],
+    );
+  }
+}
+
+/// Auto-lock timeout row with a popup menu for selecting the delay.
+class _AutoLockRow extends StatelessWidget {
+  final int currentSeconds;
+  final ValueChanged<int> onChanged;
+
+  const _AutoLockRow({required this.currentSeconds, required this.onChanged});
+
+  static const _options = <(String, int)>[
+    ('Immediately', 0),
+    ('After 30 seconds', 30),
+    ('After 1 minute', 60),
+    ('After 5 minutes', 300),
+  ];
+
+  String _label(int seconds) {
+    for (final (label, s) in _options) {
+      if (s == seconds) return label;
+    }
+    return 'Custom';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: const Icon(Icons.timer_outlined),
+      title: const Text('Auto-lock timeout'),
+      subtitle: Text(
+        _label(currentSeconds),
+        style: const TextStyle(fontSize: 12),
+      ),
+      trailing: PopupMenuButton<int>(
+        initialValue: currentSeconds,
+        onSelected: onChanged,
+        itemBuilder: (context) => [
+          for (final (label, seconds) in _options)
+            PopupMenuItem(
+              value: seconds,
+              child: Row(
+                children: [
+                  if (seconds == currentSeconds)
+                    Icon(
+                      Icons.check,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.primary,
+                    )
+                  else
+                    const SizedBox(width: 18),
+                  const SizedBox(width: 12),
+                  Text(label),
+                ],
+              ),
+            ),
+        ],
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: Theme.of(context).colorScheme.surface,
+          ),
+          child: Text(
+            _label(currentSeconds),
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Circular key for passcode dialogs — matches the lock-screen PIN pad
+/// style for visual consistency across the passcode flow.
+class _DialogKey extends StatefulWidget {
+  final String label;
+  final VoidCallback? onTap;
+
+  const _DialogKey({required this.label, this.onTap});
+
+  @override
+  State<_DialogKey> createState() => _DialogKeyState();
+}
+
+class _DialogKeyState extends State<_DialogKey> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final enabled = widget.onTap != null;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      child: GestureDetector(
+        onTapDown: enabled ? (_) => setState(() => _pressed = true) : null,
+        onTapUp: enabled
+            ? (_) {
+                setState(() => _pressed = false);
+                HapticFeedback.lightImpact();
+                widget.onTap!();
+              }
+            : null,
+        onTapCancel: enabled ? () => setState(() => _pressed = false) : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 80),
+          width: 56,
+          height: 56,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _pressed
+                ? scheme.primary.withValues(alpha: isDark ? 0.2 : 0.1)
+                : scheme.surface.withValues(alpha: isDark ? 0.4 : 0.6),
+            border: Border.all(
+              color: scheme.onSurface.withValues(alpha: enabled ? 0.08 : 0.03),
+              width: 0.6,
+            ),
+          ),
+          child: Text(
+            widget.label,
+            style: TextStyle(
+              fontSize: widget.label == '⌫' ? 20 : 24,
+              fontWeight: FontWeight.w300,
+              color: scheme.onSurface.withValues(alpha: enabled ? 0.85 : 0.25),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

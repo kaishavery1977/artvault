@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import '../../core/constants/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/services/backup_service.dart';
+import '../../core/services/biometric_service.dart';
 import '../../core/services/file_storage_service.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/motion.dart';
@@ -283,6 +284,17 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                     onTap: _busy
                         ? null
                         : () => _run(() async {
+                            // Require biometric auth before exporting vault data.
+                            final biometricOk = await BiometricService.instance
+                                .authenticateFingerprint();
+                            if (!biometricOk && context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Authentication required to export data'),
+                                ),
+                              );
+                              return;
+                            }
                             final file = await BackupService.instance
                                 .exportLocalBackup();
                             if (context.mounted) {

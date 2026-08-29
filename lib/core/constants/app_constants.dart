@@ -41,6 +41,19 @@ abstract final class AppConstants {
   /// used by Face lock to match the owner instead of accepting any face.
   static const String kFaceEmbedding = 'face_embedding';
 
+  /// Settings keys for the face lock brute-force throttle (mirrors the
+  /// passcode lockout pattern).
+  static const String kFaceFailures = 'face_failures';
+  static const String kFaceLockedUntil = 'face_locked_until';
+
+  /// Wrong face-scan attempts allowed before throttling starts.
+  static const int kFaceMaxAttempts = 5;
+
+  /// Lockout after the first face throttle threshold is crossed; each
+  /// further failure doubles the wait until [kFaceLockoutMax].
+  static const Duration kFaceLockoutStart = Duration(seconds: 30);
+  static const Duration kFaceLockoutMax = Duration(minutes: 10);
+
   /// Number of digits in the App Lock passcode.
   static const int kPasscodeLength = 4;
 
@@ -51,6 +64,10 @@ abstract final class AppConstants {
   /// failure doubles the wait until [kPasscodeLockoutMax].
   static const Duration kPasscodeLockoutStart = Duration(seconds: 30);
   static const Duration kPasscodeLockoutMax = Duration(minutes: 10);
+
+  /// Auto-lock timeout — how long after backgrounding before the app
+  /// requires re-authentication. Stored as seconds; 0 = immediately.
+  static const String kAutoLockTimeout = 'auto_lock_timeout';
   static const String kNotificationsEnabled = 'notifications_enabled';
   static const String kAutoBackup = 'auto_backup_enabled';
 

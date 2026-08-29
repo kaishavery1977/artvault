@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../router/app_router.dart';
-import '../services/resume_intro.dart';
-
 /// Replays the cinematic splash intro every time the app returns from the
 /// background — not just on cold start — then hands off back to the tab the
 /// user was on. Sits above the Navigator (in MaterialApp's builder) so it can
@@ -50,13 +47,7 @@ class _AppResumeIntroObserverState extends ConsumerState<AppResumeIntroObserver>
       case AppLifecycleState.resumed:
         if (!_backgrounded) return;
         _backgrounded = false;
-        // Cold-start splash still playing, or already at the lock screen:
-        // nothing to replay.
-        final router = ref.read(routerProvider);
-        final location = router.state.uri.toString();
-        if (location == '/splash' || location == '/lock') return;
-        ResumeIntro.prepare(location);
-        router.go('/splash');
+        // App resumes where the user left off — no splash replay.
         break;
       default:
         break;

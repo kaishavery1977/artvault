@@ -14,6 +14,8 @@ import '../../core/widgets/states.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/painting.dart';
+import '../../data/models/artist.dart';
+import '../../data/models/art_document.dart';
 import 'painting_card.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
@@ -124,9 +126,26 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final paintings = ref.watch(paintingsProvider).valueOrNull ?? const [];
-    final results = _query == null
+    final artists = ref.watch(artistsProvider).valueOrNull ?? const [];
+    final documents = ref.watch(documentsProvider).valueOrNull ?? const [];
+    final paintResults = _query == null
         ? <Painting>[]
         : AiService.instance.applyQuery(paintings, _query!);
+    final raw = _controller.text.trim().toLowerCase();
+    final artistResults = raw.isEmpty
+        ? <Artist>[]
+        : artists.where((a) =>
+            !a.isDeleted &&
+            (a.name.toLowerCase().contains(raw) ||
+             a.nationality.toLowerCase().contains(raw) ||
+             a.biography.toLowerCase().contains(raw))).toList();
+    final docResults = raw.isEmpty
+        ? <ArtDocument>[]
+        : documents.where((d) =>
+            !d.isDeleted &&
+            (d.name.toLowerCase().contains(raw) ||
+             d.type.toLowerCase().contains(raw))).toList();
+    final totalCount = paintResults.length + artistResults.length + docResults.length;
 
     return Scaffold(
       appBar: AppBar(
@@ -138,7 +157,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 controller: _controller,
                 autofocus: true,
                 decoration: const InputDecoration(
-                  hintText: 'Try "blue oil paintings"…',
+                  hintText: 'Search paintings, artists, documents…',
                   border: InputBorder.none,
                   filled: false,
                 ),
@@ -198,7 +217,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 },
               ),
             )
-          else if (results.isEmpty)
+          else if (totalCount == 0)
             const Expanded(
               child: EmptyState(
                 icon: Icons.search_off,
@@ -215,25 +234,68 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                     child: Text(
-                      '${results.length} result${results.length == 1 ? '' : 's'} for "${_query.toString()}"',
+                      '$totalCount result${totalCount == 1 ? '' : 's'} for "${_query.toString()}"',
                       style: TextStyle(
                         fontSize: 13,
                         color: scheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                   ),
-                  // Results cascade in one after another, echoing the
-                  // gallery grid — each match settles into place.
-                  for (final (i, painting) in results.indexed)
+                  if (paintResults.isNotEmpty) ...[
                     Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      key: ValueKey('search-${painting.id}'),
-                      child: revealListItem(
-                        PaintingListTile(painting: painting),
-                        i,
-                        context: context,
-                      ),
+                      padding: const EdgeInsets.only(bottom: 4, top: 4),
+                      child: Text('Paintings', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.primary)),
                     ),
+                    for (final (i, painting) in paintResults.indexed)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        key: ValueKey('search-${painting.id}'),
+                        child: revealListItem(
+                          PaintingListTile(painting: painting),
+                          i,
+                          context: context,
+                        ),
+                      ),
+                  ],
+                  if (artistResults.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4, top: 8),
+                      child: Text('Artists', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.primary)),
+                    ),
+                    for (final artist in artistResults)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        key: ValueKey('search-artist-${artist.id}'),
+                        child: Card(
+                          child: ListTile(
+                            leading: CircleAvatar(child: Text(artist.name.isNotEmpty ? artist.name[0].toUpperCase() : '?')),
+                            title: Text(artist.name),
+                            subtitle: Text(artist.nationality.isNotEmpty ? artist.nationality : 'Artist', maxLines: 1, overflow: TextOverflow.ellipsis),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () => Navigator.pushNamed(context, '/artist/${artist.id}'),
+                          ),
+                        ),
+                      ),
+                  ],
+                  if (docResults.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4, top: 8),
+                      child: Text('Documents', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.primary)),
+                    ),
+                    for (final doc in docResults)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        key: ValueKey('search-doc-${doc.id}'),
+                        child: Card(
+                          child: ListTile(
+                            leading: const Icon(Icons.description),
+                            title: Text(doc.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                            subtitle: Text(doc.type, maxLines: 1, overflow: TextOverflow.ellipsis),
+                            trailing: const Icon(Icons.chevron_right),
+                          ),
+                        ),
+                      ),
+                  ],
                 ],
               ),
             ),

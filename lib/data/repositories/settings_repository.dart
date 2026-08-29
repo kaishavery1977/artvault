@@ -25,6 +25,7 @@ class SettingsRepository {
 
   ThemeMode get themeMode {
     final v = _db.getString(AppConstants.kThemeMode, 'system');
+    if (v == 'auto') return _autoThemeMode();
     return switch (v) {
       'light' => ThemeMode.light,
       'dark' => ThemeMode.dark,
@@ -32,8 +33,19 @@ class SettingsRepository {
     };
   }
 
+  /// Auto theme: light during daytime (6AM–7PM), dark at night.
+  ThemeMode _autoThemeMode() {
+    final hour = DateTime.now().hour;
+    return (hour >= 6 && hour < 19) ? ThemeMode.light : ThemeMode.dark;
+  }
+
+  String get themeModeKey => _db.getString(AppConstants.kThemeMode, 'system') ?? 'system';
+
   Future<void> setThemeMode(ThemeMode mode) =>
       _db.setSetting(AppConstants.kThemeMode, mode.name);
+
+  Future<void> setThemeModeKey(String key) =>
+      _db.setSetting(AppConstants.kThemeMode, key);
 
   String get locale => _db.getString(AppConstants.kLocale, 'en') ?? 'en';
 
@@ -50,6 +62,14 @@ class SettingsRepository {
 
   Future<void> setAppLockEnabled(bool value) =>
       _db.setSetting(AppConstants.kAppLockEnabled, value);
+
+  /// Auto-lock timeout in seconds after the app is backgrounded.
+  /// 0 = lock immediately, 30/60/300 = delay in seconds.
+  int get autoLockTimeoutSeconds =>
+      _db.getInt(AppConstants.kAutoLockTimeout, 0);
+
+  Future<void> setAutoLockTimeout(int seconds) =>
+      _db.setSetting(AppConstants.kAutoLockTimeout, seconds);
 
   bool get autoBackup => _db.getBool(AppConstants.kAutoBackup, true);
 

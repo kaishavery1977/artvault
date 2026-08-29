@@ -97,7 +97,7 @@ void main() {
 
     // PIN pad visible (only unlock path — no biometrics in tests).
     expect(
-      find.text('Enter your passcode to open your private gallery'),
+      find.text('Enter passcode to unlock'),
       findsOneWidget,
     );
 

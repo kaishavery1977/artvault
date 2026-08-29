@@ -17,6 +17,7 @@ import '../../core/providers/providers.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../auth/face_scan_screen.dart';
 
+
 /// Cold-start lock gate shown when App Lock is enabled.
 ///
 /// Offers distinct unlock methods — fingerprint (strong biometrics), Face
@@ -335,28 +336,31 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                          width: 96,
-                          height: 96,
+                          width: 88,
+                          height: 88,
                           decoration: BoxDecoration(
-                            gradient: const LinearGradient(
+                            gradient: LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: [AppColors.secondary, AppColors.accent],
+                              colors: [
+                                AppColors.secondary.withValues(alpha: 0.9),
+                                AppColors.accent,
+                              ],
                             ),
-                            borderRadius: BorderRadius.circular(28),
+                            borderRadius: BorderRadius.circular(26),
                             boxShadow: [
                               BoxShadow(
                                 color: AppColors.secondary.withValues(
-                                  alpha: 0.35,
+                                  alpha: 0.3,
                                 ),
-                                blurRadius: 28,
-                                offset: const Offset(0, 10),
+                                blurRadius: 24,
+                                offset: const Offset(0, 8),
                               ),
                             ],
                           ),
                           child: const Icon(
-                            Icons.lock_outline,
-                            size: 44,
+                            Icons.lock_outline_rounded,
+                            size: 40,
                             color: Colors.white,
                           ),
                         )
@@ -371,11 +375,15 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen>
                         ),
                     const SizedBox(height: AppSpacing.xl),
                     Text(
-                          'ArtVault is locked',
+                          'ArtVault',
                           style: AppTheme.display(
                             context,
-                            size: 26,
-                          ).copyWith(color: fg),
+                            size: 30,
+                          ).copyWith(
+                            color: fg,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.5,
+                          ),
                         )
                         .animate(
                           onPlay: (c) => MediaQuery.disableAnimationsOf(context)
@@ -383,12 +391,17 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen>
                               : null,
                         )
                         .fadeIn(duration: 400.ms, delay: 150.ms),
-                    const SizedBox(height: AppSpacing.xs),
+                    const SizedBox(height: 6),
                     Text(
                       showPinPad
-                          ? 'Enter your passcode to open your private gallery'
-                          : 'Unlock to open your private gallery',
-                      style: TextStyle(fontSize: 13, color: muted),
+                          ? 'Enter passcode to unlock'
+                          : 'Verify your identity to unlock',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: muted,
+                        fontWeight: FontWeight.w400,
+                        letterSpacing: 0.2,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
                     if (showPinPad)
@@ -406,41 +419,62 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen>
                       )
                     else ...[
                       if (_faceMethod) ...[
-                        _UnlockButton(
+                        _BiometricButton(
                           icon: Icons.face_retouching_natural,
-                          label: 'Unlock with Face lock',
+                          label: 'Face lock',
                           checking: _checking,
                           onPressed: _verifyFace,
                         ),
-                        const SizedBox(height: AppSpacing.sm),
+                        const SizedBox(height: AppSpacing.md),
                       ],
                       if (_fingerprintMethod) ...[
-                        _UnlockButton(
+                        _BiometricButton(
                           icon: Icons.fingerprint,
-                          label: 'Unlock with Fingerprint',
+                          label: 'Fingerprint',
                           checking: _checking,
                           onPressed: _verifyFingerprint,
                         ),
-                        const SizedBox(height: AppSpacing.sm),
+                        const SizedBox(height: AppSpacing.md),
                       ],
                       if (_passcodeSet)
                         TextButton(
                           onPressed: _checking ? null : _usePasscode,
-                          child: const Text('Use passcode'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: muted,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                          ),
+                          child: const Text(
+                            'Use passcode',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
                         ),
                     ],
                     if (_status.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.md),
-                      Text(
-                        _status,
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          color: _statusError
-                              ? Theme.of(context).colorScheme.error
-                              : muted,
-                          fontWeight: _statusError
-                              ? FontWeight.w600
-                              : FontWeight.w400,
+                      const SizedBox(height: AppSpacing.lg),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        child: Text(
+                          _status,
+                          key: ValueKey(_status),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            height: 1.4,
+                            color: _statusError
+                                ? Theme.of(context).colorScheme.error
+                                : muted,
+                            fontWeight: _statusError
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                            letterSpacing: 0.1,
+                          ),
                         ),
                       ),
                     ],
@@ -450,7 +484,21 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen>
                         await ref.read(authProvider.notifier).signOut();
                         if (context.mounted) context.go('/login');
                       },
-                      child: const Text('Sign out instead'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: muted,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                      ),
+                      child: Text(
+                        'Sign out',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                          color: muted,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -470,13 +518,15 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen>
   }
 }
 
-class _UnlockButton extends StatelessWidget {
+/// Circular biometric button with an icon above a subtle label.
+/// Follows iOS-style unlock buttons: glass circle + thin icon + label.
+class _BiometricButton extends StatefulWidget {
   final IconData icon;
   final String label;
   final bool checking;
   final VoidCallback onPressed;
 
-  const _UnlockButton({
+  const _BiometricButton({
     required this.icon,
     required this.label,
     required this.checking,
@@ -484,31 +534,88 @@ class _UnlockButton extends StatelessWidget {
   });
 
   @override
+  State<_BiometricButton> createState() => _BiometricButtonState();
+}
+
+class _BiometricButtonState extends State<_BiometricButton> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 220,
-      child: FilledButton.icon(
-        onPressed: checking ? null : onPressed,
-        icon: checking
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2.2),
-              )
-            : Icon(icon),
-        label: Text(checking ? 'Verifying…' : label),
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
+
+    return GestureDetector(
+      onTapDown: widget.checking
+          ? null
+          : (_) => setState(() => _pressed = true),
+      onTapUp: widget.checking
+          ? null
+          : (_) {
+              setState(() => _pressed = false);
+              HapticFeedback.mediumImpact();
+              widget.onPressed();
+            },
+      onTapCancel: widget.checking
+          ? null
+          : () => setState(() => _pressed = false),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _pressed
+                  ? scheme.primary.withValues(alpha: isDark ? 0.2 : 0.1)
+                  : scheme.surface.withValues(
+                      alpha: isDark ? 0.5 : 0.65,
+                    ),
+              border: Border.all(
+                color: scheme.onSurface.withValues(alpha: 0.08),
+                width: 0.8,
+              ),
+            ),
+            child: widget.checking
+                ? Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: scheme.primary,
+                    ),
+                  )
+                : Icon(
+                    widget.icon,
+                    size: 30,
+                    color: scheme.onSurface.withValues(alpha: 0.8),
+                  ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            widget.checking ? 'Verifying…' : widget.label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: muted,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// Minimal on-screen numeric keypad with progress dots for passcode entry.
-class _PinPad extends StatelessWidget {
+/// Professional PIN pad with circular keys and animated dot indicators.
+///
+/// Follows iOS-style spacing, haptic feedback, and smooth color transitions
+/// for a polished, high-end unlock experience.
+class _PinPad extends StatefulWidget {
   final int length;
   final int entered;
-
-  /// True after a wrong passcode: the filled dots render in the error color
-  /// so the pad visually signals the failed attempt alongside the shake.
   final bool error;
   final bool enabled;
   final ValueChanged<String> onDigit;
@@ -524,59 +631,132 @@ class _PinPad extends StatelessWidget {
   });
 
   @override
+  State<_PinPad> createState() => _PinPadState();
+}
+
+class _PinPadState extends State<_PinPad> with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseController;
+  late final Animation<double> _pulseAnimation;
+  int _previousEntered = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeOutBack),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _PinPad oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Pulse the newest dot when a digit is added.
+    if (widget.entered > _previousEntered &&
+        widget.entered <= widget.length) {
+      _pulseController.forward(from: 0);
+    }
+    _previousEntered = widget.entered;
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final dotColor = error ? scheme.error : scheme.primary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dotColor = widget.error ? scheme.error : scheme.primary;
+    final mutedColor = scheme.onSurface.withValues(alpha: isDark ? 0.25 : 0.2);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(length, (i) {
-            return Container(
-              width: 14,
-              height: 14,
-              margin: const EdgeInsets.symmetric(horizontal: 6),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: i < entered ? dotColor : Colors.transparent,
-                border: Border.all(
-                  color: i < entered
-                      ? dotColor
-                      : scheme.onSurface.withValues(alpha: 0.4),
-                  width: 1.6,
-                ),
-              ),
+        // ── Dot indicators ──
+        AnimatedBuilder(
+          animation: _pulseAnimation,
+          builder: (context, child) {
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(widget.length, (i) {
+                final filled = i < widget.entered;
+                // Only pulse the last filled dot.
+                final pulsing = filled && i == widget.entered - 1;
+                final scale = pulsing ? _pulseAnimation.value : 1.0;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Transform.scale(
+                    scale: scale,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOut,
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: filled ? dotColor : Colors.transparent,
+                        border: Border.all(
+                          color: filled ? dotColor : mutedColor,
+                          width: 1.8,
+                        ),
+                        boxShadow: filled
+                            ? [
+                                BoxShadow(
+                                  color: dotColor.withValues(alpha: 0.3),
+                                  blurRadius: 6,
+                                  spreadRadius: 1,
+                                ),
+                              ]
+                            : null,
+                      ),
+                    ),
+                  ),
+                );
+              }),
             );
-          }),
+          },
         ),
-        const SizedBox(height: AppSpacing.lg),
+        const SizedBox(height: 44),
+        // ── Number grid ──
         for (final row in const [
           ['1', '2', '3'],
           ['4', '5', '6'],
           ['7', '8', '9'],
         ])
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final digit in row)
-                _Key(
-                  label: digit,
-                  enabled: enabled,
-                  onPressed: () => onDigit(digit),
-                ),
-            ],
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final digit in row)
+                  _Key(
+                    label: digit,
+                    enabled: widget.enabled,
+                    onPressed: () => widget.onDigit(digit),
+                  ),
+              ],
+            ),
           ),
+        // ── Bottom row: empty, 0, backspace ──
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(width: 72),
-            _Key(label: '0', enabled: enabled, onPressed: () => onDigit('0')),
+            const SizedBox(width: 80),
+            _Key(
+              label: '0',
+              enabled: widget.enabled,
+              onPressed: () => widget.onDigit('0'),
+            ),
             _Key(
               label: '⌫',
-              enabled: enabled && entered > 0,
-              onPressed: onBackspace,
+              enabled: widget.enabled && widget.entered > 0,
+              onPressed: widget.onBackspace,
             ),
           ],
         ),
@@ -585,7 +765,9 @@ class _PinPad extends StatelessWidget {
   }
 }
 
-class _Key extends StatelessWidget {
+/// Circular glass key with press feedback — follows the iOS numeric keypad
+/// style with subtle scale and opacity transitions.
+class _Key extends StatefulWidget {
   final String label;
   final bool enabled;
   final VoidCallback onPressed;
@@ -597,37 +779,65 @@ class _Key extends StatelessWidget {
   });
 
   @override
+  State<_Key> createState() => _KeyState();
+}
+
+class _KeyState extends State<_Key> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final effectiveEnabled = widget.enabled && !_pressed;
 
     return Padding(
-      padding: const EdgeInsets.all(5),
-      child: InkWell(
-        onTap: enabled ? onPressed : null,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      child: GestureDetector(
+        onTapDown: widget.enabled ? (_) => setState(() => _pressed = true) : null,
+        onTapUp: widget.enabled
+            ? (_) {
+                setState(() => _pressed = false);
+                HapticFeedback.lightImpact();
+                widget.onPressed();
+              }
+            : null,
+        onTapCancel: widget.enabled
+            ? () => setState(() => _pressed = false)
+            : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOutCubic,
           width: 72,
-          height: 56,
+          height: 72,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            // Glass key: translucent fill + hairline border. Decoration only.
-            color: scheme.surface.withValues(
-              alpha: enabled ? (isDark ? 0.55 : 0.75) : 0.25,
-            ),
-            borderRadius: BorderRadius.circular(16),
+            shape: BoxShape.circle,
+            color: _pressed
+                ? scheme.primary.withValues(alpha: isDark ? 0.25 : 0.12)
+                : scheme.surface.withValues(
+                    alpha: effectiveEnabled ? (isDark ? 0.45 : 0.7) : 0.2,
+                  ),
             border: Border.all(
-              color: scheme.onSurface.withValues(alpha: enabled ? 0.07 : 0.03),
-              width: 0.6,
+              color: _pressed
+                  ? scheme.primary.withValues(alpha: 0.4)
+                  : scheme.onSurface.withValues(
+                      alpha: effectiveEnabled ? 0.08 : 0.03,
+                    ),
+              width: 0.8,
             ),
           ),
-          child: Text(
-            label,
+          child: AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 100),
             style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w600,
-              color: scheme.onSurface.withValues(alpha: enabled ? 1 : 0.35),
+              fontSize: widget.label == '⌫' ? 22 : 28,
+              fontWeight: FontWeight.w300,
+              color: scheme.onSurface.withValues(
+                alpha: effectiveEnabled ? 0.9 : 0.25,
+              ),
+              fontFamily: widget.label == '⌫' ? null : '.SF Pro Display',
             ),
+            child: Text(widget.label),
           ),
         ),
       ),

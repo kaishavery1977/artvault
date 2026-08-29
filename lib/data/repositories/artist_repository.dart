@@ -70,6 +70,19 @@ class ArtistRepository {
     BackupService.instance.scheduleAutoBackup();
   }
 
+  /// Restores a soft-deleted artist (undo delete).
+  Future<void> restore(String id) async {
+    final artist = get(id);
+    if (artist == null || !artist.isDeleted) return;
+    await _db.put(
+      AppConstants.boxArtists,
+      id,
+      artist.copyWith(isDeleted: false, needsSync: true).toJson(),
+    );
+    unawaited(_syncArtist(artist.copyWith(isDeleted: false, needsSync: true)));
+    BackupService.instance.scheduleAutoBackup();
+  }
+
   Future<void> syncNow() async {
     if (!CloudBackend.instance.isReady) return;
     final dirty = readAll().where((a) => a.needsSync).toList();

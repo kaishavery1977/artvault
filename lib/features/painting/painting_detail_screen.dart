@@ -411,6 +411,10 @@ class _PaintingDetailScreenState extends ConsumerState<PaintingDetailScreen> {
                       paintingId: painting.id,
                       canEdit: canEdit,
                     ),
+                    if (painting.provenance.isNotEmpty) ...[
+                      SectionHeader(title: 'Provenance'),
+                      _ProvenanceTimeline(provenance: painting.provenance),
+                    ],
                     SectionHeader(title: 'QR code'),
                     _QrCard(painting: painting),
                     if (related.isNotEmpty) ...[
@@ -2216,6 +2220,90 @@ class _PublicGalleryDialogState extends State<_PublicGalleryDialog> {
           label: const Text('Share gallery link'),
         ),
       ],
+    );
+  }
+}
+
+/// Visual timeline of an artwork's ownership / exhibition history.
+class _ProvenanceTimeline extends StatelessWidget {
+  final List<Map<String, dynamic>> provenance;
+  const _ProvenanceTimeline({required this.provenance});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return GlassCard(
+      padding: AppSpacing.cardPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < provenance.length; i++)
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 32,
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: i == provenance.length - 1
+                                ? scheme.primary
+                                : scheme.primary.withValues(alpha: 0.3),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        if (i < provenance.length - 1)
+                          Expanded(
+                            child: Container(
+                              width: 2,
+                              color: scheme.outlineVariant,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (provenance[i]['date'] != null)
+                            Text(
+                              provenance[i]['date'].toString(),
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: scheme.primary,
+                              ),
+                            ),
+                          if (provenance[i]['owner'] != null)
+                            Text(
+                              provenance[i]['owner'].toString(),
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                            ),
+                          if (provenance[i]['note'] != null)
+                            Text(
+                              provenance[i]['note'].toString(),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: scheme.onSurface.withValues(alpha: 0.6),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

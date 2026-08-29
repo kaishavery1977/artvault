@@ -93,18 +93,45 @@ class _FaceScanScreenState extends State<FaceScanScreen>
   /// Verify mode: consecutive non-matching frames (drives the failure hint).
   int _failStreak = 0;
 
-  // --- Blink-liveness challenge (verify mode only) -------------------------
-  // After enough matching frames the scan demands one genuine blink (eyes
-  // open → closed transition) before unlocking, so a static photo of the
-  // owner — which can never blink — cannot pass.
+  /// Last RGB frame data + dimensions for enrollment quality scoring.
+  Uint8List? _lastRgb;
+  int _lastRgbWidth = 0;
+  int _lastRgbHeight = 0;
+
+  // --- Multi-challenge liveness (verify mode only) --------------------------
+  // After enough matching frames the scan demands a random live-action
+  // challenge before unlocking. The random selection defeats pre-recorded
+  // video attacks because the attacker cannot predict which challenge will
+  // be asked.
   bool _livenessArmed = false;
   bool _eyesWereOpen = false;
   DateTime? _livenessArmedAt;
   int _livenessFails = 0;
 
+  /// The randomly-selected liveness challenge for this scan session.
+  _LivenessChallenge _challenge = _LivenessChallenge.blink;
+
+  // Head-turn tracking for the turn-left / turn-right challenges.
+  double _initialYaw = 0;
+  bool _yawBaselineSet = false;
+
+  // --- Position jitter anti-spoofing ---------------------------------------
+  /// Tracks face-centre positions to detect static images (printed photos,
+  /// screens). Real faces have micro-movements; photos don't.
+  final PositionTracker _jitterTracker = PositionTracker();
+  bool _jitterWarned = false;
+
+  // --- Enrollment quality gating -------------------------------------------
+  /// Running count of samples rejected for low quality during enrollment.
+  int _enrollQualityRejects = 0;
+
   static const double _eyeOpenProb = 0.45;
   static const double _eyeClosedProb = 0.30;
   static const Duration _livenessTimeout = Duration(seconds: 8);
+
+  /// Head-turn liveness: the yaw angle (degrees) the user must achieve
+  /// beyond the baseline captured when liveness was armed.
+  static const double _turnThresholdDeg = 18.0;
 
   /// True once enrollment/verification finished, showing the success overlay
   /// before the screen pops with the result.
@@ -156,6 +183,12 @@ class _FaceScanScreenState extends State<FaceScanScreen>
   }
 
   Future<void> _init() async {
+    // Select a random liveness challenge so pre-recorded attacks can't
+    // predict which action is required.
+    final challengeIdx = math.Random().nextInt(_LivenessChallenge.values.length);
+    _challenge = _LivenessChallenge.values[challengeIdx];
+    await FaceDebugLog.instance.log('liveness challenge: ${_challenge.name}');
+
     // If the camera pipeline doesn't come up in time, surface it instead of
     // spinning on "Starting camera…" forever: a wedged camera HAL or a slow
     // permission dialog must never look like an infinite loading state. The
@@ -258,6 +291,8 @@ class _FaceScanScreenState extends State<FaceScanScreen>
           _failStreak = 0;
           _samples.clear();
           _livenessArmed = false;
+          _yawBaselineSet = false;
+          _jitterTracker.reset();
         } else if (_hits == 0) {
           // Flicker: decay match momentum, keep already-captured samples.
           _matchHits = _matchHits > 0 ? _matchHits - 1 : 0;
@@ -316,6 +351,17 @@ class _FaceScanScreenState extends State<FaceScanScreen>
 
       final controller = _controller;
       if (controller == null) return;
+
+      // Convert to RGB for quality scoring (stored temporarily for the
+      // enrollment quality gate; only needed in enroll mode).
+      if (widget.mode == FaceScanMode.enroll) {
+        final nv21 = _nv21Bytes(image);
+        final rgb = FaceRecognizer.instance.nv21ToRgbHalf(nv21, image.width, image.height);
+        _lastRgb = rgb.$1;
+        _lastRgbWidth = rgb.$2;
+        _lastRgbHeight = rgb.$3;
+      }
+
       final emb = await FaceRecognizer.instance.embeddingFromNv21(
         _nv21Bytes(image),
         image.width,
@@ -340,7 +386,35 @@ class _FaceScanScreenState extends State<FaceScanScreen>
       }
       _embedFails = 0;
 
+      // Track position for jitter anti-spoofing.
+      final faceCx = face.boundingBox.center.dx / image.width;
+      final faceCy = face.boundingBox.center.dy / image.height;
+      _jitterTracker.addPosition(faceCx, faceCy);
+
       if (widget.mode == FaceScanMode.enroll) {
+        // --- Quality gate: reject frames that are too dark, too small,
+        // or too low-contrast so the stored embedding is reliable.
+        final rgb = _lastRgb;
+        if (rgb != null) {
+          final quality = FaceRecognizer.instance.faceQualityScore(
+            rgb,
+            _lastRgbWidth,
+            _lastRgbHeight,
+            face.boundingBox,
+          );
+          if (quality < FaceRecognizer.minEnrollQuality) {
+            _enrollQualityRejects++;
+            await FaceDebugLog.instance.log(
+              'enroll quality reject #$quality ${quality.toStringAsFixed(2)}',
+            );
+            if (_enrollQualityRejects % 5 == 0 && mounted) {
+              setState(() {
+                _status = 'Move closer or improve lighting…';
+              });
+            }
+            return; // skip this sample
+          }
+        }
         _samples.add(emb);
         HapticFeedback.lightImpact();
         debugPrint('face_enroll sample ${_samples.length}/$_enrollFrames');
@@ -360,7 +434,7 @@ class _FaceScanScreenState extends State<FaceScanScreen>
           await _finishWithSuccess(
             avg,
             message: 'Face registered successfully!',
-            subtitle: 'Face lock is now active',
+            subtitle: 'Multi-layered security is now active',
           );
         }
       } else {
@@ -374,64 +448,88 @@ class _FaceScanScreenState extends State<FaceScanScreen>
           );
           return;
         }
+
+        // Use the adaptive threshold: tightens after consecutive failures
+        // so a partially-matching face (e.g. a relative) can't brute-force.
+        final threshold = FaceRecognizer.instance.matchThreshold;
         final sim = FaceRecognizer.instance.similarity(emb, reference);
         await FaceDebugLog.instance.log(
-          'verify sim=${sim.toStringAsFixed(3)} hits=$_matchHits',
+          'verify sim=${sim.toStringAsFixed(3)} '
+          'threshold=${threshold.toStringAsFixed(2)} '
+          'hits=$_matchHits challenge=${_challenge.name}',
         );
-        if (sim >= FaceRecognizer.matchThreshold) {
+
+        // --- Jitter anti-spoofing gate: after enough frames, reject
+        // scans where the face position is suspiciously static.
+        if (_jitterTracker.hasEnoughSamples &&
+            _jitterTracker.isLikelyStatic &&
+            !_jitterWarned) {
+          _jitterWarned = true;
+          FaceRecognizer.instance.recordFailure();
+          await _finishWithSuccess(
+            false,
+            message: 'Please use your real face',
+            subtitle: 'A photo or screen was detected',
+          );
+          return;
+        }
+
+        if (sim >= threshold) {
           _matchHits++;
           HapticFeedback.lightImpact();
           _failStreak = 0;
           if (mounted) {
             setState(() {
               _status = _livenessArmed
-                  ? 'Now blink to confirm it is you'
+                  ? _livenessPrompt()
                   : 'Matching… $_matchHits/$_matchFrames';
             });
           }
           if (_matchHits >= _matchFrames) {
             if (!_livenessArmed) {
-              // Identity confirmed — now demand a live blink before unlock.
+              // Identity confirmed — now demand a random live-action
+              // challenge before unlock.
               _livenessArmed = true;
               _livenessArmedAt = DateTime.now();
               _eyesWereOpen = _eyesOpen(face);
-              await FaceDebugLog.instance.log('liveness armed');
+              _initialYaw = face.headEulerAngleY ?? 0;
+              _yawBaselineSet = true;
+              await FaceDebugLog.instance.log(
+                'liveness armed: challenge=${_challenge.name} '
+                'baselineYaw=${_initialYaw.toStringAsFixed(1)}',
+              );
               if (mounted) {
                 setState(() {
-                  _status = 'Now blink to confirm it is you';
+                  _status = _livenessPrompt();
                 });
               }
             } else {
-              // Look for an open→closed transition while the face keeps
-              // matching. A static photo never blinks, so it stalls here
-              // until the timeout resets the scan.
-              final closed = _eyesClosed(face);
-              if (closed) {
-                if (_eyesWereOpen) {
-                  await FaceDebugLog.instance.log('liveness blink seen');
-                  await _finishWithSuccess(
-                    true,
-                    message: 'Face recognized — unlocking…',
-                  );
-                  return;
-                }
-                // Eyes still closed from the start: wait until they open
-                // first so a closed-eyes photo can't pass either.
-              } else if (_eyesOpen(face)) {
-                _eyesWereOpen = true;
+              // Evaluate the randomly-selected challenge.
+              final passed = await _evaluateLiveness(face);
+              if (passed) {
+                await FaceDebugLog.instance.log(
+                  'liveness passed: ${_challenge.name}',
+                );
+                await _finishWithSuccess(
+                  true,
+                  message: 'Face recognized — unlocking…',
+                );
+                return;
               }
+              // Check timeout.
               final armedAt = _livenessArmedAt;
               if (armedAt != null &&
                   DateTime.now().difference(armedAt) > _livenessTimeout) {
                 _livenessArmed = false;
                 _matchHits = 0;
                 _livenessFails++;
+                _yawBaselineSet = false;
                 await FaceDebugLog.instance.log('liveness timeout');
                 if (mounted) {
                   setState(() {
                     _status = _livenessFails >= 2
-                        ? 'No blink seen — open and close your eyes once, slowly'
-                        : 'No blink detected — look at the camera and try again';
+                        ? 'Try again — move slowly and follow the prompt'
+                        : 'Challenge not detected — look at the camera and try again';
                   });
                 }
               }
@@ -443,8 +541,12 @@ class _FaceScanScreenState extends State<FaceScanScreen>
           _matchHits = _matchHits > 0 ? _matchHits - 1 : 0;
           _failStreak++;
           if (_matchHits <= 0) {
-            // Identity was lost — the blink challenge (if armed) is moot.
+            // Identity was lost — the liveness challenge (if armed) is moot.
             _livenessArmed = false;
+            _yawBaselineSet = false;
+          }
+          if (_failStreak == 5) {
+            FaceRecognizer.instance.recordFailure();
           }
           if (_failStreak == 8 && mounted) {
             await FaceDebugLog.instance.log('verify mismatch streak=8');
@@ -573,6 +675,54 @@ class _FaceScanScreenState extends State<FaceScanScreen>
         right != null &&
         left < _eyeClosedProb &&
         right < _eyeClosedProb;
+  }
+
+  // --- Multi-challenge liveness helpers ----------------------------------
+
+  /// Returns the user-facing prompt for the current liveness challenge.
+  String _livenessPrompt() {
+    return switch (_challenge) {
+      _LivenessChallenge.blink => 'Blink to confirm it is you',
+      _LivenessChallenge.turnLeft => 'Turn your head slowly to the left',
+      _LivenessChallenge.turnRight => 'Turn your head slowly to the right',
+    };
+  }
+
+  /// Evaluates the randomly-selected liveness challenge against the current
+  /// face data. Returns `true` when the challenge is satisfied.
+  Future<bool> _evaluateLiveness(Face face) async {
+    switch (_challenge) {
+      case _LivenessChallenge.blink:
+        return _evaluateBlink(face);
+      case _LivenessChallenge.turnLeft:
+        return _evaluateTurn(face, left: true);
+      case _LivenessChallenge.turnRight:
+        return _evaluateTurn(face, left: false);
+    }
+  }
+
+  /// Blink challenge: eyes must go from open → closed → open.
+  bool _evaluateBlink(Face face) {
+    final closed = _eyesClosed(face);
+    if (closed) {
+      if (_eyesWereOpen) {
+        return true; // blink complete
+      }
+    } else if (_eyesOpen(face)) {
+      _eyesWereOpen = true;
+    }
+    return false;
+  }
+
+  /// Head-turn challenge: yaw angle must shift by [_turnThresholdDeg] from
+  /// the baseline captured when liveness was armed.
+  bool _evaluateTurn(Face face, {required bool left}) {
+    if (!_yawBaselineSet) return false;
+    final yaw = face.headEulerAngleY ?? 0;
+    final delta = yaw - _initialYaw;
+    // Left turn: yaw goes positive (on most devices). Right: negative.
+    final crossed = left ? delta > _turnThresholdDeg : delta < -_turnThresholdDeg;
+    return crossed;
   }
 
   /// ML Kit's rotationDegrees, per the official google_mlkit sample formula:
@@ -1025,4 +1175,11 @@ class _FaceBoxPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _FaceBoxPainter oldDelegate) =>
       oldDelegate.rect != rect;
+}
+
+/// Randomly-selected liveness challenge for the verify scan.
+enum _LivenessChallenge {
+  blink,
+  turnLeft,
+  turnRight,
 }

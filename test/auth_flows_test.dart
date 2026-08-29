@@ -415,18 +415,22 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // The set-passcode dialog opens.
+      // The set-passcode dialog opens with PIN-pad entry.
       expect(find.text('Set passcode'), findsOneWidget);
 
-      await tester.enterText(
-        find.widgetWithText(TextField, 'Passcode'),
-        '1234',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextField, 'Confirm passcode'),
-        '1234',
-      );
-      await tester.tap(find.text('Save'));
+      // Enter first passcode (4 digits — auto-advances to confirm).
+      for (final d in ['1', '2', '3', '4']) {
+        await tester.tap(find.text(d).last);
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      await tester.pump(); // advance to confirm step
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Confirm step — re-enter the same passcode.
+      for (final d in ['1', '2', '3', '4']) {
+        await tester.tap(find.text(d).last);
+        await tester.pump(const Duration(milliseconds: 50));
+      }
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));
@@ -450,21 +454,25 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.enterText(
-        find.widgetWithText(TextField, 'Passcode'),
-        '1234',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextField, 'Confirm passcode'),
-        '9999',
-      );
-      await tester.tap(find.text('Save'));
+      // Enter first passcode.
+      for (final d in ['1', '2', '3', '4']) {
+        await tester.tap(find.text(d).last);
+        await tester.pump(const Duration(milliseconds: 50));
+      }
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Still in the dialog, nothing saved.
+      // Confirm with a different passcode.
+      for (final d in ['9', '9', '9', '9']) {
+        await tester.tap(find.text(d).last);
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Still in the dialog, mismatched passcodes.
       expect(find.text('Set passcode'), findsOneWidget);
-      expect(find.text('Passcodes must be 4 digits and match'), findsOneWidget);
+      expect(find.text('Passcodes did not match. Try again.'), findsOneWidget);
       expect(await AuthRepository.instance.passcodeSet, isFalse);
     });
   });
@@ -558,6 +566,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Remove face lock'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Confirmation dialog appears.
+      expect(find.text('Remove Face lock?'), findsOneWidget);
+      await tester.tap(find.text('Remove'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 

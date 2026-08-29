@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import '../../core/constants/app_constants.dart';
 import '../../data/local/local_database.dart';
@@ -131,10 +132,12 @@ class SyncService {
   }
 
   /// Exponential backoff, capped at 10 minutes.
+  /// Attempt 1 → 5 s, Attempt 2 → 25 s, Attempt 3 → 125 s (~2 min),
+  /// Attempt 4 → 625 s (capped to 10 min).
   Duration _backoffDelay(int attempt) {
-    const base = Duration(seconds: 5);
-    const max = Duration(minutes: 10);
-    final delay = base * (5 * (attempt - 1));
-    return delay > max ? max : delay;
+    const base = 5; // seconds
+    const maxSeconds = 600; // 10 minutes
+    final delaySeconds = (base * math.pow(5, attempt - 1)).toInt().clamp(0, maxSeconds);
+    return Duration(seconds: delaySeconds);
   }
 }

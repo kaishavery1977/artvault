@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -91,7 +92,12 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
     ];
 
     return Scaffold(
-      body: CustomScrollView(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          HapticFeedback.mediumImpact();
+          ref.invalidate(paintingsProvider);
+        },
+        child: CustomScrollView(
         controller: _controller,
         slivers: [
           SliverToBoxAdapter(
@@ -118,7 +124,10 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
                       child: ChoiceChip(
                         label: const Text('All'),
                         selected: _category == null,
-                        onSelected: (_) => setState(() => _category = null),
+                        onSelected: (_) {
+                          HapticFeedback.selectionClick();
+                          setState(() => _category = null);
+                        },
                       ),
                     ),
                     for (final c in categories)
@@ -127,7 +136,10 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
                         child: ChoiceChip(
                           label: Text(c),
                           selected: _category == c,
-                          onSelected: (_) => setState(() => _category = c),
+                          onSelected: (_) {
+                            HapticFeedback.selectionClick();
+                            setState(() => _category = c);
+                          },
                         ),
                       ),
                   ],
@@ -218,6 +230,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
           ),
         ],
       ),
+      ),
     );
   }
 }
@@ -264,7 +277,10 @@ class _GalleryHeader extends StatelessWidget {
                   ),
                   IconButton(
                     tooltip: 'Favorites',
-                    onPressed: onFavoritesToggle,
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      onFavoritesToggle();
+                    },
                     icon: Icon(
                       favoritesOnly ? Icons.favorite : Icons.favorite_border,
                       color: favoritesOnly ? const Color(0xFFFF6B6B) : null,

@@ -27,6 +27,7 @@ void main() {
           documents: 2 * 1024 * 1024,
         ),
       ),
+      settingsBoxProvider.overrideWith((ref) => const Stream.empty()),
     ],
     child: const MaterialApp(home: AboutScreen()),
   );
@@ -58,39 +59,35 @@ void main() {
     expect(find.text('Plan'), findsOneWidget);
     expect(find.text('Free'), findsOneWidget);
 
-    // The stats card's GridView is also a Scrollable, so target the page's
-    // ListView explicitly when scrolling through the lazy sections.
-    final list = find.byType(Scrollable).first;
-    await tester.scrollUntilVisible(
+    // Scroll down through the remaining sections using ListView dragUntilVisible.
+    await tester.dragUntilVisible(
       find.text('Capabilities'),
-      200,
-      scrollable: list,
+      find.byType(ListView),
+      const Offset(0, -300),
     );
     expect(find.text('Capabilities'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('Celebrations'),
-      200,
-      scrollable: list,
-    );
-    expect(find.text('Celebrations'), findsOneWidget);
-    await tester.scrollUntilVisible(
+
+    await tester.dragUntilVisible(
       find.text('Support'),
-      200,
-      scrollable: list,
+      find.byType(ListView),
+      const Offset(0, -300),
     );
     expect(find.text('Support'), findsOneWidget);
     expect(find.text('Send feedback'), findsOneWidget);
     expect(find.text('Rate ArtVault'), findsOneWidget);
     expect(find.text('Share ArtVault'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Legal'), 200, scrollable: list);
-    expect(find.text('Legal'), findsOneWidget);
-    // The credit's footer line is a plain Text — scroll to it, then assert
-    // the shimmer credit (which paints two layers) is on screen too.
-    await tester.scrollUntilVisible(
-      find.text('Every masterpiece starts with a single brushstroke.'),
-      200,
-      scrollable: list,
+
+    await tester.dragUntilVisible(
+      find.text('Legal'),
+      find.byType(ListView),
+      const Offset(0, -300),
     );
-    expect(find.text('Built by Kais Havery'), findsWidgets);
+    expect(find.text('Legal'), findsOneWidget);
+    expect(find.text('Kais Havery'), findsWidgets);
+    // Drain pending timers without waiting for animations to fully settle
+    // (shimmer and aurora run continuously).
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
   });
 }

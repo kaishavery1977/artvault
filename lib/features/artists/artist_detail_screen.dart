@@ -44,8 +44,21 @@ class _ArtistDetailScreenState extends ConsumerState<ArtistDetailScreen> {
       ),
     );
     if (ok == true && mounted) {
-      await ArtistRepository.instance.delete(widget.artistId);
-      if (mounted) context.pop();
+      await ArtistRepository.instance.delete(id);
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text('"$name" deleted'),
+              action: SnackBarAction(
+                label: 'Undo',
+                onPressed: () => ArtistRepository.instance.restore(id),
+              ),
+            ),
+          );
+        context.pop();
+      }
     }
   }
 

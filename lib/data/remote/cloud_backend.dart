@@ -8,6 +8,7 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart' as fb_storage;
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -36,8 +37,18 @@ class CloudBackend {
   /// "cloud sync unavailable" hint. Any successful upload resets it.
   final ValueNotifier<int> failedUploadStreak = ValueNotifier<int>(0);
 
+  /// Human-readable description of the last upload failure, shown in the
+  /// home-screen hint so the user knows *why* sync is failing.
+  final ValueNotifier<String> lastUploadError = ValueNotifier<String>('');
+
   /// Threshold for the home-screen "cloud sync unavailable" hint.
   static const int uploadFailureHintAfter = 3;
+
+  /// Max retries for a single upload before giving up.
+  static const int uploadMaxRetries = 3;
+
+  /// Base delay between retries (doubles each attempt).
+  static const Duration uploadRetryBaseDelay = Duration(seconds: 2);
 
   /// Supabase client shorthand.
   supa.SupabaseClient get _db => supa.Supabase.instance.client;
@@ -124,6 +135,10 @@ class CloudBackend {
       email: email,
       password: password,
     );
+    // Also create a Supabase session so Storage uploads are authenticated.
+    // Uses a deterministic password so re-auth works without storing the
+    // user's actual password.
+    await _ensureSupabaseAuth(email, _socialPassword(email));
     return cred.user;
   }
 
@@ -132,6 +147,8 @@ class CloudBackend {
       email: email,
       password: password,
     );
+    // Mirror the account in Supabase so Storage uploads are authenticated.
+    await _ensureSupabaseAuth(email, _socialPassword(email));
     return cred.user;
   }
 
@@ -156,6 +173,11 @@ class CloudBackend {
     if (idToken == null) return null;
     final credential = GoogleAuthProvider.credential(idToken: idToken);
     final cred = await FirebaseAuth.instance.signInWithCredential(credential);
+    // Mirror Google account in Supabase for Storage auth.
+    final email = cred.user?.email;
+    if (email != null) {
+      await _ensureSupabaseAuth(email, _socialPassword(email));
+    }
     return cred.user;
   }
 
@@ -167,6 +189,11 @@ class CloudBackend {
       'apple.com',
     ).credential(idToken: idToken, rawNonce: rawNonce);
     final cred = await FirebaseAuth.instance.signInWithCredential(oauth);
+    // Mirror Apple account in Supabase for Storage auth.
+    final email = cred.user?.email;
+    if (email != null) {
+      await _ensureSupabaseAuth(email, _socialPassword(email));
+    }
     return cred.user;
   }
 
@@ -195,7 +222,51 @@ class CloudBackend {
     try {
       await GoogleSignIn.instance.signOut();
     } catch (_) {}
+    // Sign out of Supabase too.
+    try {
+      await _db.auth.signOut();
+    } catch (_) {}
     await FirebaseAuth.instance.signOut();
+  }
+
+  /// After Firebase auth, create a matching Supabase session so Storage
+  /// uploads are authenticated. If the Supabase account doesn't exist yet,
+  /// create it automatically.
+  Future<void> _ensureSupabaseAuth(String email, String password) async {
+    if (!_ready) return;
+    // Already authenticated?
+    final current = _db.auth.currentUser;
+    if (current != null && current.email == email) return;
+    try {
+      await _db.auth.signInWithPassword(email: email, password: password);
+      AppLogger.info('Supabase auth session created for $email');
+    } catch (_) {
+      // Supabase account may not exist — create it silently.
+      try {
+        await _db.auth.signUp(email: email, password: password);
+        AppLogger.info('Supabase account created for $email');
+      } catch (e) {
+        AppLogger.warning('Supabase auth failed for $email', error: e);
+      }
+    }
+  }
+
+  /// Deterministic password for social-login Supabase accounts.
+  /// Derived from the email so the same email always maps to the same
+  /// password across sign-in and sign-up calls.
+  static String _socialPassword(String email) =>
+      'av_${email.hashCode.toRadixString(16)}_sync';
+
+  /// Ensures the Supabase client has an active auth session before storage
+  /// operations. Re-authenticates silently using the Firebase user info.
+  Future<void> _refreshSupabaseSession() async {
+    if (!_ready) return;
+    final current = _db.auth.currentUser;
+    if (current != null) return; // already authenticated
+    // No Supabase session — try to create one from the Firebase user.
+    final fbUser = currentUser;
+    if (fbUser == null || fbUser.email == null) return;
+    await _ensureSupabaseAuth(fbUser.email!, _socialPassword(fbUser.email!));
   }
 
   // -------------------------------------------------------------- Supabase DB --
@@ -295,7 +366,12 @@ class CloudBackend {
     Uint8List bytes, {
     String? contentType,
   }) async {
-    if (!_ready) return null;
+    if (!_ready) {
+      AppLogger.warning('uploadBytes: Supabase not ready — skipping');
+      return null;
+    }
+    // Ensure the Supabase client has an auth session for storage RLS.
+    await _refreshSupabaseSession();
     // Enforce free-plan 50 MB limit client-side before hitting the network.
     if (bytes.length > maxUploadBytes) {
       throw Exception(
@@ -303,20 +379,54 @@ class CloudBackend {
         '— maximum is 50 MB on the free plan.',
       );
     }
-    return _trackUpload(() async {
-      final bucket = _bucketForPath(path);
-      await _storage
-          .from(bucket)
-          .uploadBinary(
-            _stripBucket(path),
-            bytes,
-            fileOptions: supa.FileOptions(
-              contentType: contentType ?? 'image/jpeg',
-              upsert: true,
-            ),
-          );
-      return _storage.from(bucket).getPublicUrl(_stripBucket(path));
-    });
+    // Retry loop with exponential backoff.
+    for (var attempt = 1; attempt <= uploadMaxRetries; attempt++) {
+      try {
+        return await _trackUpload(() async {
+          final bucket = _bucketForPath(path);
+          AppLogger.info('uploadBytes: attempt $attempt/$uploadMaxRetries — $bucket/${_stripBucket(path)} (${bytes.length} bytes)');
+          await _storage
+              .from(bucket)
+              .uploadBinary(
+                _stripBucket(path),
+                bytes,
+                fileOptions: supa.FileOptions(
+                  contentType: contentType ?? 'image/jpeg',
+                  upsert: true,
+                ),
+              );
+          final url = _storage.from(bucket).getPublicUrl(_stripBucket(path));
+          AppLogger.info('uploadBytes: success → $url');
+          return url;
+        });
+      } catch (e) {
+        final msg = _friendlyError(e);
+        lastUploadError.value = msg;
+        AppLogger.warning('uploadBytes: attempt $attempt/$uploadMaxRetries FAILED — $msg');
+        if (attempt < uploadMaxRetries) {
+          final delay = uploadRetryBaseDelay * (1 << (attempt - 1)); // 2s, 4s, 8s
+          AppLogger.info('uploadBytes: retrying in ${delay.inSeconds}s…');
+          await Future<void>.delayed(delay);
+          // Re-authenticate before retry in case session expired.
+          await _refreshSupabaseSession();
+        }
+      }
+    }
+    // All Supabase retries exhausted — try Firebase Storage as fallback.
+    AppLogger.info('uploadBytes: Supabase failed, trying Firebase Storage fallback…');
+    try {
+      final url = await _uploadToFirebase(path, bytes, contentType);
+      if (url != null) {
+        AppLogger.info('uploadBytes: Firebase Storage success → $url');
+        lastUploadError.value = '';
+        if (failedUploadStreak.value > 0) failedUploadStreak.value = 0;
+        return url;
+      }
+    } catch (fbError) {
+      AppLogger.warning('uploadBytes: Firebase fallback also failed', error: fbError);
+    }
+    // Both Supabase and Firebase failed — rethrow last Supabase error.
+    throw Exception(lastUploadError.value);
   }
 
   /// Uploads bytes and returns a public URL (same as [uploadBytes]).
@@ -453,5 +563,51 @@ class CloudBackend {
       FirebaseAnalytics.instance.setUserId(id: uid);
       FirebaseAnalytics.instance.logEvent(name: 'user_login');
     } catch (_) {}
+  }
+
+  /// Uploads bytes to Firebase Storage as a fallback when Supabase fails.
+  Future<String?> _uploadToFirebase(
+    String path,
+    Uint8List bytes,
+    String? contentType,
+  ) async {
+    try {
+      final ref = fb_storage.FirebaseStorage.instance.ref().child(path);
+      final metadata = fb_storage.SettableMetadata(
+        contentType: contentType ?? 'image/jpeg',
+      );
+      await ref.putData(bytes, metadata);
+      final url = await ref.getDownloadURL();
+      return url;
+    } catch (e) {
+      AppLogger.warning('Firebase upload failed for $path', error: e);
+      return null;
+    }
+  }
+
+  /// Converts a raw Supabase/storage exception into a user-friendly message.
+  static String _friendlyError(Object e) {
+    final raw = e.toString();
+    if (raw.contains('DatabaseSchemaMismatch')) {
+      return 'Cloud storage needs setup — run the migration SQL in your Supabase dashboard.';
+    }
+    if (raw.contains('statusCode: 413') || raw.contains('File too large')) {
+      return 'File too large for cloud storage (max 50 MB).';
+    }
+    if (raw.contains('statusCode: 403') || raw.contains('Forbidden')) {
+      return 'Permission denied — check your account access.';
+    }
+    if (raw.contains('SocketException') || raw.contains('Connection refused')) {
+      return 'Network error — check your internet connection.';
+    }
+    if (raw.contains('TimeoutException') || raw.contains('timeout')) {
+      return 'Upload timed out — check your connection and try again.';
+    }
+    if (raw.contains('401') || raw.contains('Unauthorized')) {
+      return 'Session expired — signing in again.';
+    }
+    // Truncate long error messages for display.
+    final short = raw.length > 120 ? '${raw.substring(0, 117)}...' : raw;
+    return 'Upload failed: $short';
   }
 }

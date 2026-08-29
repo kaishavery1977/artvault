@@ -306,11 +306,12 @@ class _CloudSyncUnavailableHint extends ConsumerWidget {
     );
     await PaintingRepository.instance.syncNow();
     final streak = CloudBackend.instance.failedUploadStreak.value;
+    final lastError = CloudBackend.instance.lastUploadError.value;
     messenger.showSnackBar(
       SnackBar(
         content: Text(
           streak > 0
-              ? 'Still can’t reach the cloud — changes stay on this device.'
+              ? lastError.isNotEmpty ? lastError : 'Still can’t reach the cloud — changes stay on this device.'
               : 'Cloud sync is working again.',
         ),
       ),
@@ -337,11 +338,14 @@ class _CloudSyncUnavailableHint extends ConsumerWidget {
               Icon(Icons.cloud_off_outlined, size: 14, color: muted),
               const SizedBox(width: 6),
               Expanded(
-                child: Text(
-                  'Cloud sync unavailable — tap to retry',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, color: muted),
+                child: ValueListenableBuilder<String>(
+                  valueListenable: CloudBackend.instance.lastUploadError,
+                  builder: (_, error, _) => Text(
+                    error.isNotEmpty ? error : 'Cloud sync unavailable \u2014 tap to retry',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 11, color: muted),
+                  ),
                 ),
               ),
               IconButton(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -95,14 +96,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: const Text('Notifications'),
               subtitle: const Text('Uploads, backups, duplicates'),
               value: notificationsOn,
-              onChanged: (v) => settings.setNotificationsEnabled(v),
+              onChanged: (v) {
+                HapticFeedback.lightImpact();
+                settings.setNotificationsEnabled(v);
+              },
             ),
             SwitchListTile(
               secondary: const Icon(Icons.cloud_upload_outlined),
               title: const Text('Auto cloud backup'),
               subtitle: const Text('Backup after each change'),
               value: autoBackup,
-              onChanged: (v) => settings.setAutoBackup(v),
+              onChanged: (v) {
+                HapticFeedback.lightImpact();
+                settings.setAutoBackup(v);
+              },
             ),
             ListTile(
               leading: const Icon(Icons.backup_outlined),
@@ -236,6 +243,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 );
                 if (confirmed == true) {
+                  HapticFeedback.heavyImpact();
                   await ref.read(authProvider.notifier).signOut();
                   if (context.mounted) context.go('/login');
                 }
@@ -315,14 +323,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   static const _languages = <(String, String)>[
     ('en', 'English'),
-    ('de', 'Deutsch'),
-    ('fr', 'Français'),
     ('es', 'Español'),
+    ('fr', 'Français'),
+    ('de', 'Deutsch'),
     ('it', 'Italiano'),
     ('pt', 'Português'),
-    ('ar', 'العربية'),
+    ('hi', 'हिन्दी'),
     ('zh', '中文'),
     ('ja', '日本語'),
+    ('ko', '한국어'),
+    ('ar', 'العربية'),
+    ('ru', 'Русский'),
+    ('tr', 'Türkçe'),
   ];
 
   static String _trashSubtitle(WidgetRef ref) {
@@ -794,28 +806,46 @@ class _ProBadge extends StatelessWidget {
 class _ThemeSelector extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final mode = ref.watch(themeModeProvider);
-    return SegmentedButton<ThemeMode>(
+    final stored = SettingsRepository.instance.themeModeKey;
+    final isAuto = stored == 'auto';
+    final currentMode = ref.watch(themeModeProvider);
+    return SegmentedButton<String>(
       showSelectedIcon: false,
       segments: const [
         ButtonSegment(
-          value: ThemeMode.system,
+          value: 'auto',
+          icon: Icon(Icons.schedule, size: 16),
+          label: Text('Auto'),
+        ),
+        ButtonSegment(
+          value: 'system',
           icon: Icon(Icons.brightness_auto, size: 16),
+          label: Text('System'),
         ),
         ButtonSegment(
-          value: ThemeMode.light,
+          value: 'light',
           icon: Icon(Icons.light_mode, size: 16),
+          label: Text('Light'),
         ),
         ButtonSegment(
-          value: ThemeMode.dark,
+          value: 'dark',
           icon: Icon(Icons.dark_mode, size: 16),
+          label: Text('Dark'),
         ),
       ],
-      selected: {mode},
+      selected: {isAuto ? 'auto' : currentMode.name},
       onSelectionChanged: (selection) {
-        final mode = selection.first;
-        SettingsRepository.instance.setThemeMode(mode);
-        ref.read(themeModeProvider.notifier).state = mode;
+        HapticFeedback.selectionClick();
+        final key = selection.first;
+        SettingsRepository.instance.setThemeMode(
+          key == 'auto' ? ThemeMode.system : ThemeMode.values.firstWhere((m) => m.name == key),
+        );
+        // For 'auto', store the key directly so themeMode getter can detect it.
+        if (key == 'auto') {
+          SettingsRepository.instance.setThemeModeKey('auto');
+        }
+        // Refresh the provider with the computed theme.
+        ref.read(themeModeProvider.notifier).state = SettingsRepository.instance.themeMode;
       },
       style: SegmentedButton.styleFrom(visualDensity: VisualDensity.compact),
     );

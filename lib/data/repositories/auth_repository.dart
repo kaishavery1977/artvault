@@ -654,6 +654,55 @@ class AuthRepository {
     await _secure.delete(key: '${AppConstants.kFaceEmbedding}_hmac');
   }
 
+  // ---------------------------------------------------------- Face lockout --
+
+  /// How long the face scan stays locked (zero = not throttled).
+  /// Stored in Flutter Secure Storage (OS keychain) so the lockout survives
+  /// app restarts — an attacker cannot brute-force by killing the app.
+  Future<Duration> faceLockRemaining() async {
+    final untilStr = await _secure.read(key: AppConstants.kFaceLockedUntil);
+    final until = int.tryParse(untilStr ?? '') ?? 0;
+    if (until <= 0) return Duration.zero;
+    final remaining = DateTime.fromMillisecondsSinceEpoch(
+      until,
+    ).difference(DateTime.now());
+    return remaining.isNegative ? Duration.zero : remaining;
+  }
+
+  /// Records a wrong face-scan attempt and returns the new lockout duration
+  /// (zero when still under the attempt threshold). Once the threshold is
+  /// crossed, each further failure doubles the wait up to a cap.
+  Future<Duration> registerFaceFailure() async {
+    final curStr = await _secure.read(key: AppConstants.kFaceFailures);
+    final failures = (int.tryParse(curStr ?? '') ?? 0) + 1;
+    await _secure.write(
+      key: AppConstants.kFaceFailures,
+      value: failures.toString(),
+    );
+    if (failures < AppConstants.kFaceMaxAttempts) return Duration.zero;
+    final steps = failures - AppConstants.kFaceMaxAttempts + 1;
+    var lockout = AppConstants.kFaceLockoutStart;
+    for (var i = 1; i < steps; i++) {
+      lockout *= 2;
+      if (lockout >= AppConstants.kFaceLockoutMax) break;
+    }
+    if (lockout > AppConstants.kFaceLockoutMax) {
+      lockout = AppConstants.kFaceLockoutMax;
+    }
+    await _secure.write(
+      key: AppConstants.kFaceLockedUntil,
+      value: DateTime.now().add(lockout).millisecondsSinceEpoch.toString(),
+    );
+    return lockout;
+  }
+
+  /// Clears the face failure counter and any active lockout (successful
+  /// unlock or re-enrollment).
+  Future<void> resetFaceAttempts() async {
+    await _secure.write(key: AppConstants.kFaceFailures, value: '0');
+    await _secure.write(key: AppConstants.kFaceLockedUntil, value: '0');
+  }
+
   /// HMAC-SHA256 of [data] using a device-derived key.
   /// The key is the session UID (stable per install) so a different device
   /// can't verify this device's embeddings, and a factory reset loses it.
