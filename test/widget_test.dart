@@ -1,7 +1,3 @@
-// Widget tests for the branded boot sequence: the full cinematic splash
-// (shockwave ring + letter stagger) on pure black, and a static render
-// when the system requests reduced motion.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,16 +24,17 @@ void main() {
     );
     await tester.pump();
 
-    // The wordmark reveals letter-by-letter, so each letter is its own Text.
+    // Wordmark letters + tagline visible during intro.
     expect(find.text('A'), findsOneWidget);
     expect(find.text('V'), findsOneWidget);
     expect(find.text('Your Private Gallery'), findsOneWidget);
 
-    // Drain the splash screen's intro (3400ms) and push-out exit (560ms),
-    // then give the router time to navigate to onboarding.
-    await tester.pump(const Duration(milliseconds: 2400));
+    // Drain the snappy 1500ms intro + 350ms exit + route transition.
     await tester.pump(const Duration(milliseconds: 1600));
+    await tester.pump(const Duration(milliseconds: 700));
     await tester.pump(const Duration(milliseconds: 900));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('Curate Your Collection'), findsOneWidget);
   });
@@ -53,9 +50,8 @@ void main() {
     );
     await tester.pump();
 
-    // Repeat launches get the full choreography.
     expect(find.text('Your Private Gallery'), findsOneWidget);
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 200));
     expect(find.byIcon(Icons.palette_rounded), findsOneWidget);
     expect(find.text('A'), findsOneWidget);
     expect(find.text('V'), findsOneWidget);
@@ -119,12 +115,11 @@ void main() {
     );
     await tester.pump();
 
-    // Static icon + wordmark, no tagline.
     expect(find.byIcon(Icons.palette_rounded), findsOneWidget);
     expect(find.text('ArtVault'), findsOneWidget);
     expect(find.text('Your Private Gallery'), findsNothing);
 
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 200));
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pump(const Duration(milliseconds: 900));
 

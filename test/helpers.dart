@@ -76,9 +76,9 @@ List<Override> appOverrides({required bool introShown}) => [
 /// incoming page's mount timers.
 Future<void> pumpToOnboarding(WidgetTester tester) async {
   await tester.pump(); // splash first frame
-  await tester.pump(const Duration(milliseconds: 2400)); // intro part 1
-  await tester.pump(const Duration(milliseconds: 1600)); // intro + exit hold
-  await tester.pump(
-    const Duration(milliseconds: 900),
-  ); // hand-off + drain mount timers
+  await tester.pump(const Duration(milliseconds: 1600)); // intro
+  await tester.pump(const Duration(milliseconds: 700)); // exit hold + drain
+  await tester.pump(const Duration(milliseconds: 900)); // hand-off + mount timers
+  await tester.pump(const Duration(milliseconds: 500)); // extra drain
+  await tester.pump(const Duration(milliseconds: 500)); // extra drain
 }

@@ -38,10 +38,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final Animation<double> _exitScale;
   late final Animation<double> _exitOpacity;
 
-  static const Duration _introFull = Duration(milliseconds: 3400);
-  static const Duration _introResume = Duration(milliseconds: 1100);
-  static const Duration _introReduced = Duration(milliseconds: 350);
-  static const Duration _exitHoldFull = Duration(milliseconds: 560);
+  static const Duration _introFull = Duration(milliseconds: 1500);
+  static const Duration _introResume = Duration(milliseconds: 650);
+  static const Duration _introReduced = Duration(milliseconds: 150);
+  static const Duration _exitHoldFull = Duration(milliseconds: 350);
 
   late final bool _resumeReplay;
 
@@ -51,8 +51,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     _resumeReplay = ResumeIntro.isResumeReplay;
     _exit = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 520),
-      reverseDuration: const Duration(milliseconds: 320),
+      duration: const Duration(milliseconds: 350),
+      reverseDuration: const Duration(milliseconds: 200),
     );
     _exitScale = CurvedAnimation(parent: _exit, curve: Curves.easeInCubic);
     _exitOpacity = CurvedAnimation(parent: _exit, curve: Curves.easeIn);
@@ -146,12 +146,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 .scaleXY(
                   begin: 0.25,
                   end: 1,
-                  duration: 600.ms,
+                  duration: 350.ms,
                   curve: Curves.easeOutCubic,
                 )
-                .fadeIn(duration: 450.ms)
+                .fadeIn(duration: 250.ms)
                 .then()
-                .fadeOut(delay: 200.ms, duration: 600.ms),
+                .fadeOut(delay: 100.ms, duration: 300.ms),
             // Expanding shockwave ring.
             Container(
                   width: 132,
@@ -164,31 +164,31 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     ),
                   ),
                 )
-                .animate(delay: 150.ms)
+                .animate(delay: 80.ms)
                 .scaleXY(
                   begin: 0.45,
                   end: 1.65,
-                  duration: 700.ms,
+                  duration: 450.ms,
                   curve: Curves.easeOutCubic,
                 )
                 .then()
-                .fadeOut(duration: 220.ms),
+                .fadeOut(duration: 150.ms),
             // Logo tile drops in with rotation settle.
             _LogoMark()
-                .animate(delay: 100.ms)
+                .animate(delay: 50.ms)
                 .scaleXY(
                   begin: 0.4,
                   end: 1,
-                  duration: 500.ms,
+                  duration: 350.ms,
                   curve: Curves.easeOutBack,
                 )
                 .rotate(
                   begin: -0.12,
                   end: 0,
-                  duration: 500.ms,
+                  duration: 350.ms,
                   curve: Curves.easeOutCubic,
                 )
-                .fadeIn(duration: 400.ms),
+                .fadeIn(duration: 250.ms),
           ],
         ),
       );
@@ -211,12 +211,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     .scaleXY(
                       begin: 0.25,
                       end: 1,
-                      duration: 1000.ms,
+                      duration: 350.ms,
                       curve: Curves.easeOutCubic,
                     )
-                    .fadeIn(duration: 700.ms)
+                    .fadeIn(duration: 350.ms)
                     .then()
-                    .fadeOut(delay: 600.ms, duration: 1400.ms),
+                    .fadeOut(delay: 300.ms, duration: 600.ms),
                 // Shockwave ring expanding outward.
                 Container(
                       width: 132,
@@ -229,31 +229,31 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         ),
                       ),
                     )
-                    .animate(delay: 350.ms)
+                    .animate(delay: 80.ms)
                     .scaleXY(
                       begin: 0.45,
                       end: 1.65,
-                      duration: 1300.ms,
+                      duration: 350.ms,
                       curve: Curves.easeOutCubic,
                     )
                     .then()
-                    .fadeOut(duration: 320.ms),
+                    .fadeOut(duration: 200.ms),
                 // The logo tile itself.
                 _LogoMark()
-                    .animate(delay: 250.ms)
+                    .animate(delay: 50.ms)
                     .scaleXY(
                       begin: 0.4,
                       end: 1,
-                      duration: 800.ms,
+                      duration: 450.ms,
                       curve: Curves.easeOutBack,
                     )
                     .rotate(
                       begin: -0.12,
                       end: 0,
-                      duration: 800.ms,
+                      duration: 450.ms,
                       curve: Curves.easeOutCubic,
                     )
-                    .fadeIn(duration: 600.ms),
+                    .fadeIn(duration: 350.ms),
               ],
             ),
           ),
@@ -261,9 +261,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
           // Stage 3: wordmark reveals letter-by-letter, gold shimmer sweep.
           _StaggeredWordmark(color: fg)
-              .animate(delay: 1800.ms)
+              .animate(delay: 450.ms)
               .shimmer(
-                duration: 1200.ms,
+                duration: 800.ms,
                 color: AppColors.accent.withValues(alpha: 0.45),
               ),
           const SizedBox(height: AppSpacing.xs),
@@ -276,15 +276,15 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               letterSpacing: 1.4,
             ),
           )
-              .animate(delay: 2000.ms)
+              .animate(delay: 600.ms)
               .slideY(begin: 0.3)
-              .fadeIn(duration: 700.ms),
+              .fadeIn(duration: 350.ms),
           const SizedBox(height: AppSpacing.xxl),
 
           // Stage 5: pulsing dot loader.
           _PulsingDots(color: fg)
-              .animate(delay: 2300.ms)
-              .fadeIn(duration: 400.ms),
+              .animate(delay: 750.ms)
+              .fadeIn(duration: 250.ms),
         ],
       );
     }
@@ -378,10 +378,10 @@ class _StaggeredWordmark extends StatelessWidget {
                 style: AppTheme.display(context, size: 40).copyWith(
                   color: color,
                 ),
-              ).animate(delay: (900 + i * 90).ms);
+              ).animate(delay: (i * 40).ms);
               return letter
                   .slideY(begin: 0.6)
-                  .fadeIn(duration: 600.ms, curve: Curves.easeOutCubic);
+                  .fadeIn(duration: 350.ms, curve: Curves.easeOutCubic);
             },
           ),
       ],
@@ -412,20 +412,20 @@ class _PulsingDots extends StatelessWidget {
                       ),
                     )
                     .animate(
-                      delay: (i * 160).ms,
+                      delay: (i * 100).ms,
                       onPlay: (controller) =>
                           controller.repeat(reverse: true),
                     )
                     .scaleXY(
                       begin: 0.5,
                       end: 1.15,
-                      duration: 420.ms,
+                      duration: 350.ms,
                       curve: Curves.easeInOut,
                     )
                     .then()
                     .scaleXY(
                       end: 0.5,
-                      duration: 420.ms,
+                      duration: 350.ms,
                       curve: Curves.easeInOut,
                     ),
           ),
