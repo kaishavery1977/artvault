@@ -1,6 +1,5 @@
-// Widget tests for the branded boot sequence: the full cinematic splash
-// (shockwave ring + letter stagger) on every launch, and a static render
-// when the system requests reduced motion.
+// Widget tests for the branded boot sequence: the icon-on-black splash
+// with a purple glow on every launch, and a reduced-motion static render.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,7 +16,7 @@ void main() {
     await initTestHive();
   });
 
-  testWidgets('App boots to the full splash on first launch', (
+  testWidgets('App boots to the icon splash on first launch', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -28,26 +27,21 @@ void main() {
     );
     await tester.pump();
 
-    // The wordmark reveals letter-by-letter, so each letter is its own Text
-    // — assert on the letters rather than the joined string.
-    expect(find.text('A'), findsOneWidget);
-    expect(find.text('V'), findsOneWidget);
-    expect(find.text('Your Private Gallery'), findsOneWidget);
+    // The splash shows the palette icon and the "ArtVault" wordmark.
+    expect(find.byIcon(Icons.palette_rounded), findsOneWidget);
+    expect(find.text('ArtVault'), findsOneWidget);
 
-    // Drain the splash screen's intro (3400ms) and push-out exit (560ms),
-    // then give the router time to navigate to onboarding (its route
-    // transition is 280ms). The final pump drains the delay timers the
-    // incoming page's reveal animations create on mount (longest is 700ms),
-    // so nothing is pending when the test ends.
+    // Drain the splash screen's intro (2200ms) and fade-out exit (450ms),
+    // then give the router time to navigate to onboarding.
     await tester.pump(const Duration(milliseconds: 2400));
-    await tester.pump(const Duration(milliseconds: 1600));
+    await tester.pump(const Duration(milliseconds: 800));
     await tester.pump(const Duration(milliseconds: 900));
 
-    // The full intro hands off into onboarding.
+    // The splash hands off into onboarding.
     expect(find.text('Curate Your Collection'), findsOneWidget);
   });
 
-  testWidgets('Every launch plays the full cinematic intro', (
+  testWidgets('Every launch plays the icon splash intro', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -58,14 +52,9 @@ void main() {
     );
     await tester.pump();
 
-    // The full choreography is not a first-launch treat: repeat launches
-    // get the shockwave ring, tagline and dot loader too.
-    expect(find.text('Your Private Gallery'), findsOneWidget);
-    // Mid-intro: the palette mark and the first letters are on screen.
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(find.byIcon(Icons.palette), findsOneWidget);
-    expect(find.text('A'), findsOneWidget);
-    expect(find.text('V'), findsOneWidget);
+    // Repeat launches get the same icon splash (shorter cut).
+    expect(find.byIcon(Icons.palette_rounded), findsOneWidget);
+    expect(find.text('ArtVault'), findsOneWidget);
 
     await pumpToOnboarding(tester);
 
@@ -130,11 +119,12 @@ void main() {
     );
     await tester.pump();
 
-    // Static wordmark (single Text, no letter stagger) and no tagline.
+    // Static icon + wordmark on black background, no tagline.
+    expect(find.byIcon(Icons.palette_rounded), findsOneWidget);
     expect(find.text('ArtVault'), findsOneWidget);
     expect(find.text('Your Private Gallery'), findsNothing);
 
-    // 350ms static hold, direct hand-off (no exit), route transition,
+    // 200ms static hold, direct hand-off (no exit), route transition,
     // then drain the onboarding mount timers.
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pump(const Duration(milliseconds: 400));

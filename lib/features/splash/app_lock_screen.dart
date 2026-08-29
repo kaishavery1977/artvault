@@ -324,8 +324,8 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen>
         _pinMode || (!_fingerprintMethod && !_faceMethod && _passcodeSet);
 
     return Scaffold(
-      // Transparent so the ambient gradient shows behind the lock screen.
-      backgroundColor: Colors.transparent,
+      // Pure black to match the splash screen for a seamless transition.
+      backgroundColor: Colors.black,
       body: SafeArea(
         child: Stack(
           children: [

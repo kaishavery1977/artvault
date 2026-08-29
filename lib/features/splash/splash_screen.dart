@@ -14,17 +14,11 @@ import '../../core/providers/providers.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/settings_repository.dart';
 
-/// Cinematic branded launch screen.
-///
-/// Cold starts play the full staged "video" intro — a spotlight blooms
-/// behind the logo, an expanding shockwave ring lands, the mark drops in
-/// with a rotation settle, the wordmark reveals letter-by-letter with a
-/// gold shimmer sweep, then a pulsing dot loader hands off to the next
-/// screen with a camera-push exit. Returning from the background replays a
-/// shorter, punchier cut (ring + logo only, no wordmark) so frequent app
-/// switches feel fast but still premium. Everything is transform/opacity
-/// only (no blur), so it stays smooth on budget phones. Reduced motion
-/// renders the mark statically and hands off immediately.
+/// Clean branded launch screen — palette icon centered on pure black with
+/// a purple glow that blooms and fades. On cold start the icon scales up
+/// with a glow pulse, then the screen dissolves into the next route
+/// (lock screen or home). Background resume replays a shorter, snappier
+/// cut. Reduced motion skips straight to the next screen.
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -34,28 +28,14 @@ class SplashScreen extends ConsumerStatefulWidget {
 
 class _SplashScreenState extends ConsumerState<SplashScreen>
     with TickerProviderStateMixin {
-  /// Exit choreography: content pushes slightly toward the camera (scale up)
-  /// while fading, then the router hand-off takes over. Feels continuous.
   late final AnimationController _exit;
-  late final Animation<double> _exitScale;
   late final Animation<double> _exitOpacity;
 
-  /// Total intro runtime before the hand-off starts: the full choreography
-  /// on cold start, a shorter ring+logo cut on background-resume replays,
-  /// and a near-static render when the system asks for reduced motion.
-  static const Duration _introFull = Duration(milliseconds: 3400);
-  static const Duration _introResume = Duration(milliseconds: 1100);
-  static const Duration _introReduced = Duration(milliseconds: 350);
+  static const Duration _introFull = Duration(milliseconds: 2200);
+  static const Duration _introResume = Duration(milliseconds: 900);
+  static const Duration _introReduced = Duration(milliseconds: 200);
+  static const Duration _exitDuration = Duration(milliseconds: 450);
 
-  /// Hold time after the camera-push exit starts (the exit animation runs in
-  /// parallel; the hold only paces the router hand-off).
-  static const Duration _exitHoldFull = Duration(milliseconds: 560);
-
-  /// Whether this mount is a background-resume replay (short cut) rather
-  /// than a cold start (full cut). Captured once in `initState` — the
-  /// observer stashes the resume target *before* routing here, so it's
-  /// already set; it must not be re-read from `build` because [ResumeIntro]
-  /// consumes the stash at hand-off.
   late final bool _resumeReplay;
 
   @override
@@ -64,52 +44,35 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     _resumeReplay = ResumeIntro.isResumeReplay;
     _exit = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 520),
-      reverseDuration: const Duration(milliseconds: 320),
+      duration: _exitDuration,
     );
-    _exitScale = CurvedAnimation(parent: _exit, curve: Curves.easeInCubic);
     _exitOpacity = CurvedAnimation(parent: _exit, curve: Curves.easeIn);
     _start();
   }
 
   Future<void> _start() async {
-    // Let initState complete first: reading MediaQuery synchronously inside
-    // initState is forbidden (it registers an inherited-widget dependency).
     await Future<void>.delayed(Duration.zero);
     if (!mounted) return;
 
-    // Pick the presentation before the intro timer starts so the delay is
-    // exact. Cold starts play the full choreography; resume replays use the
-    // short ring+logo cut; reduced motion is the only case that skips it
-    // entirely (for a near-static hold).
     final reducedMotion = MediaQuery.disableAnimationsOf(context);
     final present = reducedMotion
         ? _introReduced
         : (_resumeReplay ? _introResume : _introFull);
 
-    // Restore session / check remember-me while the intro plays, so the
-    // animation is never gated on the network.
     final boot = ref.read(authProvider.notifier).bootstrap();
     await Future.wait([boot, Future<void>.delayed(present)]);
     if (!mounted) return;
 
     final state = ref.read(authProvider);
     if (state.status == AuthStatus.authenticated) {
-      // Best-effort: surface expiring/expired public gallery links in
-      // Notifications on launch. Fire-and-forget — a reminder hiccup must
-      // never gate the hand-off.
       unawaited(
         GalleryLinkReminderService.instance.check(state.user?.uid ?? ''),
       );
     }
-    // A resume-replay hands off back to where the user was (when it's a
-    // safe, restorable location); cold starts fall through to the defaults.
     final resume = ResumeIntro.consume();
 
     String target;
     if (state.status == AuthStatus.authenticated) {
-      // App Lock gate (cold-start biometric / face / passcode lock on
-      // launch). Security wins over polish on a resume replay too.
       final appLock =
           SettingsRepository.instance.appLockEnabled ||
           await AuthRepository.instance.biometricEnabled ||
@@ -121,15 +84,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     }
     if (!mounted) return;
 
-    // Reduced motion: hand off straight away — no camera-push exit.
     if (reducedMotion) {
       context.go(target);
       return;
     }
 
-    // Camera-push exit, then hand off to the next screen.
+    // Smooth fade-out into the next screen.
     _exit.forward();
-    await Future<void>.delayed(_exitHoldFull);
+    await Future<void>.delayed(_exitDuration);
     if (!mounted) return;
     context.go(target);
   }
@@ -142,337 +104,156 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fg = isDark ? AppColors.darkText : AppColors.lightText;
-    final muted = isDark ? AppColors.darkTextMuted : AppColors.lightTextMuted;
     final reducedMotion = MediaQuery.disableAnimationsOf(context);
-
-    final mark = _LogoMark();
-    final Widget content;
-    if (reducedMotion) {
-      // Static mark + wordmark — no animation at all; the hand-off below
-      // skips the camera-push exit too.
-      content = Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          mark,
-          const SizedBox(height: AppSpacing.xl),
-          Text(
-            'ArtVault',
-            style: AppTheme.display(context, size: 40).copyWith(color: fg),
-          ),
-        ],
-      );
-    } else if (_resumeReplay) {
-      // Resume replay: the punchy ring + logo cut — spotlight bloom,
-      // shockwave ring, logo settle. No wordmark or tagline, so frequent
-      // app switches feel quick but still land with the branded mark.
-      content = SizedBox(
-        width: 200,
-        height: 200,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Soft gold spotlight blooming open behind the mark.
-            _Spotlight()
-                .animate()
-                .scaleXY(
-                  begin: 0.25,
-                  end: 1,
-                  duration: 600.ms,
-                  curve: Curves.easeOutCubic,
-                )
-                .fadeIn(duration: 450.ms)
-                .then()
-                .fadeOut(delay: 200.ms, duration: 600.ms),
-            // Expanding shockwave ring, like a stamp landing.
-            Container(
-                  width: 132,
-                  height: 132,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.accent.withValues(alpha: 0.8),
-                      width: 3,
-                    ),
-                  ),
-                )
-                .animate(delay: 150.ms)
-                .scaleXY(
-                  begin: 0.45,
-                  end: 1.65,
-                  duration: 700.ms,
-                  curve: Curves.easeOutCubic,
-                )
-                .then()
-                .fadeOut(duration: 220.ms),
-            // The logo tile drops in with a rotation settle.
-            _LogoMark()
-                .animate(delay: 100.ms)
-                .scaleXY(
-                  begin: 0.4,
-                  end: 1,
-                  duration: 500.ms,
-                  curve: Curves.easeOutBack,
-                )
-                .rotate(
-                  begin: -0.12,
-                  end: 0,
-                  duration: 500.ms,
-                  curve: Curves.easeOutCubic,
-                )
-                .fadeIn(duration: 400.ms),
-          ],
-        ),
-      );
-    } else {
-      // Cold start: the full choreography — spotlight, shockwave ring,
-      // logo settle, letter-by-letter wordmark with the gold shimmer,
-      // tagline, and the pulsing dot loader.
-      content = Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // =============================================================
-          // Stage 1 + 2 — spotlight blooms, logo drops in with a settle.
-          // =============================================================
-          SizedBox(
-            width: 200,
-            height: 200,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Soft gold spotlight blooming open behind the mark.
-                _Spotlight()
-                    .animate()
-                    .scaleXY(
-                      begin: 0.25,
-                      end: 1,
-                      duration: 1000.ms,
-                      curve: Curves.easeOutCubic,
-                    )
-                    .fadeIn(duration: 700.ms)
-                    .then()
-                    .fadeOut(delay: 600.ms, duration: 1400.ms),
-                // Expanding shockwave ring, like a stamp landing. It pushes
-                // out at full strength first, then dissolves — fading it in
-                // parallel with the expansion made it vanish before it could
-                // grow (2px at 45% alpha on the warm ambient reads as nothing).
-                Container(
-                      width: 132,
-                      height: 132,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: AppColors.accent.withValues(alpha: 0.8),
-                          width: 3,
-                        ),
-                      ),
-                    )
-                    .animate(delay: 350.ms)
-                    .scaleXY(
-                      begin: 0.45,
-                      end: 1.65,
-                      duration: 1300.ms,
-                      curve: Curves.easeOutCubic,
-                    )
-                    .then()
-                    .fadeOut(duration: 320.ms),
-                // The logo tile itself.
-                _LogoMark()
-                    .animate(delay: 250.ms)
-                    .scaleXY(
-                      begin: 0.4,
-                      end: 1,
-                      duration: 800.ms,
-                      curve: Curves.easeOutBack,
-                    )
-                    .rotate(
-                      begin: -0.12,
-                      end: 0,
-                      duration: 800.ms,
-                      curve: Curves.easeOutCubic,
-                    )
-                    .fadeIn(duration: 600.ms),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-
-          // =============================================================
-          // Stage 3 — wordmark reveals letter-by-letter, then a gold
-          // shimmer sweeps across the settled text.
-          // =============================================================
-          _StaggeredWordmark(color: fg)
-              .animate(delay: 1800.ms)
-              .shimmer(
-                duration: 1200.ms,
-                color: AppColors.accent.withValues(alpha: 0.45),
-              ),
-          const SizedBox(height: AppSpacing.xs),
-
-          // =============================================================
-          // Stage 4 — tagline drifts up.
-          // =============================================================
-          Text(
-            'Your Private Gallery',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: muted, letterSpacing: 1.4),
-          ).animate(delay: 2000.ms).slideY(begin: 0.3).fadeIn(duration: 700.ms),
-          const SizedBox(height: AppSpacing.xxl),
-
-          // =============================================================
-          // Stage 5 — pulsing dot loader.
-          // =============================================================
-          _PulsingDots(
-            color: fg,
-          ).animate(delay: 2300.ms).fadeIn(duration: 400.ms),
-        ],
-      );
-    }
+    final iconSize = 112.0;
 
     return Scaffold(
-      // Transparent so the ambient gradient shows through the launch screen.
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.black,
       body: AnimatedBuilder(
         animation: _exit,
         builder: (context, child) => Opacity(
           opacity: 1 - _exitOpacity.value,
-          child: Transform.scale(
-            scale: 1 + 0.06 * _exitScale.value,
-            child: child,
-          ),
+          child: child,
         ),
-        child: Center(child: content),
+        child: Center(
+          child: reducedMotion
+              ? Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _GlowingIcon(size: iconSize),
+                    const SizedBox(height: AppSpacing.xl),
+                    Text(
+                      'ArtVault',
+                      style: AppTheme.display(context, size: 36).copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                )
+              : (_resumeReplay
+                  ? _GlowingIcon(size: iconSize)
+                      .animate()
+                      .scale(
+                        begin: const Offset(0.85, 0.85),
+                        end: const Offset(1, 1),
+                        duration: 500.ms,
+                        curve: Curves.easeOutCubic,
+                      )
+                      .fadeIn(duration: 300.ms)
+                  : _buildColdStart()),
+        ),
       ),
+    );
+  }
+
+  Widget _buildColdStart() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Icon scales up from small with a glow bloom.
+        _GlowingIcon(size: 112)
+            .animate()
+            .scale(
+              begin: const Offset(0.5, 0.5),
+              end: const Offset(1, 1),
+              duration: 900.ms,
+              curve: Curves.easeOutBack,
+            )
+            .fadeIn(duration: 600.ms),
+        const SizedBox(height: AppSpacing.xl),
+        // Wordmark fades in after icon settles.
+        Text(
+          'ArtVault',
+          style: AppTheme.display(context, size: 36).copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.5,
+          ),
+        )
+            .animate(delay: 700.ms)
+            .fadeIn(duration: 500.ms)
+            .slideY(begin: 0.15, duration: 500.ms, curve: Curves.easeOutCubic),
+      ],
     );
   }
 }
 
-/// The 112×112 gradient logo tile with the palette glyph — shared by the
-/// full choreography, the quick intro, and the static reduced-motion render.
-class _LogoMark extends StatelessWidget {
-  const _LogoMark();
+/// Palette icon tile with a radial purple glow behind it.
+/// The glow pulses gently while visible, then fades with the screen.
+class _GlowingIcon extends StatelessWidget {
+  final double size;
+  const _GlowingIcon({required this.size});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 112,
-      height: 112,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.secondary, AppColors.accent],
-        ),
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.secondary.withValues(alpha: 0.4),
-            blurRadius: 32,
-            offset: const Offset(0, 12),
+    return SizedBox(
+      width: size * 2.2,
+      height: size * 2.2,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Purple radial glow
+          Container(
+            width: size * 2,
+            height: size * 2,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  AppColors.accent.withValues(alpha: 0.35),
+                  AppColors.accent.withValues(alpha: 0.12),
+                  AppColors.accent.withValues(alpha: 0),
+                ],
+                stops: const [0.0, 0.4, 1.0],
+              ),
+            ),
+          )
+              .animate(
+                onPlay: (c) =>
+                    MediaQuery.disableAnimationsOf(context)
+                        ? c.stop()
+                        : c.repeat(reverse: true),
+              )
+              .scale(
+                begin: const Offset(0.92, 0.92),
+                end: const Offset(1.08, 1.08),
+                duration: 1800.ms,
+                curve: Curves.easeInOut,
+              ),
+          // The palette icon tile
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppColors.secondary, AppColors.accent],
+              ),
+              borderRadius: BorderRadius.circular(size * 0.28),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.accent.withValues(alpha: 0.5),
+                  blurRadius: 40,
+                  spreadRadius: 4,
+                ),
+                BoxShadow(
+                  color: AppColors.secondary.withValues(alpha: 0.3),
+                  blurRadius: 60,
+                  spreadRadius: -8,
+                  offset: const Offset(0, 16),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.palette_rounded,
+              size: size * 0.5,
+              color: Colors.white,
+            ),
           ),
         ],
       ),
-      child: const Icon(Icons.palette, size: 56, color: Colors.white),
-    );
-  }
-}
-
-/// Expanding radial glow behind the logo — "stage lights" coming up.
-class _Spotlight extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 240,
-      height: 240,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [
-            AppColors.accent.withValues(alpha: 0.30),
-            AppColors.accent.withValues(alpha: 0),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// "ArtVault" revealed one letter at a time, sliding up from below.
-class _StaggeredWordmark extends StatelessWidget {
-  final Color color;
-
-  const _StaggeredWordmark({required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    const word = 'ArtVault';
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        for (var i = 0; i < word.length; i++)
-          Builder(
-            builder: (context) {
-              final letter = Text(
-                word[i],
-                style: AppTheme.display(
-                  context,
-                  size: 40,
-                ).copyWith(color: color),
-              ).animate(delay: (900 + i * 90).ms);
-              return letter
-                  .slideY(begin: 0.6)
-                  .fadeIn(duration: 600.ms, curve: Curves.easeOutCubic);
-            },
-          ),
-      ],
-    );
-  }
-}
-
-/// Three staggered pulsing dots — lighter-weight than a spinner.
-class _PulsingDots extends StatelessWidget {
-  final Color color;
-
-  const _PulsingDots({required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = 0; i < 3; i++)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child:
-                Container(
-                      width: 9,
-                      height: 9,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: color.withValues(alpha: 0.8),
-                      ),
-                    )
-                    .animate(
-                      delay: (i * 160).ms,
-                      onPlay: (controller) => controller.repeat(reverse: true),
-                    )
-                    .scaleXY(
-                      begin: 0.5,
-                      end: 1.15,
-                      duration: 420.ms,
-                      curve: Curves.easeInOut,
-                    )
-                    .then()
-                    .scaleXY(
-                      end: 0.5,
-                      duration: 420.ms,
-                      curve: Curves.easeInOut,
-                    ),
-          ),
-      ],
     );
   }
 }
