@@ -30,7 +30,7 @@ void main() {
     expect(find.text('Your Private Gallery'), findsOneWidget);
 
     // Drain the snappy 1500ms intro + 350ms exit + route transition.
-    await tester.pump(const Duration(milliseconds: 1600));
+    await tester.pump(const Duration(milliseconds: 2300));
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pump(const Duration(milliseconds: 900));
     await tester.pump(const Duration(milliseconds: 500));

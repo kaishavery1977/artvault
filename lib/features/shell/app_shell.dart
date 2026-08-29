@@ -51,7 +51,7 @@ const _shellDestinations = [
 ];
 
 class _AppShellState extends ConsumerState<AppShell>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   /// Drives a quick fade+drift whenever the active tab changes.
   late final AnimationController _tabIn = AnimationController(
     vsync: this,

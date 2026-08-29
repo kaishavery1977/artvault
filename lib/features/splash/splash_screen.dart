@@ -38,8 +38,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final Animation<double> _exitScale;
   late final Animation<double> _exitOpacity;
 
-  static const Duration _introFull = Duration(milliseconds: 1500);
-  static const Duration _introResume = Duration(milliseconds: 650);
+  static const Duration _introFull = Duration(milliseconds: 2200);
+  static const Duration _introResume = Duration(milliseconds: 900);
   static const Duration _introReduced = Duration(milliseconds: 150);
   static const Duration _exitHoldFull = Duration(milliseconds: 350);
 
@@ -214,9 +214,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       duration: 350.ms,
                       curve: Curves.easeOutCubic,
                     )
-                    .fadeIn(duration: 350.ms)
+                    .fadeIn(duration: 500.ms)
                     .then()
-                    .fadeOut(delay: 300.ms, duration: 600.ms),
+                    .fadeOut(delay: 500.ms, duration: 800.ms),
                 // Shockwave ring expanding outward.
                 Container(
                       width: 132,
@@ -237,7 +237,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       curve: Curves.easeOutCubic,
                     )
                     .then()
-                    .fadeOut(duration: 200.ms),
+                    .fadeOut(duration: 300.ms),
                 // The logo tile itself.
                 _LogoMark()
                     .animate(delay: 50.ms)
@@ -253,7 +253,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       duration: 450.ms,
                       curve: Curves.easeOutCubic,
                     )
-                    .fadeIn(duration: 350.ms),
+                    .fadeIn(duration: 500.ms),
               ],
             ),
           ),
@@ -261,7 +261,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
           // Stage 3: wordmark reveals letter-by-letter, gold shimmer sweep.
           _StaggeredWordmark(color: fg)
-              .animate(delay: 450.ms)
+              .animate(delay: 700.ms)
               .shimmer(
                 duration: 800.ms,
                 color: AppColors.accent.withValues(alpha: 0.45),
@@ -276,14 +276,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               letterSpacing: 1.4,
             ),
           )
-              .animate(delay: 600.ms)
-              .slideY(begin: 0.3)
-              .fadeIn(duration: 350.ms),
+              .animate(delay: 1000.ms)
+              .slideY(begin: 0.25)
+              .fadeIn(duration: 500.ms),
           const SizedBox(height: AppSpacing.xxl),
 
           // Stage 5: pulsing dot loader.
           _PulsingDots(color: fg)
-              .animate(delay: 750.ms)
+              .animate(delay: 1200.ms)
               .fadeIn(duration: 250.ms),
         ],
       );
@@ -378,10 +378,10 @@ class _StaggeredWordmark extends StatelessWidget {
                 style: AppTheme.display(context, size: 40).copyWith(
                   color: color,
                 ),
-              ).animate(delay: (i * 40).ms);
+              ).animate(delay: (i * 60).ms);
               return letter
                   .slideY(begin: 0.6)
-                  .fadeIn(duration: 350.ms, curve: Curves.easeOutCubic);
+                  .fadeIn(duration: 450.ms, curve: Curves.easeOutCubic);
             },
           ),
       ],
