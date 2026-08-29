@@ -54,7 +54,16 @@ class PaintingGridCard extends ConsumerWidget {
     this.onTap,
     this.heroTag,
     this.staggerIndex,
+    this.selectMode = false,
+    this.selected = false,
+    this.onSelect,
+    this.onLongPress,
   });
+
+  final bool selectMode;
+  final bool selected;
+  final VoidCallback? onSelect;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -126,13 +135,38 @@ class PaintingGridCard extends ConsumerWidget {
               ],
             ),
           ),
+          // Select mode checkbox overlay
+          if (selectMode)
+            Positioned(
+              top: AppSpacing.xs,
+              left: AppSpacing.xs,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: selected
+                      ? Theme.of(context).colorScheme.primary
+                      : Colors.black45,
+                  shape: BoxShape.circle,
+                ),
+                padding: const EdgeInsets.all(2),
+                child: Icon(
+                  selected ? Icons.check_circle : Icons.circle_outlined,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+            ),
           Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: onTap ?? () => context.push('/painting/${painting.id}'),
-              onLongPress: canEdit
-                  ? () => context.push('/painting/edit/${painting.id}')
-                  : null,
+              onTap: selectMode
+                  ? onSelect
+                  : (onTap ?? () => context.push('/painting/${painting.id}')),
+              onLongPress: selectMode
+                  ? null
+                  : (onLongPress ??
+                      (canEdit
+                          ? () => context.push('/painting/edit/${painting.id}')
+                          : null)),
             ),
           ),
         ],
@@ -239,7 +273,20 @@ class PaintingListTile extends StatelessWidget {
   final Painting painting;
   final VoidCallback? onTap;
 
-  const PaintingListTile({super.key, required this.painting, this.onTap});
+  const PaintingListTile({
+    super.key,
+    required this.painting,
+    this.onTap,
+    this.selectMode = false,
+    this.selected = false,
+    this.onSelect,
+    this.onLongPress,
+  });
+
+  final bool selectMode;
+  final bool selected;
+  final VoidCallback? onSelect;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -251,7 +298,10 @@ class PaintingListTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: onTap ?? () => context.push('/painting/${painting.id}'),
+          onTap: selectMode
+              ? onSelect
+              : (onTap ?? () => context.push('/painting/${painting.id}')),
+          onLongPress: selectMode ? null : onLongPress,
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.xs),
             child: Row(

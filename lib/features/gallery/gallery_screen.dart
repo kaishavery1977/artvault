@@ -14,11 +14,12 @@ import '../../core/widgets/motion.dart';
 import '../../core/widgets/states.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/painting.dart';
+import '../../data/repositories/painting_repository.dart';
 import 'painting_card.dart';
 
 enum GalleryView { grid, list, masonry }
 
-enum GallerySort { newest, oldest, title, priceHigh, priceLow }
+enum GallerySort { newest, oldest, title, artist, priceHigh, priceLow }
 
 class GalleryScreen extends ConsumerStatefulWidget {
   const GalleryScreen({super.key});
@@ -34,6 +35,10 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
   bool _favoritesOnly = false;
   final ScrollController _controller = ScrollController();
   int _visibleCount = 18;
+
+  // Batch delete: long-press to enter select mode.
+  bool _selectMode = false;
+  final Set<String> _selectedIds = {};
 
   @override
   void initState() {
@@ -69,12 +74,93 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
         list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
       case GallerySort.title:
         list.sort((a, b) => a.title.compareTo(b.title));
+      case GallerySort.artist:
+        list.sort((a, b) => a.artistName.compareTo(b.artistName));
       case GallerySort.priceHigh:
         list.sort((a, b) => (b.price ?? 0).compareTo(a.price ?? 0));
       case GallerySort.priceLow:
         list.sort((a, b) => (a.price ?? 0).compareTo(b.price ?? 0));
     }
     return list;
+  }
+
+  void _toggleSelect(String id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+        if (_selectedIds.isEmpty) _selectMode = false;
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
+  void _enterSelectMode(String id) {
+    setState(() {
+      _selectMode = true;
+      _selectedIds.add(id);
+    });
+  }
+
+  void _exitSelectMode() {
+    setState(() {
+      _selectMode = false;
+      _selectedIds.clear();
+    });
+  }
+
+  Future<void> _batchDelete() async {
+    if (_selectedIds.isEmpty) return;
+    final count = _selectedIds.length;
+    final ids = Set<String>.from(_selectedIds);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Delete $count painting${count > 1 ? 's' : ''}?'),
+        content: Text(
+          '$count painting${count > 1 ? 's' : ''} will be moved to Trash. '
+          'You can restore them from Settings.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    for (final id in ids) {
+      await PaintingRepository.instance.delete(id);
+    }
+
+    _exitSelectMode();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$count painting${count > 1 ? 's' : ''} moved to trash'),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () async {
+              for (final id in ids) {
+                await PaintingRepository.instance.restore(id);
+              }
+            },
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -91,7 +177,49 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
       ),
     ];
 
-    return Scaffold(
+    return PopScope(
+      canPop: !_selectMode,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _selectMode) _exitSelectMode();
+      },
+      child: Scaffold(
+      appBar: _selectMode
+          ? AppBar(
+              leading: IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: _exitSelectMode,
+              ),
+              title: Text('${_selectedIds.length} selected'),
+              actions: [
+                IconButton(
+                  tooltip: 'Select all',
+                  icon: const Icon(Icons.select_all),
+                  onPressed: () {
+                    setState(() {
+                      final all = _filter(
+                        ref.read(paintingsProvider).valueOrNull ?? const [],
+                      );
+                      _selectedIds.addAll(all.map((p) => p.id));
+                    });
+                  },
+                ),
+                IconButton(
+                  tooltip: 'Delete selected',
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: _batchDelete,
+                ),
+              ],
+            )
+          : null,
+      floatingActionButton: _selectMode && _selectedIds.isNotEmpty
+          ? FloatingActionButton.extended(
+              onPressed: _batchDelete,
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+              icon: const Icon(Icons.delete_outline),
+              label: Text('Delete ${_selectedIds.length}'),
+            )
+          : null,
       body: RefreshIndicator(
         backgroundColor: Theme.of(context).colorScheme.surface,
         color: Theme.of(context).colorScheme.primary,
@@ -189,6 +317,10 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
                       painting: visible[i],
                       heroTag: 'painting-${visible[i].id}',
                       staggerIndex: i,
+                      selectMode: _selectMode,
+                      selected: _selectedIds.contains(visible[i].id),
+                      onSelect: () => _toggleSelect(visible[i].id),
+                      onLongPress: () => _enterSelectMode(visible[i].id),
                     ),
                     childCount: visible.length,
                   ),
@@ -208,7 +340,13 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
                   addRepaintBoundaries: true,
                     (context, i) => Padding(
                       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: PaintingListTile(painting: visible[i]),
+                      child: PaintingListTile(
+                        painting: visible[i],
+                        selectMode: _selectMode,
+                        selected: _selectedIds.contains(visible[i].id),
+                        onSelect: () => _toggleSelect(visible[i].id),
+                        onLongPress: () => _enterSelectMode(visible[i].id),
+                      ),
                     ),
                     childCount: visible.length,
                   ),
@@ -233,6 +371,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
             ),
           ),
         ],
+      ),
       ),
       ),
     );
@@ -305,6 +444,10 @@ class _GalleryHeader extends StatelessWidget {
                       PopupMenuItem(
                         value: GallerySort.title,
                         child: Text('Title (A–Z)'),
+                      ),
+                      PopupMenuItem(
+                        value: GallerySort.artist,
+                        child: Text('Artist name'),
                       ),
                       PopupMenuItem(
                         value: GallerySort.priceHigh,
