@@ -48,7 +48,13 @@ class DocumentsScreen extends ConsumerWidget {
               subtitle:
                   'Certificates, invoices and provenance files will appear here.',
             )
-          : CustomScrollView(
+          : RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(documentsProvider);
+                ref.invalidate(paintingsProvider);
+                await Future<void>.delayed(const Duration(milliseconds: 300));
+              },
+              child: CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
@@ -109,6 +115,7 @@ class DocumentsScreen extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
       floatingActionButton: canEdit
           ? FloatingActionButton.extended(
               onPressed: () => _addDocument(context, ref, paintings),

@@ -41,7 +41,13 @@ class ArtistsScreen extends ConsumerWidget {
               subtitle:
                   'Artists are created automatically when you add paintings.',
             )
-          : CustomScrollView(
+          : RefreshIndicator(
+              onRefresh: () async {
+                ref.invalidate(artistsProvider);
+                ref.invalidate(paintingsProvider);
+                await Future<void>.delayed(const Duration(milliseconds: 300));
+              },
+              child: CustomScrollView(
               slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
@@ -92,6 +98,7 @@ class ArtistsScreen extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
     );
   }
 }

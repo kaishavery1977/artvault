@@ -51,7 +51,7 @@ const _shellDestinations = [
 ];
 
 class _AppShellState extends ConsumerState<AppShell>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   /// Drives a quick fade+drift whenever the active tab changes.
   late final AnimationController _tabIn = AnimationController(
     vsync: this,
@@ -70,6 +70,13 @@ class _AppShellState extends ConsumerState<AppShell>
       index,
       initialLocation: index == widget.navigationShell.currentIndex,
     );
+    // Refresh providers when switching tabs so data stays in sync.
+    if (index != widget.navigationShell.currentIndex) {
+      ref.invalidate(paintingsProvider);
+      ref.invalidate(artistsProvider);
+      ref.invalidate(documentsProvider);
+      ref.invalidate(vaultStatsProvider);
+    }
   }
 
   @override

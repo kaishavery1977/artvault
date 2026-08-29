@@ -79,7 +79,15 @@ class HomeScreen extends ConsumerWidget {
             child: IgnorePointer(child: AuroraBackground()),
           ),
         ),
-        CustomScrollView(
+        RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(paintingsProvider);
+            ref.invalidate(vaultStatsProvider);
+            ref.invalidate(artistsProvider);
+            ref.invalidate(documentsProvider);
+            await Future<void>.delayed(const Duration(milliseconds: 300));
+          },
+          child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
               child: _Header(userName: auth.user?.displayName ?? 'Guest'),
@@ -160,6 +168,7 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
           ],
+        ),
         ),
       ],
     );
