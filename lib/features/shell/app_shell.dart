@@ -182,7 +182,7 @@ class _AppShellState extends ConsumerState<AppShell>
                 ],
               ),
             ),
-      floatingActionButton: canEdit && !isOwnFabTab
+      floatingActionButton: canEdit && !isOwnFabTab && !ref.watch(gallerySelectModeProvider)
           ? AnimatedBuilder(
               animation: _fabPulse,
               builder: (context, child) {

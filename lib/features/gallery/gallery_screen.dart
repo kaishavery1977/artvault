@@ -100,6 +100,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
       _selectMode = true;
       _selectedIds.add(id);
     });
+    ref.read(gallerySelectModeProvider.notifier).state = true;
   }
 
   void _exitSelectMode() {
@@ -107,6 +108,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
       _selectMode = false;
       _selectedIds.clear();
     });
+    ref.read(gallerySelectModeProvider.notifier).state = false;
   }
 
   Future<void> _batchDelete() async {

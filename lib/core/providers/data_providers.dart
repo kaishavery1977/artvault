@@ -254,6 +254,10 @@ final vaultStatsProvider = Provider<VaultStats>((ref) {
   );
 });
 
+/// Whether the gallery is in multi-select (batch delete) mode.
+/// The shell hides its upload FAB while this is true so the two don't overlap.
+final gallerySelectModeProvider = StateProvider<bool>((ref) => false);
+
 /// Whether the app has cloud connectivity (Firebase configured).
 /// Populated during startup bootstrap.
 final cloudReadyProvider = StateProvider<bool>((ref) => false);
