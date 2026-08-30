@@ -300,7 +300,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             child: child,
           ),
         ),
-        child: Center(child: content),
+        child: Stack(
+          children: [
+            Center(child: content),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 32 + MediaQuery.paddingOf(context).bottom,
+              child: _SplashFooter(reducedMotion: reducedMotion),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -384,6 +394,40 @@ class _StaggeredWordmark extends StatelessWidget {
                   .fadeIn(duration: 450.ms, curve: Curves.easeOutCubic);
             },
           ),
+      ],
+    );
+  }
+}
+
+/// Professional footer — "Crafted by Kaisha Very" — fades in after the main intro.
+class _SplashFooter extends StatelessWidget {
+  final bool reducedMotion;
+  const _SplashFooter({required this.reducedMotion});
+
+  @override
+  Widget build(BuildContext context) {
+    final line = Container(width: 32, height: 1, color: Colors.white.withValues(alpha: 0.15));
+    final by = Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.favorite_rounded, size: 10, color: AppColors.accent.withValues(alpha: 0.7)),
+        const SizedBox(width: 6),
+        Text('Crafted by Kaisha Very', style: TextStyle(fontSize: 11, letterSpacing: 1.6, fontWeight: FontWeight.w500, color: Colors.white.withValues(alpha: 0.55))),
+      ],
+    );
+    final sub = Text('Made with passion for art collectors', style: TextStyle(fontSize: 10, letterSpacing: 0.8, color: Colors.white.withValues(alpha: 0.28)));
+
+    if (reducedMotion) {
+      return Column(mainAxisSize: MainAxisSize.min, children: [line, const SizedBox(height: 12), by, const SizedBox(height: 4), sub]);
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        line.animate(delay: 1800.ms).fadeIn(duration: 600.ms).scaleX(begin: 0, end: 1, curve: Curves.easeOutCubic),
+        const SizedBox(height: 12),
+        by.animate(delay: 1900.ms).fadeIn(duration: 700.ms).slideY(begin: 0.3, curve: Curves.easeOutCubic),
+        const SizedBox(height: 4),
+        sub.animate(delay: 2100.ms).fadeIn(duration: 600.ms),
       ],
     );
   }
