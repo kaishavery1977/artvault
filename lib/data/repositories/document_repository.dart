@@ -71,7 +71,7 @@ class DocumentRepository {
       type: 'upload',
     );
     BackupService.instance.scheduleAutoBackup();
-    logActivity(ActivityType.documentAdd, '$name', meta: {'documentId': doc.id});
+    logActivity(ActivityType.documentAdd, name, meta: {'documentId': doc.id});
     return doc;
   }
 

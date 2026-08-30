@@ -81,16 +81,23 @@ class ArtImage extends StatelessWidget {
       child = _fallback(context);
     }
 
-    return ClipRRect(borderRadius: borderRadius, child: child);
+    return Semantics(
+      image: true,
+      label: 'Artwork image',
+      child: ClipRRect(borderRadius: borderRadius, child: child),
+    );
   }
 
   Widget _networkImage(BuildContext context) {
+    final dpr = MediaQuery.devicePixelRatioOf(context);
     return CachedNetworkImage(
       imageUrl: url!,
       width: width,
       height: height,
       fit: fit,
       fadeInDuration: const Duration(milliseconds: 220),
+      memCacheWidth: width != null ? (width! * dpr).toInt() : null,
+      memCacheHeight: height != null ? (height! * dpr).toInt() : null,
       placeholder: (_, _) => _fallback(context),
       errorWidget: (_, _, _) => _fallback(context),
     );
@@ -133,6 +140,7 @@ class _FadeInImageState extends State<_FadeInImage> {
 
   @override
   Widget build(BuildContext context) {
+    final dpr = MediaQuery.devicePixelRatioOf(context);
     return AnimatedOpacity(
       opacity: _opacity,
       duration: const Duration(milliseconds: 250),
@@ -143,6 +151,10 @@ class _FadeInImageState extends State<_FadeInImage> {
         height: widget.height,
         fit: widget.fit,
         filterQuality: FilterQuality.low,
+        cacheWidth: widget.width != null ? (widget.width! * dpr).toInt() : null,
+        cacheHeight: widget.height != null ? (widget.height! * dpr).toInt() : null,
+        gaplessPlayback: true,
+        isAntiAlias: true,
         errorBuilder: (_, _, _) => widget.fallback,
       ),
     );

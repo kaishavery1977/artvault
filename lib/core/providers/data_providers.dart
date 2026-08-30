@@ -430,7 +430,7 @@ Future<void> logActivity(
       'type': type.name,
       'description': description,
       'at': DateTime.now().toIso8601String(),
-      if (meta != null) 'meta': meta,
+      'meta': ?meta,
     });
   } catch (_) {
     // Best-effort — audit failures must never block the action.

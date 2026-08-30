@@ -136,6 +136,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     final image = tester.widget<Image>(find.byType(Image));
-    expect((image.image as FileImage).file.path, img);
+    final provider = image.image;
+    final file = provider is ResizeImage ? (provider.imageProvider as FileImage).file.path : (provider as FileImage).file.path;
+    expect(file, img);
   });
 }

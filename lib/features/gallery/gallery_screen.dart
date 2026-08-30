@@ -146,6 +146,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
       await PaintingRepository.instance.delete(id);
     }
 
+    HapticFeedback.mediumImpact();
     _exitSelectMode();
 
     if (mounted) {
@@ -299,12 +300,14 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
               ),
             )
           else if (visible.isEmpty)
-            const SliverFillRemaining(
+            SliverFillRemaining(
               hasScrollBody: false,
               child: EmptyState(
                 icon: Icons.photo_library_outlined,
                 title: 'No artworks here yet',
                 subtitle: 'Upload a painting to start building your gallery.',
+                actionLabel: 'Add painting',
+                onAction: () => context.push('/painting/new'),
               ),
             )
           else

@@ -112,7 +112,7 @@ class PaintingRepository {
     BackupService.instance.scheduleAutoBackup();
     logActivity(
       get(working.id) != null ? ActivityType.paintingEdit : ActivityType.paintingUpload,
-      '${working.title}',
+      working.title,
       meta: {'paintingId': working.id},
     );
     return working;
@@ -137,7 +137,7 @@ class PaintingRepository {
       type: 'system',
     );
     BackupService.instance.scheduleAutoBackup();
-    logActivity(ActivityType.paintingDelete, '${painting.title}');
+    logActivity(ActivityType.paintingDelete, painting.title);
   }
 
   /// Permanently removes a painting — record, local photos and cloud copy.
