@@ -1,4 +1,4 @@
-NEW_ADMIN_CODE=AV-7R0BC9-QBDW
+NEW_ADMIN_CODE=AV-7ROBC9-QBDW
 
 1. Firebase Console -> Firestore -> bootstrap/config -> edit adminCode -> paste this code
 2. Share new code only with admins
