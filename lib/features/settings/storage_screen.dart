@@ -216,7 +216,7 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
   Future<void> _restore() async {
     setState(() => _busy = true);
     try {
-      final backups = _availableBackups();
+      final backups = await _availableBackups();
       if (backups.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -244,10 +244,11 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
                 ListTile(
                   leading: const Icon(Icons.backup_outlined),
                   title: Text(p.basename(file.path)),
-                  subtitle: Text(
-                    DateFormat('MMM d, y • HH:mm').format(
-                      DateTime.fromMillisecondsSinceEpoch(
-                        file.lastModifiedSync().millisecondsSinceEpoch,
+                  subtitle: FutureBuilder<DateTime>(
+                    future: file.lastModified(),
+                    builder: (context, snap) => Text(
+                      DateFormat('MMM d, y • HH:mm').format(
+                        snap.data ?? file.lastModifiedSync(),
                       ),
                     ),
                   ),
@@ -301,19 +302,21 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
     }
   }
 
-  static List<File> _availableBackups() {
+  static Future<List<File>> _availableBackups() async {
     final dir = FileStorageService.instance.exportsDir;
-    if (!dir.existsSync()) return const [];
-    final files =
-        dir
-            .listSync()
-            .whereType<File>()
-            .where((f) => f.path.endsWith('.json'))
-            .toList()
-          ..sort(
-            (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()),
-          );
-    return files.take(10).toList();
+    if (!await dir.exists()) return const [];
+    final files = <File>[];
+    await for (final entity in dir.list()) {
+      if (entity is File && entity.path.endsWith('.json')) {
+        files.add(entity);
+      }
+    }
+    final withDates = <({File file, DateTime modified})>[];
+    for (final f in files) {
+      withDates.add((file: f, modified: await f.lastModified()));
+    }
+    withDates.sort((a, b) => b.modified.compareTo(a.modified));
+    return withDates.take(10).map((e) => e.file).toList();
   }
 }
 

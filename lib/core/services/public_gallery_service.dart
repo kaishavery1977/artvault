@@ -82,15 +82,17 @@ class PublicGalleryService {
   /// the per-link view counter. [token] is the link's secret token — the
   /// beacon writes to the token-scoped counter so analytics can never be
   /// forged against a different (or revoked) link.
-  String buildHtml(
+  Future<String> buildHtml(
     List<Painting> paintings, {
     String watermark = '',
     String? ownerUid,
     String? token,
-  }) {
-    final cards = paintings
+  }) async {
+    final cardFutures = paintings
         .map((p) => _cardHtml(p, watermark: watermark))
-        .join('\n');
+        .toList();
+    final cardResults = await Future.wait(cardFutures);
+    final cards = cardResults.join('\n');
     final wmCss = watermark.isEmpty
         ? ''
         : '''
@@ -149,8 +151,8 @@ $beacon
 
   /// The optional Pro view-tracking beacon. Resolves the Firebase project
 
-  String _cardHtml(Painting painting, {String watermark = ''}) {
-    final image = _imageTag(painting);
+  Future<String> _cardHtml(Painting painting, {String watermark = ''}) async {
+    final image = await _imageTag(painting);
     final wm = watermark.isEmpty
         ? ''
         : '<div class="wm" data-mark="${_escape(watermark)}"></div>';
@@ -177,18 +179,21 @@ $beacon
     </div>''';
   }
 
-  String _imageTag(Painting painting) {
+  Future<String> _imageTag(Painting painting) async {
     if (painting.coverImageUrl.isNotEmpty) {
       return '<img src="${_escape(painting.coverImageUrl)}" alt="${_escape(painting.title)}">';
     }
     final path = painting.coverImagePath;
-    if (path.isNotEmpty && File(path).existsSync()) {
-      final bytes = File(path).readAsBytesSync();
-      final b64 = base64Encode(bytes);
-      final mime = p.extension(path).toLowerCase() == '.png'
-          ? 'image/png'
-          : 'image/jpeg';
-      return '<img src="data:$mime;base64,$b64" alt="${_escape(painting.title)}">';
+    if (path.isNotEmpty) {
+      final file = File(path);
+      if (await file.exists()) {
+        final bytes = await file.readAsBytes();
+        final b64 = base64Encode(bytes);
+        final mime = p.extension(path).toLowerCase() == '.png'
+            ? 'image/png'
+            : 'image/jpeg';
+        return '<img src="data:$mime;base64,$b64" alt="${_escape(painting.title)}">';
+      }
     }
     return '<img src="" alt="">';
   }
@@ -216,7 +221,7 @@ $beacon
     }
 
     final token = newToken();
-    final html = buildHtml(
+    final html = await buildHtml(
       paintings,
       watermark: watermark,
       ownerUid: ownerUid,
@@ -307,7 +312,7 @@ $beacon
   /// Writes the page to the exports folder so it can be shared as a file
   /// (the offline / rules-not-deployed fallback).
   Future<File> writeLocalHtml(List<Painting> paintings) async {
-    final html = buildHtml(paintings);
+    final html = await buildHtml(paintings);
     final file = File(
       p.join(
         FileStorageService.instance.exportsDir.path,

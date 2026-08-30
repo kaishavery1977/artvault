@@ -397,18 +397,29 @@ class _GalleryHeader extends StatelessWidget {
     required this.onFavoritesToggle,
   });
 
+  static const _viewIcons = {
+    GalleryView.grid: Icons.grid_view,
+    GalleryView.list: Icons.view_agenda_outlined,
+    GalleryView.masonry: Icons.dashboard_customize_outlined,
+  };
+  static const _viewLabels = {
+    GalleryView.grid: 'Grid',
+    GalleryView.list: 'List',
+    GalleryView.masonry: 'Gallery',
+  };
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    // Adapt header padding based on device resolution.
     final topPad = AppSpacing.lg + MediaQuery.paddingOf(context).top * 0.4;
     final hPad = context.adaptiveSpace(AppSpacing.md);
 
     return Padding(
-          padding: EdgeInsets.fromLTRB(hPad, topPad, hPad, AppSpacing.xs),
+          padding: EdgeInsets.fromLTRB(hPad, topPad, hPad, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Clean title row: just title + 2 action icons
               Row(
                 children: [
                   Expanded(
@@ -435,104 +446,130 @@ class _GalleryHeader extends StatelessWidget {
                     tooltip: 'Sort',
                     onSelected: onSortChanged,
                     itemBuilder: (context) => const [
-                      PopupMenuItem(
-                        value: GallerySort.newest,
-                        child: Text('Newest first'),
-                      ),
-                      PopupMenuItem(
-                        value: GallerySort.oldest,
-                        child: Text('Oldest first'),
-                      ),
-                      PopupMenuItem(
-                        value: GallerySort.title,
-                        child: Text('Title (A–Z)'),
-                      ),
-                      PopupMenuItem(
-                        value: GallerySort.artist,
-                        child: Text('Artist name'),
-                      ),
-                      PopupMenuItem(
-                        value: GallerySort.priceHigh,
-                        child: Text('Price: high to low'),
-                      ),
-                      PopupMenuItem(
-                        value: GallerySort.priceLow,
-                        child: Text('Price: low to high'),
-                      ),
+                      PopupMenuItem(value: GallerySort.newest, child: Text('Newest first')),
+                      PopupMenuItem(value: GallerySort.oldest, child: Text('Oldest first')),
+                      PopupMenuItem(value: GallerySort.title, child: Text('Title (A–Z)')),
+                      PopupMenuItem(value: GallerySort.artist, child: Text('Artist name')),
+                      PopupMenuItem(value: GallerySort.priceHigh, child: Text('Price: high → low')),
+                      PopupMenuItem(value: GallerySort.priceLow, child: Text('Price: low → high')),
                     ],
                     icon: const Icon(Icons.sort),
-                  ),
-                  SegmentedButton<GalleryView>(
-                    showSelectedIcon: false,
-                    segments: const [
-                      ButtonSegment(
-                        value: GalleryView.grid,
-                        icon: Icon(Icons.grid_view, size: 18),
-                      ),
-                      ButtonSegment(
-                        value: GalleryView.list,
-                        icon: Icon(Icons.view_agenda_outlined, size: 18),
-                      ),
-                      ButtonSegment(
-                        value: GalleryView.masonry,
-                        icon: Icon(
-                          Icons.dashboard_customize_outlined,
-                          size: 18,
-                        ),
-                      ),
-                    ],
-                    selected: {view},
-                    onSelectionChanged: (s) => onViewChanged(s.first),
-                    style: SegmentedButton.styleFrom(
-                      visualDensity: VisualDensity.compact,
-                    ),
                   ),
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),
-              Material(
-                color: scheme.primary.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                  onTap: onSearchTap,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.sm + 2,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.search,
-                          size: 18,
-                          color: scheme.onSurface.withValues(alpha: 0.6),
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Text(
-                          'Search paintings, artists, colors…',
-                          style: TextStyle(
-                            color: scheme.onSurface.withValues(alpha: 0.6),
-                            fontSize: 13,
+              // View switcher pill row
+              SizedBox(
+                height: 36,
+                child: Row(
+                  children: [
+                    for (final v in GalleryView.values) ...[
+                      if (v != GalleryView.values.first)
+                        const SizedBox(width: 6),
+                      _ViewPill(
+                        icon: _viewIcons[v]!,
+                        label: _viewLabels[v]!,
+                        selected: v == view,
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          onViewChanged(v);
+                        },
+                      ),
+                    ],
+                    const Spacer(),
+                    Material(
+                      color: scheme.primary.withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                        onTap: onSearchTap,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.search, size: 16, color: scheme.onSurface.withValues(alpha: 0.6)),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Search',
+                                style: TextStyle(fontSize: 12, color: scheme.onSurface.withValues(alpha: 0.6)),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ],
           ),
         )
-        // Header settles in as one unit, then the search bar follows — the
-        // toolbar choreography every list screen in the app shares.
         .animate(
           key: ValueKey('gallery-header'),
-          onPlay: (c) =>
-              MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
+          onPlay: (c) => MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
         )
         .fadeIn(duration: 420.ms, curve: Curves.easeOutCubic)
         .slideY(begin: 0.04, duration: 420.ms, curve: Curves.easeOutCubic);
+  }
+}
+
+/// Animated pill-style view switcher button.
+class _ViewPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ViewPill({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        color: selected
+            ? scheme.primary
+            : scheme.primary.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 15,
+                  color: selected ? scheme.onPrimary : scheme.primary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: selected ? scheme.onPrimary : scheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

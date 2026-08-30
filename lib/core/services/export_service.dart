@@ -28,6 +28,8 @@ class ExportService {
 
   /// Builds a print-ready PDF catalogue of the supplied paintings.
   Future<Uint8List> buildCatalogPdf(List<Painting> paintings) async {
+    // Pre-compute painting widgets outside the synchronous build callback.
+    final paintingWidgets = await _paintingsToPdf(paintings);
     final doc = pw.Document();
     doc.addPage(
       pw.MultiPage(
@@ -75,23 +77,31 @@ class ExportService {
           if (paintings.isEmpty)
             pw.Text('No artworks in this selection yet.')
           else
-            ..._paintingsToPdf(paintings),
+            ...paintingWidgets,
         ],
       ),
     );
     return doc.save();
   }
 
-  List<pw.Widget> _paintingsToPdf(List<Painting> paintings) {
+  Future<List<pw.Widget>> _paintingsToPdf(List<Painting> paintings) async {
     final rows = <pw.Widget>[];
     for (final painting in paintings) {
-      rows.add(_paintingPdfCard(painting));
+      rows.add(await _paintingPdfCard(painting));
       rows.add(pw.SizedBox(height: 14));
     }
     return rows;
   }
 
-  pw.Widget _paintingPdfCard(Painting painting) {
+  Future<pw.Widget> _paintingPdfCard(Painting painting) async {
+    pw.MemoryImage? image;
+    if (painting.coverImagePath.isNotEmpty) {
+      final file = File(painting.coverImagePath);
+      if (await file.exists()) {
+        final bytes = await file.readAsBytes();
+        image = pw.MemoryImage(bytes);
+      }
+    }
     return pw.Container(
       decoration: pw.BoxDecoration(
         border: pw.Border.all(color: PdfColors.grey300),
@@ -101,8 +111,7 @@ class ExportService {
       child: pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          if (painting.coverImagePath.isNotEmpty &&
-              File(painting.coverImagePath).existsSync())
+          if (image != null)
             pw.Container(
               width: 72,
               height: 72,
@@ -110,9 +119,7 @@ class ExportService {
                 color: PdfColors.grey200,
                 borderRadius: pw.BorderRadius.circular(6),
                 image: pw.DecorationImage(
-                  image: pw.MemoryImage(
-                    File(painting.coverImagePath).readAsBytesSync(),
-                  ),
+                  image: image,
                   fit: pw.BoxFit.cover,
                 ),
               ),

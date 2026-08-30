@@ -152,12 +152,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               title: 'Profile',
               onTap: () => context.push('/profile'),
             ),
-            if (auth.canManageUsers)
+            if (auth.canManageUsers) ...[
               _SettingTile(
                 icon: Icons.admin_panel_settings,
                 title: 'User & role management',
                 onTap: () => context.push('/users'),
               ),
+              _SettingTile(
+                icon: Icons.history,
+                title: 'Activity log',
+                subtitle: 'View all user actions across the vault',
+                onTap: () => context.push('/activity-log'),
+              ),
+            ],
             _SettingTile(
               icon: Icons.workspace_premium,
               title: 'ArtVault Pro',

@@ -80,7 +80,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
   Future<void> _restoreLocal() async {
     setState(() => _busy = true);
     try {
-      final backups = _recentBackups();
+      final backups = await _recentBackups();
       if (backups.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -178,19 +178,21 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
     ref.invalidate(documentsProvider);
   }
 
-  static List<File> _recentBackups() {
+  static Future<List<File>> _recentBackups() async {
     final dir = FileStorageService.instance.exportsDir;
-    if (!dir.existsSync()) return const [];
-    final files =
-        dir
-            .listSync()
-            .whereType<File>()
-            .where((f) => f.path.endsWith('.json'))
-            .toList()
-          ..sort(
-            (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()),
-          );
-    return files.take(10).toList();
+    if (!await dir.exists()) return const [];
+    final files = <File>[];
+    await for (final entity in dir.list()) {
+      if (entity is File && entity.path.endsWith('.json')) {
+        files.add(entity);
+      }
+    }
+    final withDates = <({File file, DateTime modified})>[];
+    for (final f in files) {
+      withDates.add((file: f, modified: await f.lastModified()));
+    }
+    withDates.sort((a, b) => b.modified.compareTo(a.modified));
+    return withDates.take(10).map((e) => e.file).toList();
   }
 
   @override
@@ -198,7 +200,6 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
     final scheme = Theme.of(context).colorScheme;
     final cloudReady = ref.watch(cloudReadyProvider);
     final usage = ref.watch(storageUsageProvider).valueOrNull;
-    final backups = _recentBackups();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Backup & restore')),
@@ -345,34 +346,33 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                     ),
                   ),
                   const SizedBox(height: AppSpacing.sm),
-                  if (backups.isEmpty)
-                    Text(
-                      'No backups created yet. Tap “Back up now” to create your first one.',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: scheme.onSurface.withValues(alpha: 0.65),
-                      ),
-                    )
-                  else
-                    for (final file in backups)
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
-                        leading: const Icon(
-                          Icons.description_outlined,
-                          size: 20,
-                        ),
-                        title: Text(
-                          p.basename(file.path),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        subtitle: Text(
-                          '${Formatters.bytes(file.lengthSync())} · '
-                          '${DateFormat('MMM d, y • HH:mm').format(file.lastModifiedSync())}',
-                          style: const TextStyle(fontSize: 11),
-                        ),
-                      ),
+                  FutureBuilder<List<File>>(
+                    future: _recentBackups(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                        );
+                      }
+                      final backups = snapshot.data ?? [];
+                      if (backups.isEmpty) {
+                        return Text(
+                          'No backups created yet. Tap “Back up now” to create your first one.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: scheme.onSurface.withValues(alpha: 0.65),
+                          ),
+                        );
+                      }
+                      return Column(
+                        children: [
+                          for (final file in backups)
+                            _BackupFileInfo(file: file),
+                        ],
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -455,6 +455,60 @@ class _UsageRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _BackupFileInfo extends StatefulWidget {
+  final File file;
+
+  const _BackupFileInfo({required this.file});
+
+  @override
+  State<_BackupFileInfo> createState() => _BackupFileInfoState();
+}
+
+class _BackupFileInfoState extends State<_BackupFileInfo> {
+  late Future<int> _sizeFuture;
+  late Future<DateTime> _modifiedFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _sizeFuture = widget.file.length();
+    _modifiedFuture = widget.file.lastModified();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      dense: true,
+      leading: const Icon(
+        Icons.description_outlined,
+        size: 20,
+      ),
+      title: Text(
+        p.basename(widget.file.path),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: FutureBuilder<int>(
+        future: _sizeFuture,
+        builder: (context, sizeSnap) {
+          final size = sizeSnap.data ?? 0;
+          return FutureBuilder<DateTime>(
+            future: _modifiedFuture,
+            builder: (context, dateSnap) {
+              final date = dateSnap.data;
+              return Text(
+                '${Formatters.bytes(size)}${date != null ? ' · ${DateFormat('MMM d, y • HH:mm').format(date)}' : ''}',
+                style: const TextStyle(fontSize: 11),
+              );
+            },
+          );
+        },
       ),
     );
   }

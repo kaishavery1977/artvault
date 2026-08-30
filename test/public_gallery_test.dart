@@ -42,8 +42,8 @@ void main() {
   final service = PublicGalleryService.instance;
 
   group('PublicGalleryService.buildHtml', () {
-    test('renders curated artwork fields and never the price', () {
-      final html = service.buildHtml([
+    test('renders curated artwork fields and never the price', () async {
+      final html = await service.buildHtml([
         _paint(
           'p1',
           title: 'Sunlit Orchard',
@@ -64,8 +64,8 @@ void main() {
       expect(html, isNot(contains('12500')));
     });
 
-    test('escapes HTML in user-provided fields', () {
-      final html = service.buildHtml([
+    test('escapes HTML in user-provided fields', () async {
+      final html = await service.buildHtml([
         _paint(
           'p1',
           title: '<script>alert(1)</script>',
@@ -80,12 +80,12 @@ void main() {
       expect(html, contains('ROOM &lt;'));
     });
 
-    test('embeds a local image as base64 when there is no remote url', () {
+    test('embeds a local image as base64 when there is no remote url', () async {
       final dir = Directory.systemTemp.createTempSync('artvault_gallery_test');
       final img = File('${dir.path}/cover.png');
       img.writeAsBytesSync([0x89, 0x50, 0x4E, 0x47, 1, 2, 3, 4]);
 
-      final html = service.buildHtml([
+      final html = await service.buildHtml([
         _paint('p1', title: 'Local Piece', coverPath: img.path),
       ]);
 
@@ -95,20 +95,20 @@ void main() {
       dir.deleteSync(recursive: true);
     });
 
-    test('empty selection produces a valid page', () {
-      final html = service.buildHtml(const []);
+    test('empty selection produces a valid page', () async {
+      final html = await service.buildHtml(const []);
       expect(html, contains('Nothing here yet.'));
       expect(html, contains('0 artworks'));
     });
 
-    test('no watermark by default', () {
-      final html = service.buildHtml([_paint('p1', title: 'Plain')]);
+    test('no watermark by default', () async {
+      final html = await service.buildHtml([_paint('p1', title: 'Plain')]);
       expect(html, isNot(contains('class="wm"')));
       expect(html, isNot(contains('setToServerValue')));
     });
 
-    test('watermark overlays every image and arms the view beacon', () {
-      final html = service.buildHtml(
+    test('watermark overlays every image and arms the view beacon', () async {
+      final html = await service.buildHtml(
         [_paint('p1', title: 'Owned Piece')],
         watermark: 'Kais Havery',
         ownerUid: 'owner-1',

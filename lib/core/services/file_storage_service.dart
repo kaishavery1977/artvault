@@ -61,7 +61,7 @@ class FileStorageService {
   /// Generates and stores a grid thumbnail. Returns its path.
   Future<String> makeThumbnail(String imagePath) async {
     final file = File(imagePath);
-    if (!file.existsSync()) return imagePath;
+    if (!await file.exists()) return imagePath;
     final thumb = await ImageUtils.thumbnail(file);
     return thumb.path;
   }

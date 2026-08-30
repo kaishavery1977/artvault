@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/app_user.dart';
@@ -261,3 +262,177 @@ final gallerySelectModeProvider = StateProvider<bool>((ref) => false);
 /// Whether the app has cloud connectivity (Firebase configured).
 /// Populated during startup bootstrap.
 final cloudReadyProvider = StateProvider<bool>((ref) => false);
+
+// ---------------------------------------------------------------------------
+// User activity audit log
+// ---------------------------------------------------------------------------
+
+/// Types of user activity tracked in the audit log.
+enum ActivityType {
+  signIn,
+  signOut,
+  paintingUpload,
+  paintingEdit,
+  paintingDelete,
+  artistAdd,
+  artistEdit,
+  artistDelete,
+  documentAdd,
+  documentDelete,
+  roleChanged,
+  planChanged,
+  profileUpdate,
+  backup,
+  other,
+}
+
+extension ActivityTypeX on ActivityType {
+  String get label => switch (this) {
+    ActivityType.signIn => 'Sign in',
+    ActivityType.signOut => 'Sign out',
+    ActivityType.paintingUpload => 'Painting uploaded',
+    ActivityType.paintingEdit => 'Painting edited',
+    ActivityType.paintingDelete => 'Painting deleted',
+    ActivityType.artistAdd => 'Artist added',
+    ActivityType.artistEdit => 'Artist edited',
+    ActivityType.artistDelete => 'Artist deleted',
+    ActivityType.documentAdd => 'Document added',
+    ActivityType.documentDelete => 'Document deleted',
+    ActivityType.roleChanged => 'Role changed',
+    ActivityType.planChanged => 'Plan changed',
+    ActivityType.profileUpdate => 'Profile updated',
+    ActivityType.backup => 'Backup',
+    ActivityType.other => 'Other',
+  };
+
+  IconData get icon => switch (this) {
+    ActivityType.signIn => Icons.login,
+    ActivityType.signOut => Icons.logout,
+    ActivityType.paintingUpload => Icons.brush,
+    ActivityType.paintingEdit => Icons.edit,
+    ActivityType.paintingDelete => Icons.delete_outline,
+    ActivityType.artistAdd => Icons.person_add,
+    ActivityType.artistEdit => Icons.person_outline,
+    ActivityType.artistDelete => Icons.person_remove,
+    ActivityType.documentAdd => Icons.description,
+    ActivityType.documentDelete => Icons.delete_sweep_outlined,
+    ActivityType.roleChanged => Icons.admin_panel_settings,
+    ActivityType.planChanged => Icons.workspace_premium,
+    ActivityType.profileUpdate => Icons.person,
+    ActivityType.backup => Icons.backup_outlined,
+    ActivityType.other => Icons.info_outline,
+  };
+
+  Color get color => switch (this) {
+    ActivityType.signIn => const Color(0xFF22C55E),
+    ActivityType.signOut => const Color(0xFF9CA3AF),
+    ActivityType.paintingUpload => const Color(0xFF3B82F6),
+    ActivityType.paintingEdit => const Color(0xFFF59E0B),
+    ActivityType.paintingDelete => const Color(0xFFEF4444),
+    ActivityType.artistAdd => const Color(0xFF8B5CF6),
+    ActivityType.artistEdit => const Color(0xFF8B5CF6),
+    ActivityType.artistDelete => const Color(0xFFEF4444),
+    ActivityType.documentAdd => const Color(0xFF06B6D4),
+    ActivityType.documentDelete => const Color(0xFFEF4444),
+    ActivityType.roleChanged => const Color(0xFFF59E0B),
+    ActivityType.planChanged => const Color(0xFF22C55E),
+    ActivityType.profileUpdate => const Color(0xFF6366F1),
+    ActivityType.backup => const Color(0xFF14B8A6),
+    ActivityType.other => const Color(0xFF9CA3AF),
+  };
+
+  static ActivityType fromString(String? value) {
+    for (final t in ActivityType.values) {
+      if (t.name == value) return t;
+    }
+    return ActivityType.other;
+  }
+}
+
+/// A single activity audit entry.
+class ActivityAuditEntry {
+  final String uid;
+  final String userEmail;
+  final String userName;
+  final ActivityType type;
+  final String description;
+  final DateTime at;
+  final Map<String, dynamic>? meta;
+
+  const ActivityAuditEntry({
+    required this.uid,
+    required this.userEmail,
+    required this.userName,
+    required this.type,
+    required this.description,
+    required this.at,
+    this.meta,
+  });
+
+  factory ActivityAuditEntry.fromJson(Map<String, dynamic> json) {
+    return ActivityAuditEntry(
+      uid: (json['uid'] as String?) ?? '',
+      userEmail: (json['userEmail'] as String?) ?? '',
+      userName: (json['userName'] as String?) ?? '',
+      type: ActivityTypeX.fromString(json['type'] as String?),
+      description: (json['description'] as String?) ?? '',
+      at: DateTime.tryParse((json['at'] as String?) ?? '') ?? DateTime.now(),
+      meta: json['meta'] as Map<String, dynamic>?,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'uid': uid,
+    'userEmail': userEmail,
+    'userName': userName,
+    'type': type.name,
+    'description': description,
+    'at': at.toIso8601String(),
+    if (meta != null) 'meta': meta,
+  };
+}
+
+/// Streams the `activity_audit` collection — a live feed of user actions
+/// across the vault. Newest first. Falls back to empty when offline.
+final activityAuditProvider = StreamProvider<List<ActivityAuditEntry>>(
+  (ref) async* {
+    final cloud = CloudBackend.instance;
+    if (!cloud.isReady) {
+      yield const [];
+      return;
+    }
+    yield* cloud
+        .watchCollection('activity_audit')
+        .map(
+          (list) => list
+              .map(ActivityAuditEntry.fromJson)
+              .toList()
+            ..sort((a, b) => b.at.compareTo(a.at)),
+        );
+  },
+);
+
+/// Logs a user activity entry to the Firestore `activity_audit` collection.
+/// Fire-and-forget: best-effort write that never throws.
+Future<void> logActivity(
+  ActivityType type,
+  String description, {
+  Map<String, dynamic>? meta,
+}) async {
+  final cloud = CloudBackend.instance;
+  if (!cloud.isReady || cloud.currentUid.isEmpty) return;
+  try {
+    final me = AuthRepository.instance.cachedUser;
+    await cloud.addDoc('activity_audit', {
+      'uid': me.uid,
+      'userEmail': me.email,
+      'userName': me.displayName,
+      'type': type.name,
+      'description': description,
+      'at': DateTime.now().toIso8601String(),
+      if (meta != null) 'meta': meta,
+    });
+  } catch (_) {
+    // Best-effort — audit failures must never block the action.
+  }
+}

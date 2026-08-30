@@ -9,6 +9,7 @@ import '../../core/services/file_storage_service.dart';
 import '../local/local_database.dart';
 import '../models/artist.dart';
 import '../remote/cloud_backend.dart';
+import '../../core/providers/data_providers.dart';
 
 class ArtistRepository {
   ArtistRepository._();
@@ -65,6 +66,7 @@ class ArtistRepository {
     await _db.put(AppConstants.boxArtists, working.id, working.toJson());
     if (working.needsSync) unawaited(_syncArtist(working));
     BackupService.instance.scheduleAutoBackup();
+    logActivity(ActivityType.artistAdd, '${working.name}');
     return working;
   }
 
@@ -78,6 +80,7 @@ class ArtistRepository {
     );
     unawaited(_syncArtist(artist.copyWith(isDeleted: true, needsSync: true)));
     BackupService.instance.scheduleAutoBackup();
+    logActivity(ActivityType.artistDelete, '${artist.name}');
   }
 
   /// Restores a soft-deleted artist (undo delete).

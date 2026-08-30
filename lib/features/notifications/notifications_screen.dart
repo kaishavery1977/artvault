@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_spacing.dart';
-import '../../core/widgets/motion.dart';
 import '../../core/widgets/states.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/app_notification.dart';
@@ -39,6 +38,7 @@ class NotificationsScreen extends ConsumerWidget {
         loading: () => const LoadingView(),
         error: (e, _) => ErrorState(message: '$e'),
         data: (items) {
+          final scheme = Theme.of(context).colorScheme;
           if (items.isEmpty) {
             return const EmptyState(
               icon: Icons.notifications_none,
@@ -49,17 +49,64 @@ class NotificationsScreen extends ConsumerWidget {
           }
           final sorted = [...items]
             ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          return ListView.separated(
+          // Group by date
+          final groups = <String, List<AppNotification>>{};
+          final now = DateTime.now();
+          for (final n in sorted) {
+            final diff = now.difference(n.createdAt);
+            final key = diff.inDays == 0
+                ? 'Today'
+                : diff.inDays == 1
+                ? 'Yesterday'
+                : diff.inDays < 7
+                ? 'This week'
+                : 'Older';
+            groups.putIfAbsent(key, () => []).add(n);
+          }
+          final orderedKeys = ['Today', 'Yesterday', 'This week', 'Older']
+              .where(groups.containsKey)
+              .toList();
+          return ListView.builder(
             padding: AppSpacing.screenPadding,
-            itemCount: sorted.length,
-            separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
-            itemBuilder: (context, index) {
-              final n = sorted[index];
-              return revealListItem(
-                _NotificationTile(notification: n),
-                index,
-                key: ValueKey(n.id),
-                context: context,
+            itemCount: orderedKeys.length,
+            itemBuilder: (context, sectionIndex) {
+              final key = orderedKeys[sectionIndex];
+              final group = groups[key]!;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.xs),
+                    child: Text(
+                      key,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: scheme.onSurface.withValues(alpha: 0.5),
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ),
+                  for (final n in group)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                      child: Dismissible(
+                        key: ValueKey(n.id),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: scheme.error.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Icon(Icons.delete_outline, color: scheme.error),
+                        ),
+                        onDismissed: (_) => NotificationRepository.instance.remove(n.id),
+                        child: _NotificationTile(notification: n),
+                      ),
+                    ),
+                ],
               );
             },
           );

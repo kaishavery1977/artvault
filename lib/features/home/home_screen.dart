@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,12 +5,10 @@ import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/pro_limits.dart';
 import '../../core/theme/adaptive_layout.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
-import '../../core/widgets/bits.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/widgets/premium/premium.dart';
@@ -31,7 +27,6 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
     final paintingsAsync = ref.watch(paintingsProvider);
-    final stats = ref.watch(vaultStatsProvider);
     final canEdit = auth.canEdit;
 
     final paintings = (paintingsAsync.valueOrNull ?? const <Painting>[])
@@ -121,11 +116,7 @@ class HomeScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: AppSpacing.lg),
                         ],
-                        _StatsGrid(stats: stats, canEdit: canEdit),
-                        const SizedBox(height: AppSpacing.lg),
-                        _StorageCard(stats: stats),
-                        const SizedBox(height: AppSpacing.lg),
-                        const _PlanUsageCard(),
+                        const _CollectionHero(),
                         const SizedBox(height: AppSpacing.lg),
                         _QuickActions(canEdit: canEdit),
                         SectionHeader(
@@ -633,108 +624,21 @@ class _WelcomeHero extends StatelessWidget {
   }
 }
 
-class _StatsGrid extends ConsumerWidget {
-  final VaultStats stats;
-  final bool canEdit;
-
-  const _StatsGrid({required this.stats, required this.canEdit});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Format with the user's preferred currency, not the hardcoded USD
-    // default.
-    final currency = ref.watch(currencyProvider);
-    // Adapt the number of columns based on device resolution.
-    // In landscape, the wider viewport allows one extra column.
-    final size = MediaQuery.sizeOf(context);
-    final isLandscape = size.width > size.height;
-    final width = size.width;
-    var cols = width >= 700 ? 4 : (width >= 480 ? 3 : 2);
-    if (isLandscape) cols = (cols + 1).clamp(2, 4);
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Use the pre-computed cols but allow override for very wide layouts.
-        final effectiveCols = constraints.maxWidth >= 700 ? 4 : cols;
-        return GridView.count(
-          crossAxisCount: effectiveCols,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: AppSpacing.sm,
-          crossAxisSpacing: AppSpacing.sm,
-          // Fixed cell height (not aspect ratio): on narrow screens an
-          // aspect-ratio cell gets too short for the card content and
-          // overflows. 132dp = 32dp card padding + 96dp content + slack.
-          // Adapt cell height based on device resolution.
-          mainAxisExtent: context.scaled(132),
-          children: [
-            StatCard(
-              label: 'Paintings',
-              value: '${stats.paintings}',
-              countValue: stats.paintings.toDouble(),
-              countFormat: (v) => v.round().toString(),
-              icon: Icons.brush,
-              color: AppColors.secondary,
-              onTap: () => context.push('/gallery'),
-            ),
-            StatCard(
-              label: 'Artists',
-              value: '${stats.artists}',
-              countValue: stats.artists.toDouble(),
-              countFormat: (v) => v.round().toString(),
-              icon: Icons.person,
-              color: AppColors.accent,
-              onTap: () => context.push('/artists'),
-            ),
-            StatCard(
-              label: 'Documents',
-              value: '${stats.documents}',
-              countValue: stats.documents.toDouble(),
-              countFormat: (v) => v.round().toString(),
-              icon: Icons.description,
-              color: AppColors.success,
-              onTap: () => context.push('/documents'),
-            ),
-            StatCard(
-              label: 'Collection value',
-              value: Formatters.money(
-                stats.collectionValue,
-                currency: currency,
-              ),
-              countValue: stats.collectionValue,
-              countFormat: (v) => Formatters.money(v, currency: currency),
-              icon: Icons.attach_money,
-              color: AppColors.info,
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _StorageCard extends ConsumerWidget {
-  final VaultStats stats;
-
-  const _StorageCard({required this.stats});
+class _CollectionHero extends ConsumerWidget {
+  const _CollectionHero();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
+    final stats = ref.watch(vaultStatsProvider);
     final isPro = ref.watch(authProvider.select((a) => a.isPro));
+    final currency = ref.watch(currencyProvider);
     final usage = ref.watch(storageUsageProvider).valueOrNull;
     final device = ref.watch(deviceStorageProvider).valueOrNull;
-    final total = stats.storageBytes;
-    final usedLabel = total > 0 ? Formatters.bytes(total.toInt()) : '0 B';
 
-    // Phone-wide numbers when available, so the user sees how much is left
-    // on the device — not just what the vault itself has stored.
-    final freeLabel = device != null
-        ? Formatters.bytes(device.freeBytes)
-        : null;
-    final totalDeviceLabel = device != null
-        ? Formatters.bytes(device.totalBytes)
-        : null;
+    final totalBytes = stats.storageBytes.toInt();
+    final usedLabel = totalBytes > 0 ? Formatters.bytes(totalBytes) : '0 B';
+    final freeLabel = device != null ? Formatters.bytes(device.freeBytes) : null;
     final barFraction = device != null
         ? device.usedFraction
         : (usage != null && usage.total > 0
@@ -742,439 +646,177 @@ class _StorageCard extends ConsumerWidget {
               : 0);
 
     return Depth3DCard(
-      onTap: () => context.push('/storage'),
-      padding: AppSpacing.cardPadding,
-      depth: 6,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      depth: 8,
       tiltEnabled: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Collection value hero
+          Text(
+            'Collection Value',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurface.withValues(alpha: 0.5),
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          GradientShimmerText(
+            text: Formatters.money(stats.collectionValue, currency: currency),
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              color: scheme.primary,
+            ),
+            colors: [scheme.primary, scheme.secondary, scheme.tertiary],
+            duration: const Duration(milliseconds: 1400),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          // Stat badges row
           Row(
             children: [
-              Icon(Icons.storage_outlined, size: 20, color: scheme.primary),
-              const SizedBox(width: AppSpacing.xs),
-              Text(
-                'Storage used',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const Spacer(),
-              // Free-tier usage ring: fills toward the cap and pulses once
-              // the vault nears the free storage limit. Pro has no cap, so
-              // the ring is hidden for Pro accounts (same as _PlanUsageCard).
-              if (!isPro)
-                _StorageRing(
-                  freeBytes: usage != null
-                      ? usage.countedBytes
-                      : stats.storageBytes.toInt(),
-                  capBytes: ProLimits.freeStorageBytes,
-                ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: barFraction.clamp(0.0, 1.0).toDouble(),
-              minHeight: 6,
-              backgroundColor: scheme.primary.withValues(alpha: 0.1),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            device != null
-                ? '$freeLabel free of $totalDeviceLabel phone storage · '
-                      'vault uses $usedLabel'
-                : 'Images & documents live on-device first, synced to the cloud when connected.',
-            style: TextStyle(
-              fontSize: 11.5,
-              color: scheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Animated circular ring showing free-tier storage usage (vault bytes vs
-/// the free cap). Fills in on load, and pulses a warning glow once the vault
-/// is at 85%+ of the free tier. Ticker-only — reduced motion renders it
-/// statically.
-class _StorageRing extends StatefulWidget {
-  final int freeBytes;
-  final int capBytes;
-
-  const _StorageRing({required this.freeBytes, required this.capBytes});
-
-  @override
-  State<_StorageRing> createState() => _StorageRingState();
-}
-
-class _StorageRingState extends State<_StorageRing>
-    with TickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1100),
-  )..forward();
-
-  late final Animation<double> _fill = CurvedAnimation(
-    parent: _controller,
-    curve: Curves.easeOutCubic,
-  );
-
-  // Separate loop for the near-limit pulse (only drives the glow, not the
-  // arc), so normal builds hold still.
-  late final AnimationController _pulse = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1200),
-  );
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _syncPulse();
-  }
-
-  @override
-  void didUpdateWidget(covariant _StorageRing oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.freeBytes != widget.freeBytes ||
-        oldWidget.capBytes != widget.capBytes) {
-      _controller.forward(from: 0);
-      _syncPulse();
-    }
-  }
-
-  void _syncPulse() {
-    final near = _fraction >= 0.85;
-    if (near && !MediaQuery.disableAnimationsOf(context)) {
-      if (!_pulse.isAnimating) _pulse.repeat(reverse: true);
-    } else {
-      _pulse.stop();
-      _pulse.value = 0;
-    }
-  }
-
-  double get _fraction => widget.capBytes > 0
-      ? (widget.freeBytes / widget.capBytes).clamp(0.0, 1.0)
-      : 0.0;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _pulse.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final near = _fraction >= 0.85;
-    final reduced = MediaQuery.disableAnimationsOf(context);
-    final pct = (_fraction * 100).round();
-
-    return AnimatedBuilder(
-      animation: Listenable.merge([_fill, _pulse]),
-      builder: (context, _) {
-        final v = reduced ? _fraction : _fraction * _fill.value;
-        final glow = near ? 0.35 + 0.3 * _pulse.value : 0.0;
-        final color = near ? AppColors.warning : scheme.primary;
-        return SizedBox(
-          width: 52,
-          height: 52,
-          child: CustomPaint(
-            painter: _RingPainter(
-              fraction: v,
-              color: color,
-              trackColor: scheme.primary.withValues(alpha: 0.12),
-              glow: glow,
-            ),
-            child: Center(
-              child: Text(
-                '$pct%',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: near ? AppColors.warning : scheme.primary,
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _RingPainter extends CustomPainter {
-  final double fraction;
-  final Color color;
-  final Color trackColor;
-  final double glow;
-
-  _RingPainter({
-    required this.fraction,
-    required this.color,
-    required this.trackColor,
-    required this.glow,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final stroke = 5.0;
-    final rect = Offset.zero & size;
-    final center = rect.center;
-    final radius = (size.shortestSide - stroke) / 2;
-
-    // Soft pulsing halo behind the ring when near the limit.
-    if (glow > 0) {
-      canvas.drawCircle(
-        center,
-        radius + 5 + 3 * glow,
-        Paint()
-          ..color = color.withValues(alpha: 0.22 * glow)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
-      );
-    }
-
-    // Track.
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = stroke
-        ..color = trackColor,
-    );
-
-    // Fill arc (clockwise from top).
-    final sweep = math.pi * 2 * fraction;
-    final arc = Rect.fromCircle(center: center, radius: radius);
-    canvas.drawArc(
-      arc,
-      -math.pi / 2,
-      sweep,
-      false,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = stroke
-        ..strokeCap = StrokeCap.round
-        ..color = color,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _RingPainter oldDelegate) =>
-      oldDelegate.fraction != fraction ||
-      oldDelegate.color != color ||
-      oldDelegate.glow != glow;
-}
-
-/// Free-plan usage meter: how much of each free-tier cap is used, with a
-/// one-tap upgrade entry. Hidden entirely for Pro users — unlimited needs
-/// no meter.
-class _PlanUsageCard extends ConsumerWidget {
-  const _PlanUsageCard();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final scheme = Theme.of(context).colorScheme;
-    final isPro = ref.watch(authProvider.select((a) => a.isPro));
-    if (isPro) return const SizedBox.shrink();
-
-    final stats = ref.watch(vaultStatsProvider);
-    final usage = ref.watch(storageUsageProvider).valueOrNull;
-
-    final rows = <(String, int, int)>[
-      ('Paintings', stats.paintings, ProLimits.freePaintings),
-      ('Artists', stats.artists, ProLimits.freeArtists),
-      ('Documents', stats.documents, ProLimits.freeDocuments),
-      ('Storage', usage?.countedBytes ?? 0, ProLimits.freeStorageBytes),
-    ];
-
-    return Depth3DCard(
-      onTap: () => context.push('/upgrade'),
-      padding: AppSpacing.cardPadding,
-      depth: 6,
-      tiltEnabled: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.workspace_premium, size: 20, color: scheme.primary),
-              const SizedBox(width: AppSpacing.xs),
-              Expanded(
-                child: Text(
-                  'Free plan usage',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-                ),
-              ),
-              Text(
-                'Upgrade',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w700,
-                  color: scheme.primary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          for (var i = 0; i < rows.length; i++) ...[
-            _UsageRow(
-              label: rows[i].$1,
-              used: rows[i].$2,
-              cap: rows[i].$3,
-              index: i,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
-          Text(
-            'Tap to upgrade and unlock unlimited capacity.',
-            style: TextStyle(
-              fontSize: 11.5,
-              color: scheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _UsageRow extends StatefulWidget {
-  final String label;
-  final int used;
-  final int cap;
-  final int index;
-
-  const _UsageRow({
-    required this.label,
-    required this.used,
-    required this.cap,
-    required this.index,
-  });
-
-  @override
-  State<_UsageRow> createState() => _UsageRowState();
-}
-
-class _UsageRowState extends State<_UsageRow>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 900),
-  )..forward();
-
-  late final Animation<double> _fraction = CurvedAnimation(
-    parent: _controller,
-    curve: Curves.easeOutCubic,
-  );
-
-  /// Bumped whenever the used amount crosses the cap, replaying the shake.
-  int _shakeTick = 0;
-  bool _wasAtCap = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // Initialize the cap-tracking baseline so a later crossing shakes even
-    // if the row first appears already at (or over) the limit.
-    _wasAtCap = widget.cap > 0 && widget.used >= widget.cap;
-  }
-
-  @override
-  void didUpdateWidget(covariant _UsageRow oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.used != widget.used || oldWidget.cap != widget.cap) {
-      _syncCap();
-    }
-  }
-
-  void _syncCap() {
-    final atCap = widget.cap > 0 && widget.used >= widget.cap;
-    if (atCap && !_wasAtCap) {
-      _shakeTick++; // exactly 100% (or over) — shake once
-    }
-    _wasAtCap = atCap;
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final reduced = MediaQuery.disableAnimationsOf(context);
-    final cap = widget.cap;
-    final used = widget.used;
-    final target = cap > 0 ? (used / cap).clamp(0.0, 1.0).toDouble() : 0.0;
-    final atCap = target >= 1.0;
-    final color = atCap
-        ? AppColors.error
-        : (target >= 0.85 ? AppColors.warning : null);
-
-    return ShakeOnError(
-      tick: _shakeTick,
-      child: AnimatedBuilder(
-        animation: _fraction,
-        builder: (context, _) {
-          final v = reduced ? target : target * _fraction.value;
-          final shown = (used * (reduced ? 1.0 : _fraction.value)).round();
-          final usedLabel = widget.label == 'Storage'
-              ? Formatters.bytes(shown)
-              : '$shown / $cap';
-          return Row(
-            children: [
-              SizedBox(
-                width: 86,
-                child: Text(
-                  widget.label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: scheme.onSurface.withValues(alpha: 0.6),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: LinearProgressIndicator(
-                    value: v,
-                    minHeight: 5,
-                    backgroundColor: scheme.onSurface.withValues(alpha: 0.08),
-                    color: color ?? scheme.primary.withValues(alpha: 0.75),
-                  ),
-                ),
+              _StatBadge(
+                icon: Icons.brush,
+                label: 'Artworks',
+                value: '${stats.paintings}',
+                color: AppColors.secondary,
+                onTap: () => context.push('/gallery'),
               ),
               const SizedBox(width: AppSpacing.sm),
-              SizedBox(
-                width: 72,
-                child: Text(
-                  usedLabel,
-                  textAlign: TextAlign.end,
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w700,
-                    color: color ?? scheme.onSurface,
-                  ),
+              _StatBadge(
+                icon: Icons.person,
+                label: 'Artists',
+                value: '${stats.artists}',
+                color: AppColors.accent,
+                onTap: () => context.push('/artists'),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              _StatBadge(
+                icon: Icons.description,
+                label: 'Docs',
+                value: '${stats.documents}',
+                color: AppColors.success,
+                onTap: () => context.push('/documents'),
+              ),
+              if (!isPro) ...[
+                const SizedBox(width: AppSpacing.sm),
+                _StatBadge(
+                  icon: Icons.workspace_premium,
+                  label: 'Plan',
+                  value: 'Free',
+                  color: AppColors.warning,
+                  onTap: () => context.push('/upgrade'),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          // Storage bar
+          Row(
+            children: [
+              Icon(Icons.storage_outlined, size: 14, color: scheme.onSurface.withValues(alpha: 0.5)),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: barFraction.clamp(0.0, 1.0).toDouble(),
+                        minHeight: 4,
+                        backgroundColor: scheme.primary.withValues(alpha: 0.1),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      device != null
+                          ? '$freeLabel free · vault $usedLabel'
+                          : 'Vault uses $usedLabel',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: scheme.onSurface.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              if (!isPro)
+                TextButton(
+                  onPressed: () => context.push('/upgrade'),
+                  style: TextButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  child: const Text('Upgrade', style: TextStyle(fontSize: 12)),
+                ),
             ],
-          );
-        },
+          ),
+        ],
       ),
     );
   }
 }
+
+/// Compact stat badge with icon, label, and value.
+class _StatBadge extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+  final VoidCallback? onTap;
+
+  const _StatBadge({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Expanded(
+      child: Material(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            child: Column(
+              children: [
+                Icon(icon, size: 18, color: color),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: scheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 
 class _QuickActions extends ConsumerWidget {
   final bool canEdit;
@@ -1193,38 +835,26 @@ class _QuickActions extends ConsumerWidget {
       (Icons.grid_view, 'Gallery', () => context.go('/gallery')),
       (Icons.person, 'Artists', () => context.go('/artists')),
       (Icons.insights, 'Reports', () => context.push('/reports')),
-      (
-        Icons.favorite,
-        'Favorites',
-        () => context.push('/gallery', extra: 'favorites'),
-      ),
       (Icons.qr_code_scanner, 'Scan', () => context.push('/scan')),
-      (Icons.settings_outlined, 'Settings', () => context.go('/settings')),
-      if (canEdit) (Icons.sync, 'Sync', () => _sync(context, ref)),
     ];
 
-    return Wrap(
-      spacing: AppSpacing.md,
-      runSpacing: AppSpacing.md,
+    return Row(
       children: [
-        for (final a in actions)
-          _QuickAction(icon: a.$1, label: a.$2, onTap: a.$3),
+        for (var i = 0; i < actions.length; i++) ...[
+          if (i > 0) const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: _QuickAction(
+              icon: actions[i].$1,
+              label: actions[i].$2,
+              onTap: actions[i].$3,
+            ),
+          ),
+        ],
       ],
     );
   }
 
-  static Future<void> _sync(BuildContext context, WidgetRef ref) async {
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(const SnackBar(content: Text('Syncing vault…')));
-    final count = await PaintingRepository.instance.syncNow();
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          count > 0 ? 'Synced $count items.' : 'Vault is up to date.',
-        ),
-      ),
-    );
-  }
+
 }
 
 class _QuickAction extends StatelessWidget {
@@ -1249,19 +879,20 @@ class _QuickAction extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
+            horizontal: AppSpacing.sm,
             vertical: AppSpacing.sm + 2,
           ),
-          child: Row(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 18, color: scheme.primary),
-              const SizedBox(width: AppSpacing.xs),
+              Icon(icon, size: 20, color: scheme.primary),
+              const SizedBox(height: 4),
               Text(
                 label,
-                style: const TextStyle(
-                  fontSize: 13,
+                style: TextStyle(
+                  fontSize: 11,
                   fontWeight: FontWeight.w600,
+                  color: scheme.onSurface.withValues(alpha: 0.8),
                 ),
               ),
             ],

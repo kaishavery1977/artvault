@@ -11,6 +11,7 @@ import '../../data/repositories/document_repository.dart';
 import '../../data/repositories/painting_repository.dart';
 import '../../data/remote/cloud_backend.dart';
 import '../services/backup_service.dart';
+import 'data_providers.dart';
 
 // ---------------------------------------------------------------------------
 // Auth
@@ -267,6 +268,7 @@ class AuthController extends StateNotifier<AuthState> {
     state = AuthState(status: AuthStatus.authenticated, user: user);
     _syncVaultAfterAuth();
     _watchMyProfile(user);
+    logActivity(ActivityType.signIn, '${user.displayName} signed in');
   }
 
   @override
@@ -378,6 +380,7 @@ class AuthController extends StateNotifier<AuthState> {
   }
 
   Future<void> signOut() async {
+    logActivity(ActivityType.signOut, 'Signed out');
     _profileSub?.cancel();
     _profileSub = null;
     _profileApplying = false;

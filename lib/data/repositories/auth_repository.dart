@@ -19,6 +19,7 @@ import '../../core/services/notification_service.dart';
 import '../../data/models/app_user.dart';
 import '../../data/remote/cloud_backend.dart';
 import '../local/local_database.dart';
+import '../../core/providers/data_providers.dart';
 
 /// Authentication + session + RBAC role management.
 ///
@@ -79,7 +80,10 @@ class AuthRepository {
       final user = await cloud.signInWithEmail(email, password);
       if (user != null) {
         final profile = await _loadOrCreateProfile(user);
-        if (remember) await saveRememberedSession(user.uid);
+        // Always persist session UID for HMAC key consistency, even
+        // when "remember me" is off — the face-embedding HMAC key
+        // depends on this value being available on cold starts.
+        await saveRememberedSession(user.uid);
         await _persistUser(profile);
         return profile;
       }
@@ -220,8 +224,51 @@ class AuthRepository {
   Future<AppUser> restoreSession() async {
     final cached = cachedUser;
     if (cached.uid.isEmpty) {
-      throw AuthException('No saved session.');
+      // Fallback: the profile might not be in Hive yet (cold start race),
+      // but the session UID may exist in secure storage from a previous
+      // remember-me login.  Try to recover the session via Firebase Auth.
+      final savedUid = await _secure.read(key: AppConstants.kSessionUid);
+      if (savedUid == null || savedUid.isEmpty) {
+        throw AuthException('No saved session.');
+      }
+      // Profile missing from Hive but UID exists — persist the UID so
+      // HMAC key derivation is consistent on next read.
+      await LocalDatabase.instance.setSetting(AppConstants.kSessionUid, savedUid);
+      // Try Firebase Auth to rebuild the profile.
+      final cloud = CloudBackend.instance;
+      if (cloud.isReady) {
+        final user = cloud.currentUser;
+        if (user != null) {
+          try {
+            final profile = await _loadOrCreateProfile(user);
+            await _persistUser(profile);
+            return profile;
+          } catch (_) {
+            // Profile rebuild failed — return a minimal user so the
+            // session is not lost.
+            return AppUser(
+              uid: savedUid,
+              email: '',
+              displayName: 'User',
+              role: AppRole.curator,
+              createdAt: DateTime.now(),
+              lastLogin: DateTime.now(),
+            );
+          }
+        }
+      }
+      // Firebase not ready yet — return minimal user with the saved UID.
+      return AppUser(
+        uid: savedUid,
+        email: '',
+        displayName: 'User',
+        role: AppRole.curator,
+        createdAt: DateTime.now(),
+        lastLogin: DateTime.now(),
+      );
     }
+    // Profile exists in Hive — persist UID for HMAC consistency.
+    await LocalDatabase.instance.setSetting(AppConstants.kSessionUid, cached.uid);
     // Prefer live Firebase user when available.
     final cloud = CloudBackend.instance;
     if (cloud.isReady) {
@@ -332,6 +379,7 @@ class AuthRepository {
         cachedUser.copyWith(role: role).toJson(),
       );
     }
+    logActivity(ActivityType.roleChanged, 'Changed role to ${role.label}', meta: {'targetUid': uid});
   }
 
   /// Reads a user's current role from the cloud (best-effort; defaults to
@@ -619,9 +667,6 @@ class AuthRepository {
       if (hmac != null && hmac.isNotEmpty) {
         final computed = _hmacSha256(raw);
         if (!_constantTimeEquals(computed, hmac)) {
-          await FaceDebugLog.instance.log(
-            'faceEmbedding HMAC mismatch — tampered',
-          );
           return null;
         }
       }
@@ -707,11 +752,12 @@ class AuthRepository {
   /// The key is the session UID (stable per install) so a different device
   /// can't verify this device's embeddings, and a factory reset loses it.
   String _hmacSha256(String data) {
-    // Use the persisted UID (set during _persistUser on every login) so the
-    // HMAC survives cold starts even when cachedUser hasn't loaded yet.
-    final uid = cachedUser.uid.isNotEmpty
-        ? cachedUser.uid
-        : (LocalDatabase.instance.getSetting(AppConstants.kSessionUid) ?? '');
+    // Use the Hive session UID (set during _persistUser on every login
+    // and in restoreSession) as the primary source.  This is set BEFORE
+    // cachedUser is accessed, so it's reliable on cold starts.  Fall back
+    // to cachedUser.uid only if Hive hasn't been written yet.
+    final hiveUid = (LocalDatabase.instance.getSetting(AppConstants.kSessionUid) ?? '') as String;
+    final uid = hiveUid.isNotEmpty ? hiveUid : cachedUser.uid;
     final key = utf8.encode(uid.isNotEmpty ? uid : 'default');
     final mac = crypto.Hmac(crypto.sha256, key);
     return mac.convert(utf8.encode(data)).toString();

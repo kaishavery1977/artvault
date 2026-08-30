@@ -10,6 +10,7 @@ import '../../core/services/notification_service.dart';
 import '../local/local_database.dart';
 import '../models/art_document.dart';
 import '../remote/cloud_backend.dart';
+import '../../core/providers/data_providers.dart';
 
 class DocumentRepository {
   DocumentRepository._();
@@ -70,6 +71,7 @@ class DocumentRepository {
       type: 'upload',
     );
     BackupService.instance.scheduleAutoBackup();
+    logActivity(ActivityType.documentAdd, '$name', meta: {'documentId': doc.id});
     return doc;
   }
 

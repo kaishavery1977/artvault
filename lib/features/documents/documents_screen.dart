@@ -165,7 +165,7 @@ class DocumentsScreen extends ConsumerWidget {
     if (!ref.read(authProvider).isPro) {
       final usage = ref.read(storageUsageProvider).valueOrNull;
       final current = usage?.countedBytes ?? 0;
-      if (current + File(path).lengthSync() > ProLimits.freeStorageBytes) {
+      if (current + await File(path).length() > ProLimits.freeStorageBytes) {
         if (context.mounted) {
           await showUpgradePrompt(
             context,

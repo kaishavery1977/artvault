@@ -58,6 +58,10 @@ strix_runs/
 # Local device backups (contain plaintext vault data)
 backups/
 
+# Dependencies
+node_modules/
+functions/node_modules/
+
 # Build artifacts
 *.apk
 *.aab

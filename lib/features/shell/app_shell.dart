@@ -172,6 +172,9 @@ class _AppShellState extends ConsumerState<AppShell>
                 height: navBarHeight,
                 selectedIndex: shell.currentIndex,
                 onDestinationSelected: _go,
+                indicatorColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.18),
+                animationDuration: const Duration(milliseconds: 400),
+                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
                 destinations: [
                   for (final d in _shellDestinations)
                     NavigationDestination(

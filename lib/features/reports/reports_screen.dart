@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -241,11 +242,20 @@ class _BarCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final max = data.fold<double>(1, (m, e) => e.$2 > m ? e.$2 : m);
 
     if (data.isEmpty) {
       return GlassCard(padding: AppSpacing.cardPadding, child: Text(title));
     }
+
+    final maxVal = data.fold<double>(1, (m, e) => e.$2 > m ? e.$2 : m);
+    final barColors = [
+      scheme.primary,
+      scheme.secondary,
+      scheme.tertiary,
+      AppColors.accent,
+      AppColors.info,
+      AppColors.success,
+    ];
 
     return GlassCard(
       padding: AppSpacing.cardPadding,
@@ -254,74 +264,105 @@ class _BarCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
-          const SizedBox(height: AppSpacing.md),
-          for (final entry in data)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      SizedBox(
-                        width: 110,
-                        child: Text(
-                          entry.$1,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: scheme.onSurface.withValues(alpha: 0.6),
-                          ),
+          const SizedBox(height: AppSpacing.lg),
+          SizedBox(
+            height: 180,
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceAround,
+                maxY: maxVal * 1.2,
+                minY: 0,
+                barTouchData: BarTouchData(
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      return BarTooltipItem(
+                        '${data[groupIndex].$1}\n',
+                        TextStyle(
+                          color: scheme.onPrimary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
                         ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: TweenAnimationBuilder<double>(
-                            tween: Tween(begin: 0, end: entry.$2 / max),
-                            duration: const Duration(milliseconds: 600),
-                            curve: Curves.easeOutCubic,
-                            builder: (context, value, _) => Container(
-                              height: 16,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    scheme.primary,
-                                    scheme.primary.withValues(alpha: 0.5),
-                                  ],
-                                ),
-                              ),
-                              width:
-                                  (value * 100).clamp(0, 100) *
-                                  MediaQuery.sizeOf(context).width /
-                                  100,
+                        children: [
+                          TextSpan(
+                            text: rod.toY.toStringAsFixed(0),
+                            style: TextStyle(
+                              color: scheme.onPrimary.withValues(alpha: 0.85),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      SizedBox(
-                        width: 36,
-                        child: Text(
-                          entry.$2.toStringAsFixed(0),
-                          textAlign: TextAlign.right,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: maxVal / 4,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: scheme.onSurface.withValues(alpha: 0.07),
+                    strokeWidth: 1,
+                  ),
+                ),
+                borderData: FlBorderData(show: false),
+                titlesData: FlTitlesData(
+                  show: true,
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        final idx = value.toInt();
+                        if (idx < 0 || idx >= data.length) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                            data[idx].$1,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: scheme.onSurface.withValues(alpha: 0.55),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                barGroups: [
+                  for (var i = 0; i < data.length; i++)
+                    BarChartGroupData(
+                      x: i,
+                      barRods: [
+                        BarChartRodData(
+                          toY: data[i].$2,
+                          color: barColors[i % barColors.length],
+                          width: data.length > 8 ? 14 : 20,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(6),
+                            topRight: Radius.circular(6),
+                          ),
+                          backDrawRodData: BackgroundBarChartRodData(
+                            show: true,
+                            toY: maxVal * 1.2,
+                            color: scheme.onSurface.withValues(alpha: 0.04),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
                 ],
               ),
+              duration: const Duration(milliseconds: 600),
+              curve: Curves.easeOutCubic,
             ),
+          ),
         ],
       ),
     );

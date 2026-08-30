@@ -14,6 +14,7 @@ import '../../core/services/notification_service.dart';
 import '../local/local_database.dart';
 import '../models/painting.dart';
 import '../remote/cloud_backend.dart';
+import '../../core/providers/data_providers.dart';
 
 /// Offline-first repository for paintings.
 ///
@@ -109,6 +110,11 @@ class PaintingRepository {
       unawaited(_syncPainting(working));
     }
     BackupService.instance.scheduleAutoBackup();
+    logActivity(
+      get(working.id) != null ? ActivityType.paintingEdit : ActivityType.paintingUpload,
+      '${working.title}',
+      meta: {'paintingId': working.id},
+    );
     return working;
   }
 
@@ -131,6 +137,7 @@ class PaintingRepository {
       type: 'system',
     );
     BackupService.instance.scheduleAutoBackup();
+    logActivity(ActivityType.paintingDelete, '${painting.title}');
   }
 
   /// Permanently removes a painting — record, local photos and cloud copy.
@@ -268,7 +275,7 @@ class PaintingRepository {
       if (allLocal) continue;
 
       // (expected local path, remote url) pairs aligned by index.
-      final pairs = <(String, String)>[
+      var pairs = <(String, String)>[
         for (var i = 0; i < painting.images.length; i++)
           (painting.images[i], i < urls.length ? urls[i] : ''),
       ];
@@ -277,6 +284,15 @@ class PaintingRepository {
       if (painting.coverImagePath.isNotEmpty &&
           pairs.every((pair) => pair.$1 != painting.coverImagePath)) {
         pairs.add((painting.coverImagePath, painting.coverImageUrl));
+      }
+      // If images were never saved locally (e.g. restored from a cloud
+      // backup that only has imageUrls), create pairs directly from URLs
+      // so they can be downloaded.
+      if (pairs.isEmpty && urls.isNotEmpty) {
+        pairs = [
+          for (var i = 0; i < urls.length; i++)
+            ('', urls[i]),
+        ];
       }
 
       final newPaths = <String>[];

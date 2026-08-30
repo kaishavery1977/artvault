@@ -136,7 +136,8 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen>
     if (!mounted) return;
     if (embedding == null || embedding.isEmpty) {
       // No enrollment yet (e.g. face lock enabled before identity matching
-      // existed) — run enrollment first, then unlock.
+      // existed, or the HMAC key drifted on cold start) — run enrollment
+      // first, then unlock.
       final emb = await context.push<List<double>>(
         '/face-scan',
         extra: const FaceScanScreen(mode: FaceScanMode.enroll),

@@ -35,6 +35,7 @@ import '../../features/qr/qr_scan_screen.dart';
 import '../../features/notifications/notifications_screen.dart';
 import '../../features/admin/users_screen.dart';
 import '../../features/admin/backup_screen.dart';
+import '../../features/admin/activity_log_screen.dart';
 import '../../features/pro/upgrade_screen.dart';
 
 /// Routes that require edit permission (curator/admin).
@@ -47,7 +48,7 @@ const List<String> _editRoutes = [
 
 /// Routes that require admin. (Backups are per-user, so `/backup` stays open
 /// to every signed-in account.)
-const List<String> _adminRoutes = ['/users'];
+const List<String> _adminRoutes = ['/users', '/activity-log'];
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -354,6 +355,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/users',
         pageBuilder: (_, _) => _page(const UsersScreen()),
+      ),
+      GoRoute(
+        path: '/activity-log',
+        pageBuilder: (_, _) => _page(const ActivityLogScreen()),
       ),
       GoRoute(
         path: '/backup',

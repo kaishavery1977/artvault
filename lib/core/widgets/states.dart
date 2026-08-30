@@ -57,25 +57,17 @@ class EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 96,
-              height: 96,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary.withValues(alpha: 0.16),
-                    theme.colorScheme.primary.withValues(alpha: 0.04),
-                  ],
-                ),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 44, color: theme.colorScheme.primary),
+            // Floating animated icon with soft glow
+            _FloatingIcon(
+              icon: icon,
+              color: scheme.primary,
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
@@ -91,8 +83,10 @@ class EmptyState extends StatelessWidget {
               Text(
                 subtitle!,
                 textAlign: TextAlign.center,
+                maxLines: 3,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
+                  color: scheme.onSurface.withValues(alpha: 0.65),
+                  height: 1.4,
                 ),
               ),
             ],
@@ -107,9 +101,9 @@ class EmptyState extends StatelessWidget {
           ],
         ),
       ),
-    ).animate().fadeIn(duration: 350.ms).slideY(
-          begin: 0.08,
-          duration: 350.ms,
+    ).animate().fadeIn(duration: 400.ms).slideY(
+          begin: 0.06,
+          duration: 400.ms,
           curve: Curves.easeOutCubic,
         );
   }
@@ -130,9 +124,8 @@ class ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.cloud_off_outlined,
-              size: 44,
+            const _FloatingIcon(
+              icon: Icons.cloud_off_outlined,
               color: Colors.orange,
             ),
             const SizedBox(height: AppSpacing.md),
@@ -149,5 +142,72 @@ class ErrorState extends StatelessWidget {
         ),
       ),
     ).animate().fadeIn(duration: 300.ms);
+  }
+}
+
+/// Gently floating icon used in empty/error states for visual personality.
+class _FloatingIcon extends StatefulWidget {
+  final IconData icon;
+  final Color color;
+
+  const _FloatingIcon({required this.icon, required this.color});
+
+  @override
+  State<_FloatingIcon> createState() => _FloatingIconState();
+}
+
+class _FloatingIconState extends State<_FloatingIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2200),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, child) {
+        return Transform.translate(
+          offset: Offset(0, _ctrl.value * 8 - 4),
+          child: child,
+        );
+      },
+      child: Container(
+        width: 100,
+        height: 100,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              widget.color.withValues(alpha: 0.18),
+              widget.color.withValues(alpha: 0.04),
+            ],
+          ),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: widget.color.withValues(alpha: 0.12),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Icon(widget.icon, size: 44, color: widget.color),
+      ),
+    );
   }
 }

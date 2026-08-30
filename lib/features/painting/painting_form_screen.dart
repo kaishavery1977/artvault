@@ -21,7 +21,6 @@ import '../../core/utils/validators.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_fields.dart';
 import '../../core/widgets/art_image.dart';
-import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
 import '../../features/pro/pro_celebration.dart';
 import '../../features/pro/upgrade_prompt.dart';
@@ -263,7 +262,7 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
     if (!ref.read(authProvider.select((a) => a.isPro))) {
       final usage = ref.read(storageUsageProvider).valueOrNull;
       final current = usage?.countedBytes ?? 0;
-      if (current + file.lengthSync() > ProLimits.freeStorageBytes) {
+      if (current + await file.length() > ProLimits.freeStorageBytes) {
         if (!mounted) return;
         await showUpgradePrompt(
           context,
@@ -677,222 +676,254 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
               ),
             ],
             const SizedBox(height: AppSpacing.lg),
-            AppTextField(
-              controller: _title,
-              label: 'Title *',
-              icon: Icons.title,
-              validator: Validators.required,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _ArtistField(
-              controller: _artistName,
-              onManageArtists: () => context.push('/artist/new'),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              children: [
-                Expanded(
-                  child: AppDropdown<String>(
-                    label: 'Category',
-                    value: _category.isEmpty ? null : _category,
-                    items: AppConstants.categories,
+            // ── Basics section (expanded by default) ──
+            _FormSection(
+              title: 'Basics',
+              icon: Icons.info_outline,
+              child: Column(
+                children: [
+                  AppTextField(
+                    controller: _title,
+                    label: 'Title *',
+                    icon: Icons.title,
+                    validator: Validators.required,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  _ArtistField(
+                    controller: _artistName,
+                    onManageArtists: () => context.push('/artist/new'),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppDropdown<String>(
+                          label: 'Category',
+                          value: _category.isEmpty ? null : _category,
+                          items: AppConstants.categories,
+                          labelFor: (v) => v,
+                          icon: Icons.category_outlined,
+                          onChanged: (v) => setState(() => _category = v ?? ''),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: AppDropdown<String>(
+                          label: 'Medium',
+                          value: _medium.isEmpty ? null : _medium,
+                          items: AppConstants.mediums,
+                          labelFor: (v) => v,
+                          icon: Icons.brush_outlined,
+                          onChanged: (v) => setState(() => _medium = v ?? ''),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  AppDropdown<String>(
+                    label: 'Style',
+                    value: _style.isEmpty ? null : _style,
+                    items: AppConstants.styles,
                     labelFor: (v) => v,
-                    icon: Icons.category_outlined,
-                    onChanged: (v) => setState(() => _category = v ?? ''),
+                    icon: Icons.auto_awesome,
+                    onChanged: (v) => setState(() => _style = v ?? ''),
                   ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: AppDropdown<String>(
-                    label: 'Medium',
-                    value: _medium.isEmpty ? null : _medium,
-                    items: AppConstants.mediums,
-                    labelFor: (v) => v,
-                    icon: Icons.brush_outlined,
-                    onChanged: (v) => setState(() => _medium = v ?? ''),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            AppDropdown<String>(
-              label: 'Style',
-              value: _style.isEmpty ? null : _style,
-              items: AppConstants.styles,
-              labelFor: (v) => v,
-              icon: Icons.auto_awesome,
-              onChanged: (v) => setState(() => _style = v ?? ''),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            SectionHeader(title: 'Dimensions & weight'),
-            Row(
-              children: [
-                Expanded(
-                  child: AppTextField(
-                    controller: _width,
-                    label: 'Width',
-                    icon: Icons.swap_horiz,
-                    keyboardType: TextInputType.number,
-                    validator: Validators.positiveNumber,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: AppTextField(
-                    controller: _height,
-                    label: 'Height',
-                    icon: Icons.swap_vert,
-                    keyboardType: TextInputType.number,
-                    validator: Validators.positiveNumber,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: AppTextField(
-                    controller: _depth,
-                    label: 'Depth',
-                    icon: Icons.straighten,
-                    keyboardType: TextInputType.number,
-                    validator: Validators.positiveNumber,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: [
-                Expanded(
-                  child: AppDropdown<String>(
-                    label: 'Unit',
-                    value: _unit,
-                    items: AppConstants.dimensionUnits,
-                    labelFor: (v) => v,
-                    onChanged: (v) => setState(() => _unit = v ?? 'cm'),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: AppTextField(
-                    controller: _weight,
-                    label: 'Weight (kg)',
-                    icon: Icons.scale_outlined,
-                    keyboardType: TextInputType.number,
-                    validator: Validators.positiveNumber,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            SectionHeader(title: 'Value'),
-            Row(
-              children: [
-                Expanded(
-                  child: AppTextField(
-                    controller: _price,
-                    label: 'Price',
-                    prefixText: Formatters.currencySymbol(_currency),
-                    keyboardType: TextInputType.number,
-                    validator: Validators.positiveNumber,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: AppDropdown<String>(
-                    label: 'Currency',
-                    value: _currency,
-                    items: AppConstants.currencies,
-                    labelFor: (v) => v,
-                    onChanged: (v) => setState(() => _currency = v ?? 'USD'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            AppDropdown<String>(
-              label: 'Availability',
-              value: _availability,
-              items: AppConstants.availabilityOptions,
-              labelFor: (v) => v,
-              icon: Icons.sell_outlined,
-              onChanged: (v) =>
-                  setState(() => _availability = v ?? 'Available'),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            AppTextField(
-              controller: _location,
-              label: 'Location',
-              icon: Icons.location_on_outlined,
-              hint: 'Studio, gallery, storage…',
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              children: [
-                Expanded(
-                  child: AppTextField(
-                    controller: _lat,
-                    label: 'Latitude',
-                    icon: Icons.map_outlined,
-                    hint: 'e.g. 48.86',
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: AppTextField(
-                    controller: _lng,
-                    label: 'Longitude',
-                    icon: Icons.map_outlined,
-                    hint: 'e.g. 2.33',
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                  ),
-                ),
-              ],
-            ),
-            if (_lat.text.isNotEmpty && _lng.text.isNotEmpty)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: () {
-                    final lat = _lat.text.trim();
-                    final lng = _lng.text.trim();
-                    launchUrl(Uri.parse('https://www.openstreetmap.org/?mlat=$lat&mlon=$lng#map=15/$lat/$lng'));
-                  },
-                  icon: const Icon(Icons.open_in_new, size: 16),
-                  label: const Text('Open in map'),
-                ),
+                ],
               ),
-            const SizedBox(height: AppSpacing.md),
-            AppTextField(
-              controller: _dateCreated,
-              label: 'Date created',
-              icon: Icons.calendar_month,
-              hint: 'Tap the calendar to pick a date',
-              readOnly: true,
-              onTap: _pickDate,
-              // Single highlighted leading calendar: tapping the icon (or the
-              // field) opens the picker — no duplicate suffix button.
-              onIconTap: _pickDate,
-              iconSize: 22,
             ),
-            const SizedBox(height: AppSpacing.md),
-            AppTextField(
-              controller: _description,
-              label: 'Description',
+            // ── Dimensions section (expanded by default)
+            _FormSection(
+              title: 'Dimensions & weight',
+              icon: Icons.straighten,
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppTextField(
+                          controller: _width,
+                          label: 'Width',
+                          icon: Icons.swap_horiz,
+                          keyboardType: TextInputType.number,
+                          validator: Validators.positiveNumber,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: AppTextField(
+                          controller: _height,
+                          label: 'Height',
+                          icon: Icons.swap_vert,
+                          keyboardType: TextInputType.number,
+                          validator: Validators.positiveNumber,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: AppTextField(
+                          controller: _depth,
+                          label: 'Depth',
+                          icon: Icons.straighten,
+                          keyboardType: TextInputType.number,
+                          validator: Validators.positiveNumber,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppDropdown<String>(
+                          label: 'Unit',
+                          value: _unit,
+                          items: AppConstants.dimensionUnits,
+                          labelFor: (v) => v,
+                          onChanged: (v) => setState(() => _unit = v ?? 'cm'),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: AppTextField(
+                          controller: _weight,
+                          label: 'Weight (kg)',
+                          icon: Icons.scale_outlined,
+                          keyboardType: TextInputType.number,
+                          validator: Validators.positiveNumber,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // ── Value section (expanded by default)
+            _FormSection(
+              title: 'Value & location',
+              icon: Icons.account_balance_wallet,
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppTextField(
+                          controller: _price,
+                          label: 'Price',
+                          prefixText: Formatters.currencySymbol(_currency),
+                          keyboardType: TextInputType.number,
+                          validator: Validators.positiveNumber,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: AppDropdown<String>(
+                          label: 'Currency',
+                          value: _currency,
+                          items: AppConstants.currencies,
+                          labelFor: (v) => v,
+                          onChanged: (v) => setState(() => _currency = v ?? 'USD'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  AppDropdown<String>(
+                    label: 'Availability',
+                    value: _availability,
+                    items: AppConstants.availabilityOptions,
+                    labelFor: (v) => v,
+                    icon: Icons.sell_outlined,
+                    onChanged: (v) => setState(() => _availability = v ?? 'Available'),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  AppTextField(
+                    controller: _location,
+                    label: 'Location',
+                    icon: Icons.location_on_outlined,
+                    hint: 'Studio, gallery, storage…',
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppTextField(
+                          controller: _lat,
+                          label: 'Latitude',
+                          icon: Icons.map_outlined,
+                          hint: 'e.g. 48.86',
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: AppTextField(
+                          controller: _lng,
+                          label: 'Longitude',
+                          icon: Icons.map_outlined,
+                          hint: 'e.g. 2.33',
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (_lat.text.isNotEmpty && _lng.text.isNotEmpty)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: () {
+                          final lat = _lat.text.trim();
+                          final lng = _lng.text.trim();
+                          launchUrl(Uri.parse('https://www.openstreetmap.org/?mlat=$lat&mlon=$lng#map=15/$lat/$lng'));
+                        },
+                        icon: const Icon(Icons.open_in_new, size: 16),
+                        label: const Text('Open in map'),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            // ── Details section (expanded by default)
+            _FormSection(
+              title: 'Details & description',
               icon: Icons.notes,
-              maxLines: 4,
-              hint: 'Provenance, story, condition notes…',
+              child: Column(
+                children: [
+                  AppTextField(
+                    controller: _dateCreated,
+                    label: 'Date created',
+                    icon: Icons.calendar_month,
+                    hint: 'Tap the calendar to pick a date',
+                    readOnly: true,
+                    onTap: _pickDate,
+                    onIconTap: _pickDate,
+                    iconSize: 22,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  AppTextField(
+                    controller: _description,
+                    label: 'Description',
+                    icon: Icons.notes,
+                    maxLines: 4,
+                    hint: 'Provenance, story, condition notes…',
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  AppTagsField(
+                    tags: _tags,
+                    onChanged: (tags) => setState(() => _tags = tags),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: AppSpacing.md),
-            AppTagsField(
-              tags: _tags,
-              onChanged: (tags) => setState(() => _tags = tags),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            SectionHeader(title: 'Documents'),
-            _DocumentsPicker(
-              pending: _pendingDocs,
-              onAdd: _pickDocument,
-              onRemove: (doc) => setState(() => _pendingDocs.remove(doc)),
+            // ── Documents section (collapsed by default)
+            _FormSection(
+              title: 'Documents',
+              icon: Icons.folder_outlined,
+              initiallyExpanded: false,
+              child: _DocumentsPicker(
+                pending: _pendingDocs,
+                onAdd: _pickDocument,
+                onRemove: (doc) => setState(() => _pendingDocs.remove(doc)),
+              ),
             ),
             const SizedBox(height: AppSpacing.xl),
             AppButton(
@@ -1146,10 +1177,137 @@ class _AiTagBanner extends StatelessWidget {
                     ),
                   ),
                 ),
+            ],              ),
+          ],
+      ),
+    );
+  }
+}
+
+/// Collapsible accordion section for the painting form.
+/// Shows a header with icon + title + chevron, expands/collapses on tap.
+class _FormSection extends StatefulWidget {
+  final String title;
+  final IconData icon;
+  final Widget child;
+  final bool initiallyExpanded;
+
+  const _FormSection({
+    required this.title,
+    required this.icon,
+    required this.child,
+    this.initiallyExpanded = true,
+  });
+
+  @override
+  State<_FormSection> createState() => _FormSectionState();
+}
+
+class _FormSectionState extends State<_FormSection>
+    with SingleTickerProviderStateMixin {
+  late bool _expanded;
+  late final AnimationController _animCtrl;
+  late final Animation<double> _heightFactor;
+
+  @override
+  void initState() {
+    super.initState();
+    _expanded = widget.initiallyExpanded;
+    _animCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+      value: _expanded ? 1.0 : 0.0,
+    );
+    _heightFactor = _animCtrl.drive(CurveTween(curve: Curves.easeOutCubic));
+  }
+
+  @override
+  void dispose() {
+    _animCtrl.dispose();
+    super.dispose();
+  }
+
+  void _toggle() {
+    setState(() => _expanded = !_expanded);
+    if (_expanded) {
+      _animCtrl.forward();
+    } else {
+      _animCtrl.reverse();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return AnimatedBuilder(
+      animation: _animCtrl,
+      builder: (context, child) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            border: Border.all(
+              color: _expanded
+                  ? scheme.primary.withValues(alpha: 0.15)
+                  : scheme.outlineVariant.withValues(alpha: 0.12),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              InkWell(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                onTap: _toggle,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.sm + 2,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(widget.icon, size: 18, color: scheme.primary),
+                      const SizedBox(width: AppSpacing.xs),
+                      Expanded(
+                        child: Text(
+                          widget.title,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: scheme.onSurface,
+                          ),
+                        ),
+                      ),
+                      AnimatedRotation(
+                        turns: _expanded ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 250),
+                        child: Icon(
+                          Icons.keyboard_arrow_down,
+                          size: 20,
+                          color: scheme.onSurface.withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              ClipRect(
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  heightFactor: _heightFactor.value,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md, 0, AppSpacing.md, AppSpacing.md,
+                    ),
+                    child: widget.child,
+                  ),
+                ),
+              ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
