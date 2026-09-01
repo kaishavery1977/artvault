@@ -18,9 +18,9 @@
     default-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://*.web.app;
     script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    font-src 'self' https://fonts.gstatic.com;
-    img-src 'self' data: blob: https://*.firebaseio.com https://*.firebasestorage.app;
-    connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com wss://*.firebaseio.com;
+    font-src 'self' https://fonts.gstatic.com data:;
+    img-src 'self' data: blob: https://*.firebaseio.com https://*.firebasestorage.app https://*.supabase.co https://*.supabase.in;
+    connect-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com https://*.firebaseapp.com https://*.supabase.co https://*.supabase.in wss://*.firebaseio.com;
     frame-ancestors 'none';
     form-action 'none';
   ">
