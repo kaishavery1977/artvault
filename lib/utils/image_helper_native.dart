@@ -1,5 +1,5 @@
+import 'dart:io';
 import 'package:flutter/widgets.dart';
-import 'io_shim.dart' show File;
 
 /// Shows a local image file — only used on native (mobile/desktop).
 Widget nativeImage(

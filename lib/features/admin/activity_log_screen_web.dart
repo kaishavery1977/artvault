@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/providers/providers.dart';
+import '../../core/widgets/web/skeleton_shimmer.dart';
 
 /// Web-optimized activity log with data table, filters, and CSV export.
 class ActivityLogScreenWeb extends ConsumerStatefulWidget {
@@ -104,7 +105,10 @@ class _ActivityLogScreenWebState extends ConsumerState<ActivityLogScreenWeb> {
           Expanded(
             child: auditAsync.when(
               loading: () =>
-                  const Center(child: CircularProgressIndicator()),
+                  const Padding(
+                    padding: EdgeInsets.all(20),
+                    child: TableSkeleton(rows: 6, columns: 4),
+                  ),
               error: (e, _) => Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,

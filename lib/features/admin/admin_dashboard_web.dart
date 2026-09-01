@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/providers/providers.dart';
+import '../../core/widgets/motion.dart';
+import '../../core/widgets/web/page_fade_in.dart';
 import '../../data/models/app_user.dart';
 
 /// Admin-only dashboard home screen for the web app.
@@ -25,7 +27,9 @@ class AdminDashboardWeb extends ConsumerWidget {
       backgroundColor: Theme.of(context).brightness == Brightness.dark
           ? const Color(0xFF08090F)
           : const Color(0xFFF8F8FC),
-      body: SingleChildScrollView(
+      body: PageFadeIn(
+        duration: const Duration(milliseconds: 500),
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,6 +73,7 @@ class AdminDashboardWeb extends ConsumerWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }
@@ -298,8 +303,10 @@ class _StatCardState extends State<_StatCard> {
                 ],
               ),
               const SizedBox(height: 12),
-              Text(
-                widget.value,
+              AnimatedCountUp(
+                value: double.tryParse(widget.value.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0,
+                format: (v) => widget.value.contains('.') ? v.toStringAsFixed(0) : v.toInt().toString(),
+                duration: const Duration(milliseconds: 1200),
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
@@ -780,7 +787,7 @@ class _QuickActionsGrid extends StatelessWidget {
   }
 }
 
-class _QuickActionCard extends StatefulWidget {
+class _QuickActionCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final String subtitle;
@@ -798,62 +805,40 @@ class _QuickActionCard extends StatefulWidget {
   });
 
   @override
-  State<_QuickActionCard> createState() => _QuickActionCardState();
-}
-
-class _QuickActionCardState extends State<_QuickActionCard> {
-  bool _hovered = false;
-
-  @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        cursor: SystemMouseCursors.click,
+      child: TiltCard(
         child: GestureDetector(
-          onTap: widget.onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
+          onTap: onTap,
+          child: Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: _hovered
-                  ? widget.color.withValues(alpha: 0.06)
-                  : widget.scheme.surface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: _hovered
-                    ? widget.color.withValues(alpha: 0.2)
-                    : widget.scheme.outlineVariant.withValues(alpha: 0.12),
-              ),
-            ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: widget.color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(widget.icon, size: 20, color: widget.color),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  widget.label,
-                  style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w700),
+                child: Icon(icon, size: 20, color: color),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                label,
+                style: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: scheme.onSurface.withValues(alpha: 0.5),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  widget.subtitle,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: widget.scheme.onSurface.withValues(alpha: 0.5),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
+          ),
           ),
         ),
       ),

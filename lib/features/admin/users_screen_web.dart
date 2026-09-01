@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/providers/providers.dart';
+import '../../core/widgets/web/skeleton_shimmer.dart';
 import '../../data/models/app_user.dart';
 import '../../data/repositories/auth_repository.dart';
 
@@ -34,7 +35,10 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
     return Scaffold(
       backgroundColor: scheme.surface,
       body: usersAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Padding(
+          padding: EdgeInsets.all(20),
+          child: TableSkeleton(rows: 8, columns: 7),
+        ),
         error: (e, _) => _buildError(context, e),
         data: (allUsers) {
           var users = _applyFilters(allUsers);
@@ -660,7 +664,10 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
         Expanded(
           child: revokedAsync.when(
             loading: () =>
-                const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: CardSkeleton(height: 48),
+                ),
             error: (e, _) => Center(
               child: Text('Error loading',
                   style: TextStyle(
