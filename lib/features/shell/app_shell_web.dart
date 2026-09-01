@@ -245,6 +245,8 @@ class _WebSidebarState extends State<_WebSidebar>
               ],
             ),
           ),
+          // Admin section (shown for admin users)
+          _AdminSidebarSection(),
           // Bottom: user avatar
           const SizedBox(height: 16),
           _SidebarAvatar(),
@@ -365,6 +367,126 @@ class _SidebarAvatar extends ConsumerWidget {
                 color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Admin section in sidebar — shows Users & Activity Log for admin users.
+class _AdminSidebarSection extends ConsumerWidget {
+  const _AdminSidebarSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final canManage = ref.watch(authProvider.select((a) => a.canManageUsers));
+    if (!canManage) return const SizedBox.shrink();
+
+    final scheme = Theme.of(context).colorScheme;
+    final currentPath = GoRouterState.of(context).uri.path;
+
+    return Column(
+      children: [
+        const SizedBox(height: 12),
+        // Divider
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Divider(
+            color: scheme.outlineVariant.withValues(alpha: 0.15),
+          ),
+        ),
+        const SizedBox(height: 8),
+        // Admin label
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            'ADMIN',
+            style: TextStyle(
+              fontSize: 10,
+              letterSpacing: 1.5,
+              fontWeight: FontWeight.w700,
+              color: scheme.onSurface.withValues(alpha: 0.35),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        // Users
+        _AdminLink(
+          icon: Icons.admin_panel_settings,
+          label: 'Users & Roles',
+          color: const Color(0xFF8B5CF6),
+          isSelected: currentPath == '/users',
+          onTap: () => context.push('/users'),
+        ),
+        // Activity Log
+        _AdminLink(
+          icon: Icons.history,
+          label: 'Activity Log',
+          color: const Color(0xFF22D3EE),
+          isSelected: currentPath == '/activity-log',
+          onTap: () => context.push('/activity-log'),
+        ),
+        // Backup
+        _AdminLink(
+          icon: Icons.backup_outlined,
+          label: 'Backup',
+          color: const Color(0xFF6EE7B7),
+          isSelected: currentPath == '/backup',
+          onTap: () => context.push('/backup'),
+        ),
+      ],
+    );
+  }
+}
+
+class _AdminLink extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _AdminLink({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? color.withValues(alpha: 0.12)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 18, color: isSelected ? color : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  color: isSelected
+                      ? color
+                      : (isDark ? Colors.white70 : Colors.black54),
+                ),
+              ),
+            ],
           ),
         ),
       ),

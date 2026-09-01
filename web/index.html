@@ -82,6 +82,19 @@
       return div.innerHTML;
     };
   </script>
+
+  <script>
+    // Register service worker for offline support + push notifications
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js').then(function(reg) {
+          console.log('[ArtVault] Service worker registered, scope:', reg.scope);
+        }).catch(function(err) {
+          console.warn('[ArtVault] SW registration failed:', err);
+        });
+      });
+    }
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

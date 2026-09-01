@@ -38,6 +38,8 @@ import '../../features/notifications/notifications_screen.dart';
 import '../../features/admin/users_screen.dart';
 import '../../features/admin/backup_screen.dart';
 import '../../features/admin/activity_log_screen.dart';
+import '../../features/admin/users_screen_web.dart';
+import '../../features/admin/activity_log_screen_web.dart';
 import '../../features/pro/upgrade_screen.dart';
 
 /// Routes that require edit permission (curator/admin).
@@ -362,11 +364,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/users',
-        pageBuilder: (_, _) => _page(const UsersScreen()),
+        pageBuilder: (_, _) => _page(
+          kIsWeb ? const AdminUsersScreenWeb() : const UsersScreen(),
+        ),
       ),
       GoRoute(
         path: '/activity-log',
-        pageBuilder: (_, _) => _page(const ActivityLogScreen()),
+        pageBuilder: (_, _) => _page(
+          kIsWeb ? const ActivityLogScreenWeb() : const ActivityLogScreen(),
+        ),
       ),
       GoRoute(
         path: '/backup',

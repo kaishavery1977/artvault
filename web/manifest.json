@@ -1,13 +1,14 @@
 {
-    "name": "artvault",
-    "short_name": "artvault",
-    "start_url": ".",
+    "name": "ArtVault — Art Collection Manager",
+    "short_name": "ArtVault",
+    "start_url": "/",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
-    "orientation": "portrait-primary",
+    "background_color": "#08090F",
+    "theme_color": "#8B5CF6",
+    "description": "Your private art collection manager. Track, catalogue, and manage your artwork with AI-powered insights.",
+    "orientation": "any",
     "prefer_related_applications": false,
+    "categories": ["art", "productivity", "utilities"],
     "icons": [
         {
             "src": "icons/Icon-192.png",
@@ -30,6 +31,27 @@
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"
+        }
+    ],
+    "screenshots": [],
+    "shortcuts": [
+        {
+            "name": "Gallery",
+            "short_name": "Gallery",
+            "url": "/gallery",
+            "icons": [{ "src": "icons/Icon-192.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "Add Painting",
+            "short_name": "Add",
+            "url": "/painting/new",
+            "icons": [{ "src": "icons/Icon-192.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "Artists",
+            "short_name": "Artists",
+            "url": "/artists",
+            "icons": [{ "src": "icons/Icon-192.png", "sizes": "192x192" }]
         }
     ]
 }
