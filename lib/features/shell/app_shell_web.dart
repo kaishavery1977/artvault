@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/providers/providers.dart';
 import '../../core/widgets/web/web_breadcrumb.dart';
+import '../../core/widgets/web/sync_status_indicator.dart';
 
 /// Web-optimized application shell with immersive sidebar navigation,
 /// smooth page transitions, hover effects, and 60fps animations.
@@ -411,11 +412,19 @@ class _AdminSidebarSection extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 6),
+        // Admin Dashboard
+        _AdminLink(
+          icon: Icons.dashboard_outlined,
+          label: 'Dashboard',
+          color: const Color(0xFF8B5CF6),
+          isSelected: currentPath == '/admin-dashboard',
+          onTap: () => context.push('/admin-dashboard'),
+        ),
         // Users
         _AdminLink(
           icon: Icons.admin_panel_settings,
           label: 'Users & Roles',
-          color: const Color(0xFF8B5CF6),
+          color: const Color(0xFF22D3EE),
           isSelected: currentPath == '/users',
           onTap: () => context.push('/users'),
         ),
@@ -542,6 +551,9 @@ class _WebHeader extends StatelessWidget {
             ),
           ),
           const Spacer(),
+          // Sync status
+          const SyncStatusIndicator(),
+          const SizedBox(width: 12),
           // Search button
           _HeaderButton(
             icon: Icons.search_rounded,

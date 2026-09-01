@@ -40,6 +40,7 @@ import '../../features/admin/backup_screen.dart';
 import '../../features/admin/activity_log_screen.dart';
 import '../../features/admin/users_screen_web.dart';
 import '../../features/admin/activity_log_screen_web.dart';
+import '../../features/admin/admin_dashboard_web.dart';
 import '../../features/pro/upgrade_screen.dart';
 
 /// Routes that require edit permission (curator/admin).
@@ -377,6 +378,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/backup',
         pageBuilder: (_, _) => _page(const BackupScreen()),
+      ),
+      GoRoute(
+        path: '/admin-dashboard',
+        pageBuilder: (_, _) => _page(
+          kIsWeb ? const AdminDashboardWeb() : const SettingsScreen(),
+        ),
       ),
       GoRoute(
         path: '/repair-images',

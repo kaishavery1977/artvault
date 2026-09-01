@@ -19,6 +19,7 @@ class WebBreadcrumb extends StatelessWidget {
     '/backup': 'Backup',
     '/users': 'Users',
     '/activity-log': 'Activity Log',
+    '/admin-dashboard': 'Admin Dashboard',
     '/security': 'Security',
     '/storage': 'Storage',
     '/profile': 'Profile',
