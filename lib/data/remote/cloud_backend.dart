@@ -153,6 +153,25 @@ class CloudBackend {
   }
 
   Future<User?> signInWithGoogle() async {
+    if (kIsWeb) {
+      // On web, use Firebase Auth's popup/redirect — the google_sign_in
+      // package's authenticate() is not supported on web.
+      try {
+        final provider = GoogleAuthProvider();
+        provider.addScope('email');
+        provider.setCustomParameters({'prompt': 'select_account'});
+        final cred = await FirebaseAuth.instance.signInWithPopup(provider);
+        final email = cred.user?.email;
+        if (email != null) {
+          await _ensureSupabaseAuth(email, _socialPassword(email));
+        }
+        return cred.user;
+      } catch (e) {
+        debugPrint('Google sign-in popup error: $e');
+        return null;
+      }
+    }
+    // Mobile: use google_sign_in package
     try {
       await GoogleSignIn.instance.initialize(
         clientId:
@@ -173,7 +192,6 @@ class CloudBackend {
     if (idToken == null) return null;
     final credential = GoogleAuthProvider.credential(idToken: idToken);
     final cred = await FirebaseAuth.instance.signInWithCredential(credential);
-    // Mirror Google account in Supabase for Storage auth.
     final email = cred.user?.email;
     if (email != null) {
       await _ensureSupabaseAuth(email, _socialPassword(email));
