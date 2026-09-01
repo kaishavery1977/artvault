@@ -78,22 +78,22 @@ abstract final class AppTheme {
         ? AppColors.darkOutlineVariant
         : AppColors.lightOutlineVariant;
 
-    // === PRIMARY — Violet ===
-    final primary = isDark ? AppColors.violet500 : AppColors.violet600;
-    final onPrimary = isDark ? Colors.white : Colors.white;
+    // === PRIMARY — Vivid Violet ===
+    final primary = isDark ? AppColors.violet400 : AppColors.violet600;
+    final onPrimary = Colors.white;
     final primaryContainer = isDark ? AppColors.violet900 : AppColors.violet100;
     final onPrimaryContainer = isDark
         ? AppColors.violet200
         : AppColors.violet800;
 
-    // === SECONDARY — Cyan ===
-    final secondary = isDark ? AppColors.cyan400 : AppColors.cyan600;
+    // === SECONDARY — Bright Cyan ===
+    final secondary = isDark ? AppColors.cyan300 : AppColors.cyan600;
     final onSecondary = isDark ? AppColors.cyan900 : Colors.white;
     final secondaryContainer = isDark ? AppColors.cyan900 : AppColors.cyan100;
     final onSecondaryContainer = isDark ? AppColors.cyan200 : AppColors.cyan800;
 
-    // === TERTIARY — Rose ===
-    final tertiary = isDark ? AppColors.rose400 : AppColors.rose600;
+    // === TERTIARY — Warm Rose ===
+    final tertiary = isDark ? AppColors.rose300 : AppColors.rose600;
     final onTertiary = isDark ? AppColors.rose900 : Colors.white;
     final tertiaryContainer = isDark ? AppColors.rose900 : AppColors.rose100;
     final onTertiaryContainer = isDark ? AppColors.rose200 : AppColors.rose700;
@@ -138,7 +138,7 @@ abstract final class AppTheme {
       inverseSurface: onSurface,
       inversePrimary: primaryContainer,
       shadow: Colors.black.withValues(alpha: 0.3),
-      surfaceTint: primary.withValues(alpha: isDark ? 0.06 : 0.04),
+      surfaceTint: primary.withValues(alpha: isDark ? 0.10 : 0.06),
     );
 
     final baseTheme = ThemeData(
@@ -186,26 +186,26 @@ abstract final class AppTheme {
       ),
 
       // =======================================================================
-      // CARD — Glass surface with subtle violet border in dark mode
+      // CARD — Glass surface with colorful tinted border
       // =======================================================================
       cardTheme: CardThemeData(
-        color: isDark ? AppColors.glassDark(opacity: 0.70) : surface,
+        color: isDark ? AppColors.glassDark(opacity: 0.72) : surface,
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
           side: BorderSide(
             color: isDark
-                ? AppColors.violet500.withValues(alpha: 0.08)
-                : outlineVariant,
-            width: 0.5,
+                ? AppColors.violet400.withValues(alpha: 0.12)
+                : AppColors.violet200.withValues(alpha: 0.35),
+            width: 0.6,
           ),
         ),
         clipBehavior: Clip.antiAlias,
       ),
 
       // =======================================================================
-      // NAVIGATION BAR — Glassmorphism
+      // NAVIGATION BAR — Colorful glassmorphism with violet tint
       // =======================================================================
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: isDark
@@ -213,7 +213,9 @@ abstract final class AppTheme {
             : AppColors.glassLight(opacity: 0.80),
         elevation: 0,
         height: 64,
-        indicatorColor: primary.withValues(alpha: 0.15),
+        indicatorColor: isDark
+            ? AppColors.violet400.withValues(alpha: 0.20)
+            : AppColors.violet500.withValues(alpha: 0.12),
         indicatorShape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
         ),
@@ -257,13 +259,21 @@ abstract final class AppTheme {
       ),
 
       // =======================================================================
-      // CHIP
+      // CHIP — Colorful tinted chips
       // =======================================================================
       chipTheme: ChipThemeData(
-        backgroundColor: surfaceVariant,
-        selectedColor: primary.withValues(alpha: 0.12),
+        backgroundColor: isDark
+            ? AppColors.violet500.withValues(alpha: 0.08)
+            : AppColors.violet50.withValues(alpha: 0.8),
+        selectedColor: isDark
+            ? AppColors.violet400.withValues(alpha: 0.18)
+            : AppColors.violet100.withValues(alpha: 0.9),
         disabledColor: surfaceVariant.withValues(alpha: 0.5),
-        side: BorderSide(color: outlineVariant, width: 0.5),
+        side: BorderSide(
+            color: isDark
+                ? AppColors.violet400.withValues(alpha: 0.15)
+                : AppColors.violet200.withValues(alpha: 0.4),
+            width: 0.5),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
         ),
@@ -283,13 +293,13 @@ abstract final class AppTheme {
       ),
 
       // =======================================================================
-      // INPUT FIELDS — Glassmorphism fill with violet focus ring
+      // INPUT FIELDS — Colorful fill with violet focus ring
       // =======================================================================
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: isDark
-            ? AppColors.violet500.withValues(alpha: 0.04)
-            : surfaceVariant,
+            ? AppColors.violet500.withValues(alpha: 0.06)
+            : AppColors.violet50.withValues(alpha: 0.5),
         isDense: false,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
@@ -342,17 +352,19 @@ abstract final class AppTheme {
       ),
 
       // =======================================================================
-      // BUTTONS — Violet primary, cyan outline, glassmorphism
+      // BUTTONS — Vivid violet primary with glow, cyan outline
       // =======================================================================
       elevatedButtonTheme: ElevatedButtonThemeData(
         style:
             ElevatedButton.styleFrom(
-              backgroundColor: primary,
+              backgroundColor: isDark ? AppColors.violet500 : AppColors.violet600,
               foregroundColor: onPrimary,
+              shadowColor: isDark
+                  ? AppColors.violet500.withValues(alpha: 0.35)
+                  : AppColors.violet400.withValues(alpha: 0.25),
+              elevation: isDark ? 0 : 2,
               disabledBackgroundColor: surfaceVariant,
               disabledForegroundColor: onSurfaceVariant.withValues(alpha: 0.6),
-              elevation: 0,
-              shadowColor: Colors.transparent,
               minimumSize: const Size(0, 52),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
@@ -552,15 +564,15 @@ abstract final class AppTheme {
       ),
 
       // =======================================================================
-      // SWITCH
+      // SWITCH — Vibrant when on
       // =======================================================================
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return primary;
+          if (states.contains(WidgetState.selected)) return Colors.white;
           return outline;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return primaryContainer;
+          if (states.contains(WidgetState.selected)) return AppColors.violet500;
           return surfaceContainerHighest;
         }),
         trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
@@ -568,11 +580,11 @@ abstract final class AppTheme {
       ),
 
       // =======================================================================
-      // CHECKBOX
+      // CHECKBOX — Colorful when checked
       // =======================================================================
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return primary;
+          if (states.contains(WidgetState.selected)) return AppColors.violet500;
           return Colors.transparent;
         }),
         checkColor: WidgetStateProperty.all(onPrimary),
@@ -583,11 +595,11 @@ abstract final class AppTheme {
       ),
 
       // =======================================================================
-      // RADIO
+      // RADIO — Colorful when selected
       // =======================================================================
       radioTheme: RadioThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return primary;
+          if (states.contains(WidgetState.selected)) return AppColors.violet500;
           return outline;
         }),
       ),

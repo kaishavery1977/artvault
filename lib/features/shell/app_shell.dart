@@ -27,26 +27,31 @@ const _shellDestinations = [
     icon: Icons.space_dashboard_outlined,
     selected: Icons.space_dashboard,
     label: 'Home',
+    color: Color(0xFF8B5CF6), // Violet
   ),
   (
     icon: Icons.grid_view_outlined,
     selected: Icons.grid_view_rounded,
     label: 'Gallery',
+    color: Color(0xFF22D3EE), // Cyan
   ),
   (
     icon: Icons.person_outline,
     selected: Icons.person_rounded,
     label: 'Artists',
+    color: Color(0xFFFB7185), // Rose
   ),
   (
     icon: Icons.description_outlined,
     selected: Icons.description_rounded,
     label: 'Documents',
+    color: Color(0xFFFBBF24), // Amber
   ),
   (
     icon: Icons.settings_outlined,
     selected: Icons.settings_rounded,
     label: 'Settings',
+    color: Color(0xFF6EE7B7), // Emerald
   ),
 ];
 
@@ -178,8 +183,8 @@ class _AppShellState extends ConsumerState<AppShell>
                 destinations: [
                   for (final d in _shellDestinations)
                     NavigationDestination(
-                      icon: Icon(d.icon),
-                      selectedIcon: Icon(d.selected),
+                      icon: Icon(d.icon, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      selectedIcon: Icon(d.selected, color: d.color),
                       label: d.label,
                     ),
                 ],

@@ -41,34 +41,50 @@ class _AmbientPainter extends CustomPainter {
 
     // Soft color blobs in the new violet-cyan-rose palette.
     // Alphas are deliberately low so surfaces and text keep their contrast.
-    final radius = size.shortestSide * 0.55;
+    final radius = size.shortestSide * 0.60;
     final blobs = isDark
         ? [
             (
-              AppColors.violet700.withValues(alpha: 0.35),
-              Offset(size.width * 0.85, size.height * 0.12),
+              AppColors.violet600.withValues(alpha: 0.40),
+              Offset(size.width * 0.82, size.height * 0.08),
             ),
             (
-              AppColors.cyan800.withValues(alpha: 0.18),
-              Offset(size.width * 0.08, size.height * 0.40),
+              AppColors.cyan700.withValues(alpha: 0.25),
+              Offset(size.width * 0.10, size.height * 0.35),
             ),
             (
-              AppColors.rose900.withValues(alpha: 0.12),
-              Offset(size.width * 0.60, size.height * 0.85),
+              AppColors.rose800.withValues(alpha: 0.20),
+              Offset(size.width * 0.55, size.height * 0.82),
+            ),
+            (
+              AppColors.amber800.withValues(alpha: 0.12),
+              Offset(size.width * 0.15, size.height * 0.75),
+            ),
+            (
+              AppColors.emerald800.withValues(alpha: 0.10),
+              Offset(size.width * 0.85, size.height * 0.55),
             ),
           ]
         : [
             (
-              AppColors.violet200.withValues(alpha: 0.30),
-              Offset(size.width * 0.88, size.height * 0.10),
+              AppColors.violet200.withValues(alpha: 0.35),
+              Offset(size.width * 0.85, size.height * 0.08),
             ),
             (
-              AppColors.cyan200.withValues(alpha: 0.35),
-              Offset(size.width * 0.04, size.height * 0.45),
+              AppColors.cyan200.withValues(alpha: 0.40),
+              Offset(size.width * 0.06, size.height * 0.42),
             ),
             (
-              AppColors.rose200.withValues(alpha: 0.25),
-              Offset(size.width * 0.66, size.height * 0.90),
+              AppColors.rose200.withValues(alpha: 0.30),
+              Offset(size.width * 0.60, size.height * 0.88),
+            ),
+            (
+              AppColors.amber100.withValues(alpha: 0.25),
+              Offset(size.width * 0.18, size.height * 0.78),
+            ),
+            (
+              AppColors.emerald100.withValues(alpha: 0.20),
+              Offset(size.width * 0.88, size.height * 0.58),
             ),
           ];
 

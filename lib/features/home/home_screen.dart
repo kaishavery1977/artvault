@@ -119,6 +119,8 @@ class HomeScreen extends ConsumerWidget {
                         const _CollectionHero(),
                         const SizedBox(height: AppSpacing.lg),
                         _QuickActions(canEdit: canEdit),
+                        const SizedBox(height: AppSpacing.lg),
+                        if (paintings.isNotEmpty) _AiInsights(paintings: paintings),
                         SectionHeader(
                           title: 'Recent uploads',
                           actionLabel: 'See all',
@@ -149,15 +151,7 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-            SliverPadding(
-              padding: AppSpacing.screenPadding,
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  if (paintings.isNotEmpty) _AiInsights(paintings: paintings),
-                  const SizedBox(height: AppSpacing.xl),
-                ]),
-              ),
-            ),
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
           ],
         ),
         ),
@@ -825,17 +819,18 @@ class _QuickActions extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final actions = <(IconData, String, VoidCallback)>[
+    final actions = <(IconData, String, VoidCallback, Color)>[
       if (canEdit)
         (
           Icons.add_photo_alternate,
           'Upload',
           () => context.push('/painting/new'),
+          AppColors.emerald500,
         ),
-      (Icons.grid_view, 'Gallery', () => context.go('/gallery')),
-      (Icons.person, 'Artists', () => context.go('/artists')),
-      (Icons.insights, 'Reports', () => context.push('/reports')),
-      (Icons.qr_code_scanner, 'Scan', () => context.push('/scan')),
+      (Icons.grid_view, 'Gallery', () => context.go('/gallery'), AppColors.cyan500),
+      (Icons.person, 'Artists', () => context.go('/artists'), AppColors.rose500),
+      (Icons.insights, 'Reports', () => context.push('/reports'), AppColors.amber500),
+      (Icons.qr_code_scanner, 'Scan', () => context.push('/scan'), AppColors.indigo500),
     ];
 
     return Row(
@@ -847,6 +842,7 @@ class _QuickActions extends ConsumerWidget {
               icon: actions[i].$1,
               label: actions[i].$2,
               onTap: actions[i].$3,
+              color: actions[i].$4,
             ),
           ),
         ],
@@ -861,22 +857,31 @@ class _QuickAction extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final Color color;
 
   const _QuickAction({
     required this.icon,
     required this.label,
     required this.onTap,
+    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return Material(
-      color: scheme.primary.withValues(alpha: 0.06),
+      color: color.withValues(alpha: 0.10),
       borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
       child: InkWell(
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+            border: Border.all(
+              color: color.withValues(alpha: 0.18),
+              width: 0.6,
+            ),
+          ),
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.sm,
@@ -885,18 +890,19 @@ class _QuickAction extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 20, color: scheme.primary),
+              Icon(icon, size: 20, color: color),
               const SizedBox(height: 4),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: scheme.onSurface.withValues(alpha: 0.8),
+                  color: color.withValues(alpha: 0.85),
                 ),
               ),
             ],
           ),
+        ),
         ),
       ),
     );
