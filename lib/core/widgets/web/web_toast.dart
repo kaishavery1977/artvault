@@ -24,8 +24,8 @@ class WebToast {
     );
     Overlay.of(context).insert(_current!);
 
-    // Auto-dismiss after 3 seconds
-    Future.delayed(const Duration(seconds: 3), () {
+    // Auto-dismiss after 4 seconds
+    Future.delayed(const Duration(seconds: 4), () {
       _current?.remove();
       _current = null;
     });
@@ -113,7 +113,7 @@ class _ToastWidgetState extends State<_ToastWidget> {
               ],
             ),
           ),
-        ).animate().fadeIn(duration: 200.ms).slideX(begin: 0.1),
+        ).animate().fadeIn(duration: 300.ms).slideX(begin: 0.15, curve: Curves.easeOutCubic),
       ),
     );
   }
