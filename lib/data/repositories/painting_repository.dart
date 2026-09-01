@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:io';
+import 'package:artvault/utils/io_shim.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';

@@ -1,5 +1,6 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 // ignore_for_file: use_build_context_synchronously
-import 'dart:io';
+import 'package:artvault/utils/io_shim.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -180,6 +181,7 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
   }
 
   static Future<List<File>> _recentBackups() async {
+    if (kIsWeb) return const [];
     final dir = FileStorageService.instance.exportsDir;
     if (!await dir.exists()) return const [];
     final files = <File>[];

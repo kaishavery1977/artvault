@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
+import 'package:artvault/utils/io_shim.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;

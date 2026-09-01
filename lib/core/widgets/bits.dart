@@ -1,4 +1,6 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:artvault/utils/image_helper.dart';
+import 'package:artvault/utils/io_shim.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -97,11 +99,13 @@ class Avatar extends StatelessWidget {
         errorBuilder: (_, _, _) => _initials(context),
       );
     } else if (path != null) {
-      child = Image.file(
-        File(path),
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _initials(context),
-      );
+      child = kIsWeb
+          ? _initials(context)
+          : nativeImage(
+              File(path),
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => _initials(context),
+            );
     } else {
       child = _initials(context);
     }
@@ -364,3 +368,4 @@ class InfoBanner extends StatelessWidget {
         .slideY(begin: 0.04, duration: 380.ms, curve: Curves.easeOutCubic);
   }
 }
+

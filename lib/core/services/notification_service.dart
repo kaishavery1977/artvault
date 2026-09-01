@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:artvault/utils/io_shim.dart';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';

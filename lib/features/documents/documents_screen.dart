@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:artvault/utils/io_shim.dart';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';

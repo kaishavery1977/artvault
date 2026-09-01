@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'package:artvault/utils/io_shim.dart';
 import 'dart:math';
 import 'dart:typed_data';
 

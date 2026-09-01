@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:artvault/utils/image_helper.dart';
 // ignore_for_file: deprecated_member_use
-import 'dart:io';
+import 'package:artvault/utils/io_shim.dart';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -1014,7 +1016,7 @@ class _ImagePickerGrid extends StatelessWidget {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                    child: Image.file(file, fit: BoxFit.cover),
+                    child: kIsWeb ? const Icon(Icons.image, size: 48) : nativeImage(file),
                   ),
                   Positioned(
                     top: 2,
@@ -1602,3 +1604,4 @@ class _DocumentsPicker extends StatelessWidget {
     );
   }
 }
+

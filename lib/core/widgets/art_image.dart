@@ -1,4 +1,6 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:artvault/utils/image_helper.dart';
+import 'package:artvault/utils/io_shim.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -145,18 +147,20 @@ class _FadeInImageState extends State<_FadeInImage> {
       opacity: _opacity,
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeOut,
-      child: Image.file(
-        widget.file,
-        width: widget.width,
-        height: widget.height,
-        fit: widget.fit,
-        filterQuality: FilterQuality.low,
-        cacheWidth: widget.width != null ? (widget.width! * dpr).toInt() : null,
-        cacheHeight: widget.height != null ? (widget.height! * dpr).toInt() : null,
-        gaplessPlayback: true,
-        isAntiAlias: true,
-        errorBuilder: (_, _, _) => widget.fallback,
-      ),
+      child: kIsWeb
+          ? widget.fallback
+          : nativeImage(
+              widget.file,
+              width: widget.width,
+              height: widget.height,
+              fit: widget.fit,
+              filterQuality: FilterQuality.low,
+              cacheWidth: widget.width != null ? (widget.width! * dpr).toInt() : null,
+              cacheHeight: widget.height != null ? (widget.height! * dpr).toInt() : null,
+              gaplessPlayback: true,
+              isAntiAlias: true,
+              errorBuilder: (_, _, _) => widget.fallback,
+            ),
     );
   }
 }
@@ -169,3 +173,4 @@ class BottomSpacer extends StatelessWidget {
     return SizedBox(height: bottom + AppSpacing.lg);
   }
 }
+

@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:io';
+import 'package:artvault/utils/io_shim.dart';
 import 'dart:math' as math;
 
 import 'package:file_picker/file_picker.dart';

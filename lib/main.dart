@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,7 +23,7 @@ import 'data/remote/cloud_backend.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  HttpOverrides.global = ArtVaultHttpOverrides();
+  ArtVaultHttpOverrides.install();
 
   // Offline-first boot: local storage + services first, Firebase best-effort.
   try {
@@ -60,7 +60,7 @@ Future<void> main() async {
 
   // Lock orientation based on device type: phones get portrait-only,
   // tablets/foldables get both orientations.
-  await OrientationService.instance.applyForDevice();
+  if (!kIsWeb) await OrientationService.instance.applyForDevice();
 
   runApp(
     ProviderScope(
@@ -105,7 +105,7 @@ class ArtVaultApp extends ConsumerWidget {
         );
         // Re-apply orientation policy on device changes (e.g. fold/unfold
         // on a foldable might switch from phone to tablet mode).
-        OrientationService.instance.applyForDevice();
+        if (!kIsWeb) OrientationService.instance.applyForDevice();
         final profile = DeviceResolutionService.instance.current!;
         return AdaptiveLayout(
           profile: profile,

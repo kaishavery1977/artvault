@@ -1,4 +1,6 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:artvault/utils/image_helper.dart';
+import 'package:artvault/utils/io_shim.dart';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
@@ -178,12 +180,14 @@ class _ConditionReportDialogState extends State<ConditionReportDialog> {
                         borderRadius: BorderRadius.circular(
                           AppSpacing.radiusMd - 2,
                         ),
-                        child: Image.file(
-                          _photo!,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: double.infinity,
-                        ),
+                        child: kIsWeb
+                            ? const Icon(Icons.image, size: 48)
+                            : nativeImage(
+                                _photo!,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                              ),
                       ),
               ),
             ),
@@ -222,3 +226,4 @@ class _ConditionReportDialogState extends State<ConditionReportDialog> {
 }
 
 enum _Source { gallery, camera, remove }
+

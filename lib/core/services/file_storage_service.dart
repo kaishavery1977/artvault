@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:artvault/utils/io_shim.dart';
 import 'dart:typed_data';
 
 import 'package:path/path.dart' as p;
@@ -128,7 +128,7 @@ class FileStorageService {
   /// (images & thumbnails / documents / exports & backups).
   Future<({int images, int documents, int exports})> storageBreakdown() async {
     Future<int> dirBytes(Directory dir) async {
-      if (!dir.existsSync()) return 0;
+      if (!await dir.exists()) return 0;
       var total = 0;
       await for (final entity in dir.list(
         recursive: true,
@@ -136,7 +136,7 @@ class FileStorageService {
       )) {
         if (entity is File) {
           try {
-            total += await entity.length();
+            total += entity.lengthSync();
           } catch (_) {}
         }
       }
