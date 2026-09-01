@@ -87,11 +87,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     String target;
     if (state.status == AuthStatus.authenticated) {
-      final appLock =
+      final appLock = kIsWeb ? false : (
           SettingsRepository.instance.appLockEnabled ||
           await AuthRepository.instance.biometricEnabled ||
           await AuthRepository.instance.faceLockEnabled ||
-          await AuthRepository.instance.passcodeSet;
+          await AuthRepository.instance.passcodeSet);
       target = appLock ? '/lock' : (resume ?? '/home');
     } else {
       target = resume ?? '/onboarding';

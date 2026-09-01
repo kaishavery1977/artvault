@@ -16,6 +16,7 @@ class NotificationService {
 
   Future<void> init() async {
     if (_initialized) return;
+    if (kIsWeb) { _initialized = true; return; }
 
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const ios = DarwinInitializationSettings(

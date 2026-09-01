@@ -42,6 +42,7 @@ class BiometricService {
   static const MethodChannel _native = MethodChannel('artvault/biometrics');
 
   Future<bool> get isAvailable async {
+    if (kIsWeb) return false;
     try {
       final canCheck = await _auth.canCheckBiometrics;
       final hasHardware = await _auth.isDeviceSupported();
@@ -54,6 +55,7 @@ class BiometricService {
 
   /// Detailed status for debugging.
   Future<String> get status async {
+    if (kIsWeb) return 'Biometrics not available on web.';
     try {
       final canCheck = await _auth.canCheckBiometrics;
       final hasHardware = await _auth.isDeviceSupported();
@@ -89,6 +91,7 @@ class BiometricService {
   /// Face lock uses the in-app camera scan and is available whenever a front
   /// camera exists. On iOS the system Face ID prompt is used.
   Future<bool> get hasFaceId async {
+    if (kIsWeb) return false;
     if (defaultTargetPlatform == TargetPlatform.android) {
       try {
         final cams = await availableCameras();
@@ -105,6 +108,7 @@ class BiometricService {
   ///
   /// On Android this is the `strong` (Class 3) classification.
   Future<bool> get hasFingerprint async {
+    if (kIsWeb) return false;
     final types = await availableTypes();
     return types.contains(BiometricType.fingerprint) ||
         types.contains(BiometricType.strong);
@@ -124,6 +128,7 @@ class BiometricService {
   /// enrolled biometric). Used for the login screen and as a fallback where
   /// the native class-restricted channel isn't available (iOS/web).
   Future<bool> authenticate({String reason = 'Unlock ArtVault'}) async {
+    if (kIsWeb) return false;
     try {
       return await _auth.authenticate(
         localizedReason: reason,
@@ -145,6 +150,7 @@ class BiometricService {
   Future<bool> authenticateFingerprint({
     String reason = 'Unlock ArtVault',
   }) async {
+    if (kIsWeb) return false;
     try {
       final ok = await _native.invokeMethod<bool>('authenticateClass', {
         'class': 'strong',
@@ -166,6 +172,7 @@ class BiometricService {
   Future<FaceAuthResult> authenticateFace({
     String reason = 'Unlock ArtVault',
   }) async {
+    if (kIsWeb) return FaceAuthResult.failed;
     if (defaultTargetPlatform == TargetPlatform.android) {
       return FaceAuthResult.needsCameraScan;
     }
@@ -175,6 +182,7 @@ class BiometricService {
 
   /// Stops any pending authentication session.
   Future<void> stop() async {
+    if (kIsWeb) return;
     try {
       await _auth.stopAuthentication();
     } catch (_) {}

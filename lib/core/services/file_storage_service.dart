@@ -41,7 +41,7 @@ class FileStorageService {
   Directory get documentsDir => Directory(p.join(root.path, 'documents'));
   Directory get exportsDir => Directory(p.join(root.path, 'exports'));
 
-  String get imageExtension => Platform.isAndroid ? 'jpg' : 'jpg';
+  String get imageExtension => 'jpg';
 
   /// Copies a picked image into the vault and returns its local path.
   Future<String> importImage(File source) async {

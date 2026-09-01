@@ -102,7 +102,7 @@ class HomeScreenWeb extends ConsumerWidget {
 }
 
 /// Immersive hero section for the web home screen.
-class _WebHero extends StatelessWidget {
+class _WebHero extends ConsumerWidget {
   final String userName;
   final List<Painting> paintings;
   final bool canEdit;
@@ -114,7 +114,7 @@ class _WebHero extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -242,8 +242,6 @@ class _WebHero extends StatelessWidget {
     return 'evening';
   }
 
-  BuildContext get context => throw UnimplementedError();
-  WidgetRef get ref => throw UnimplementedError();
 }
 
 class _StatPill extends StatefulWidget {
