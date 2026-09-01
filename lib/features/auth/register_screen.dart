@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/validators.dart';
 import '../../core/widgets/app_fields.dart';
@@ -9,6 +11,7 @@ import '../../core/widgets/motion.dart';
 import '../../core/widgets/premium/premium_button.dart';
 import '../../core/providers/providers.dart';
 import 'auth_layout.dart';
+import 'auth_layout_web.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -62,159 +65,123 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final auth = ref.watch(authProvider);
     final error = auth.error;
 
-    return AuthLayout(
-      title: 'Create your vault',
-      subtitle: 'Start building your private art collection',
-      // Wrap (not Row) so the 'Sign in' action drops to its own line
-      // rather than overflowing the card on narrow widths.
-      footer: Wrap(
-        alignment: WrapAlignment.center,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          const Text('Already have an account?'),
-          TextButton(
-            onPressed: () => context.go('/login'),
-            child: const Text('Sign in'),
-          ),
-        ],
-      ),
+    final title = 'Create your vault';
+    final subtitle = 'Start building your private art collection';
+    final footer = Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        if (error != null)
-          Container(
-            margin: const EdgeInsets.only(bottom: AppSpacing.md),
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-            ),
-            child: Text(
-              error,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.error,
-                fontSize: 13,
-              ),
-            ),
-          ),
-        Form(
-          key: _formKey,
-          child: Column(
-            // Fields cascade in one by one, matching the login screen and
-            // the cinematic splash intro.
-            children: staggerReveal(
-              [
-                AppTextField(
-                  controller: _name,
-                  label: 'Full name',
-                  hint: 'Alexandra Restrepo',
-                  icon: Icons.person_outline,
-                  capitalization: TextCapitalization.words,
-                  validator: Validators.name,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                AppTextField(
-                  controller: _email,
-                  label: 'Email',
-                  icon: Icons.mail_outline,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: Validators.email,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                AppTextField(
-                  controller: _password,
-                  label: 'Password',
-                  icon: Icons.lock_outline,
-                  obscureText: _obscure,
-                  validator: Validators.password,
-                  textInputAction: TextInputAction.next,
-                  suffixIcon: IconButton(
-                    tooltip: _obscure ? 'Show password' : 'Hide password',
-                    icon: Icon(
-                      _obscure
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                      size: 20,
-                    ),
-                    onPressed: () => setState(() => _obscure = !_obscure),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                AppTextField(
-                  controller: _confirm,
-                  label: 'Confirm password',
-                  icon: Icons.lock_outline,
-                  obscureText: _confirmObscure,
-                  validator: (v) =>
-                      Validators.passwordConfirm(v, _password.text),
-                  textInputAction: TextInputAction.done,
-                  suffixIcon: IconButton(
-                    tooltip: _confirmObscure
-                        ? 'Show password'
-                        : 'Hide password',
-                    icon: Icon(
-                      _confirmObscure
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                      size: 20,
-                    ),
-                    onPressed: () =>
-                        setState(() => _confirmObscure = !_confirmObscure),
-                  ),
-                ),
-                // Optional one-time setup: the very first account can become
-                // admin with the bootstrap code created in Firestore
-                // (bootstrap/config.adminCode). Hidden by default so everyday
-                // sign-ups never see it.
-                TextButton.icon(
-                  onPressed: () =>
-                      setState(() => _showAdminCode = !_showAdminCode),
-                  icon: Icon(
-                    _showAdminCode
-                        ? Icons.expand_less
-                        : Icons.admin_panel_settings_outlined,
-                    size: 18,
-                  ),
-                  label: Text(
-                    _showAdminCode
-                        ? 'Hide admin setup code'
-                        : 'First admin? Enter setup code',
-                  ),
-                ),
-                if (_showAdminCode) ...[
-                  const SizedBox(height: AppSpacing.xs),
-                  AppTextField(
-                    controller: _adminCode,
-                    label: 'Admin setup code',
-                    icon: Icons.key_outlined,
-                    obscureText: _adminCodeObscure,
-                    textInputAction: TextInputAction.done,
-                    suffixIcon: IconButton(
-                      tooltip: _adminCodeObscure ? 'Show code' : 'Hide code',
-                      icon: Icon(
-                        _adminCodeObscure
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                        size: 20,
-                      ),
-                      onPressed: () => setState(
-                        () => _adminCodeObscure = !_adminCodeObscure,
-                      ),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: AppSpacing.md),
-                // Premium 3D button with glow effect
-                PremiumButton(
-                  label: 'Create Account',
-                  loading: auth.busy,
-                  onPressed: _submit,
-                ),
-              ],
-              initialDelay: const Duration(milliseconds: 100),
-              context: context,
-            ),
-          ),
+        const Text('Already have an account?'),
+        TextButton(
+          onPressed: () => context.go('/login'),
+          child: const Text('Sign in'),
         ),
       ],
     );
+    final children = <Widget>[
+      if (error != null)
+        Container(
+          margin: const EdgeInsets.only(bottom: AppSpacing.md),
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+          ),
+          child: Text(
+            error,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.error,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      Form(
+        key: _formKey,
+        child: Column(
+          children: staggerReveal(
+            [
+              AppTextField(
+                controller: _name,
+                label: 'Full name',
+                hint: 'Alexandra Restrepo',
+                icon: Icons.person_outline,
+                capitalization: TextCapitalization.words,
+                validator: Validators.name,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                controller: _email,
+                label: 'Email',
+                icon: Icons.mail_outline,
+                keyboardType: TextInputType.emailAddress,
+                validator: Validators.email,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                controller: _password,
+                label: 'Password',
+                icon: Icons.lock_outline,
+                obscureText: _obscure,
+                validator: Validators.password,
+                textInputAction: TextInputAction.next,
+                suffixIcon: IconButton(
+                  tooltip: _obscure ? 'Show password' : 'Hide password',
+                  icon: Icon(
+                    _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                    size: 20,
+                  ),
+                  onPressed: () => setState(() => _obscure = !_obscure),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                controller: _confirm,
+                label: 'Confirm password',
+                icon: Icons.lock_outline,
+                obscureText: _confirmObscure,
+                validator: (v) => Validators.passwordConfirm(v, _password.text),
+                textInputAction: TextInputAction.done,
+                suffixIcon: IconButton(
+                  tooltip: _confirmObscure ? 'Show password' : 'Hide password',
+                  icon: Icon(
+                    _confirmObscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                    size: 20,
+                  ),
+                  onPressed: () => setState(() => _confirmObscure = !_confirmObscure),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () => setState(() => _showAdminCode = !_showAdminCode),
+                icon: Icon(_showAdminCode ? Icons.expand_less : Icons.admin_panel_settings_outlined, size: 18),
+                label: Text(_showAdminCode ? 'Hide admin setup code' : 'First admin? Enter setup code'),
+              ),
+              if (_showAdminCode) ...[
+                const SizedBox(height: AppSpacing.xs),
+                AppTextField(
+                  controller: _adminCode,
+                  label: 'Admin setup code',
+                  icon: Icons.key_outlined,
+                  obscureText: _adminCodeObscure,
+                  textInputAction: TextInputAction.done,
+                  suffixIcon: IconButton(
+                    tooltip: _adminCodeObscure ? 'Show code' : 'Hide code',
+                    icon: Icon(_adminCodeObscure ? Icons.visibility_outlined : Icons.visibility_off_outlined, size: 20),
+                    onPressed: () => setState(() => _adminCodeObscure = !_adminCodeObscure),
+                  ),
+                ),
+              ],
+              const SizedBox(height: AppSpacing.md),
+              PremiumButton(label: 'Create Account', loading: auth.busy, onPressed: _submit),
+            ],
+            initialDelay: const Duration(milliseconds: 100),
+            context: context,
+          ),
+        ),
+      ),
+    ];
+    if (kIsWeb) {
+      return AuthLayoutWeb(title: title, subtitle: subtitle, footer: footer, children: children);
+    }
+    return AuthLayout(title: title, subtitle: subtitle, footer: footer, children: children);
   }
 }

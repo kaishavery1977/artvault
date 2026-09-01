@@ -4,12 +4,15 @@ import 'package:go_router/go_router.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 import '../../core/providers/providers.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/widgets/premium/premium_button.dart';
 import '../../data/models/app_user.dart';
 import '../../data/repositories/auth_repository.dart';
 import 'auth_layout.dart';
+import 'auth_layout_web.dart';
 
 /// Post-social-sign-in gate: lets a Google/Apple user enter the one-time
 /// admin code (from Firestore `bootstrap/config.adminCode`) to become the
@@ -147,77 +150,85 @@ class _AdminCodeGateScreenState extends ConsumerState<AdminCodeGateScreen> {
         ? user!.displayName
         : 'there';
 
-    return AuthLayout(
-      title: 'Almost there, $name!',
-      subtitle:
-          'Enter the admin code to unlock admin access, or skip to continue as curator',
-      children: [
-        if (_error != null)
-          Container(
-            margin: const EdgeInsets.only(bottom: AppSpacing.md),
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 18,
-                  color: Theme.of(context).colorScheme.error,
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                Expanded(
-                  child: Text(
-                    _error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                      fontSize: 13,
-                    ),
+    final formChildren = <Widget>[
+      if (_error != null)
+        Container(
+          margin: const EdgeInsets.only(bottom: AppSpacing.md),
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 18,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Expanded(
+                child: Text(
+                  _error!,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                    fontSize: 13,
                   ),
                 ),
-              ],
-            ),
-          ),
-        TextField(
-          controller: _controller,
-          textInputAction: TextInputAction.done,
-          autofillHints: const [AutofillHints.oneTimeCode],
-          decoration: const InputDecoration(
-            labelText: 'Admin code',
-            hintText: '••••••••',
-            prefixIcon: Icon(Icons.admin_panel_settings_outlined),
-            border: OutlineInputBorder(),
-          ),
-          onSubmitted: (_) => _verify(),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          'Only people with the one-time admin code can become admin here. Everyone else can skip — you’ll be a curator and an existing admin can promote you later in Users & roles.',
-          style: TextStyle(
-            fontSize: 12,
-            height: 1.4,
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: AppSpacing.lg),
-        PremiumButton(
-          label: 'Verify & continue',
-          loading: _busy,
-          onPressed: _verify,
+      TextField(
+        controller: _controller,
+        textInputAction: TextInputAction.done,
+        autofillHints: const [AutofillHints.oneTimeCode],
+        decoration: const InputDecoration(
+          labelText: 'Admin code',
+          hintText: '••••••••',
+          prefixIcon: Icon(Icons.admin_panel_settings_outlined),
+          border: OutlineInputBorder(),
         ),
-        const SizedBox(height: AppSpacing.sm),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton(
-            onPressed: _busy ? null : _skip,
-            child: const Text('Skip for now'),
-          ),
+        onSubmitted: (_) => _verify(),
+      ),
+      const SizedBox(height: AppSpacing.sm),
+      Text(
+        'Only people with the one-time admin code can become admin here. Everyone else can skip — you’ll be a curator and an existing admin can promote you later in Users & roles.',
+        style: TextStyle(
+          fontSize: 12,
+          height: 1.4,
+          color: Theme.of(
+            context,
+          ).colorScheme.onSurface.withValues(alpha: 0.6),
         ),
-      ],
+      ),
+      const SizedBox(height: AppSpacing.lg),
+      PremiumButton(
+        label: 'Verify & continue',
+        loading: _busy,
+        onPressed: _verify,
+      ),
+      const SizedBox(height: AppSpacing.sm),
+      SizedBox(
+        width: double.infinity,
+        child: OutlinedButton(
+          onPressed: _busy ? null : _skip,
+          child: const Text('Skip for now'),
+        ),
+      ),
+    ];
+
+    if (kIsWeb) {
+      return AuthLayoutWeb(
+        title: 'Almost there, $name!',
+        subtitle: 'Enter the admin code to unlock admin access, or skip to continue as curator',
+        children: formChildren,
+      );
+    }
+    return AuthLayout(
+      title: 'Almost there, $name!',
+      subtitle: 'Enter the admin code to unlock admin access, or skip to continue as curator',
+      children: formChildren,
     );
   }
 }
