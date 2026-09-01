@@ -1,12 +1,14 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_spacing.dart';
 import '../../core/services/device_resolution_service.dart';
 import '../../core/providers/providers.dart';
+import 'app_shell_web.dart';
 
 /// Responsive application shell.
 ///
@@ -123,6 +125,11 @@ class _AppShellState extends ConsumerState<AppShell>
 
   @override
   Widget build(BuildContext context) {
+    // Web uses the dedicated web shell — never touch mobile code paths.
+    if (kIsWeb) {
+      return AppShellWeb(navigationShell: widget.navigationShell);
+    }
+
     final shell = widget.navigationShell;
     final isDesktop = AppBreakpoints.isDesktop(context);
     final canEdit = ref.watch(authProvider.select((a) => a.canEdit));

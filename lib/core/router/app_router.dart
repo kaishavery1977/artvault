@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -16,6 +17,7 @@ import '../../features/home/home_screen.dart';
 import '../../features/gallery/gallery_screen.dart';
 import '../../features/gallery/search_screen.dart';
 import '../../features/painting/painting_detail_screen.dart';
+import '../../features/gallery/print_report_view.dart';
 import '../../features/painting/painting_form_screen.dart';
 import '../../features/painting/painting_lightbox_screen.dart';
 import '../../features/painting/trash_screen.dart';
@@ -58,8 +60,8 @@ final rootNavigatorKey = GlobalKey<NavigatorState>();
 Page<void> _page(Widget child) {
   return CustomTransitionPage<void>(
     child: child,
-    transitionDuration: const Duration(milliseconds: 280),
-    reverseTransitionDuration: const Duration(milliseconds: 240),
+    transitionDuration: kIsWeb ? const Duration(milliseconds: 400) : const Duration(milliseconds: 280),
+    reverseTransitionDuration: kIsWeb ? const Duration(milliseconds: 350) : const Duration(milliseconds: 240),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       final curved = CurvedAnimation(
         parent: animation,
@@ -284,6 +286,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/painting/:id',
         pageBuilder: (_, state) => _page(
           PaintingDetailScreen(paintingId: state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: '/painting/:id/print',
+        pageBuilder: (_, state) => _page(
+          PrintReportView(paintingId: state.pathParameters['id']!),
         ),
       ),
       GoRoute(

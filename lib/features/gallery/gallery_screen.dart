@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'gallery_table_view.dart';
+import 'split_panel_view.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:shimmer/shimmer.dart';
@@ -17,7 +20,7 @@ import '../../data/models/painting.dart';
 import '../../data/repositories/painting_repository.dart';
 import 'painting_card.dart';
 
-enum GalleryView { grid, list, masonry }
+enum GalleryView { grid, list, masonry, table, split }
 
 enum GallerySort { newest, oldest, title, artist, priceHigh, priceLow }
 
@@ -29,7 +32,7 @@ class GalleryScreen extends ConsumerStatefulWidget {
 }
 
 class _GalleryScreenState extends ConsumerState<GalleryScreen> {
-  GalleryView _view = GalleryView.grid;
+  GalleryView _view = kIsWeb ? GalleryView.table : GalleryView.grid;
   GallerySort _sort = GallerySort.newest;
   String? _category;
   bool _favoritesOnly = false;
@@ -369,6 +372,21 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
                       _MasonryCard(painting: visible[i], staggerIndex: i),
                 ),
               ),
+              GalleryView.table => SliverToBoxAdapter(
+                child: Padding(
+                  padding: AppSpacing.screenPadding,
+                  child: SizedBox(
+                    height: MediaQuery.of(context).size.height - 200,
+                    child: const GalleryTableView(),
+                  ),
+                ),
+              ),
+              GalleryView.split => SliverToBoxAdapter(
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height - 100,
+                  child: const SplitPanelView(),
+                ),
+              ),
             },
           SliverToBoxAdapter(
             child: SizedBox(
@@ -404,11 +422,15 @@ class _GalleryHeader extends StatelessWidget {
     GalleryView.grid: Icons.grid_view,
     GalleryView.list: Icons.view_agenda_outlined,
     GalleryView.masonry: Icons.dashboard_customize_outlined,
+    GalleryView.table: Icons.table_chart_rounded,
+    GalleryView.split: Icons.view_column_rounded,
   };
   static const _viewLabels = {
     GalleryView.grid: 'Grid',
     GalleryView.list: 'List',
     GalleryView.masonry: 'Gallery',
+    GalleryView.table: 'Table',
+    GalleryView.split: 'Split',
   };
 
   @override

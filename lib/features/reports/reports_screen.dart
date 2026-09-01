@@ -1,7 +1,10 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'collection_valuation_chart.dart';
+import 'activity_dashboard_web.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -102,6 +105,13 @@ class ReportsScreen extends ConsumerWidget {
                     currency: ref.watch(currencyProvider),
                   ),
                   const SizedBox(height: AppSpacing.lg),
+                  // Web-only: enhanced charts and dashboard
+                  if (kIsWeb && canSeeAnalytics) ...[
+                    const CollectionValuationChart(),
+                    const SizedBox(height: AppSpacing.lg),
+                    const ActivityDashboardWeb(),
+                    const SizedBox(height: AppSpacing.lg),
+                  ],
                   if (canSeeAnalytics) ...[
                     SectionHeader(title: 'Collection breakdown'),
                     _BarCard(

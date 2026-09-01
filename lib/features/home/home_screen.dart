@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
+
+import 'home_screen_web.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/theme/adaptive_layout.dart';
@@ -25,6 +28,8 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (kIsWeb) return const HomeScreenWeb();
+
     final auth = ref.watch(authProvider);
     final paintingsAsync = ref.watch(paintingsProvider);
     final canEdit = auth.canEdit;

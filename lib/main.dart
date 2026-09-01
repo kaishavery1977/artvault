@@ -17,6 +17,7 @@ import 'core/services/device_resolution_service.dart';
 import 'core/services/file_storage_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/orientation_service.dart';
+import 'core/widgets/web/web_shortcuts.dart';
 import 'core/services/sync_service.dart';
 import 'data/local/local_database.dart';
 import 'data/remote/cloud_backend.dart';
@@ -107,12 +108,17 @@ class ArtVaultApp extends ConsumerWidget {
         // on a foldable might switch from phone to tablet mode).
         if (!kIsWeb) OrientationService.instance.applyForDevice();
         final profile = DeviceResolutionService.instance.current!;
-        return AdaptiveLayout(
+        Widget appContent = AdaptiveLayout(
           profile: profile,
           child: AppResumeIntroObserver(
             child: AmbientBackground(child: child ?? const SizedBox.shrink()),
           ),
         );
+        // Web-only: wrap with keyboard shortcuts handler
+        if (kIsWeb) {
+          appContent = WebShortcutsHandler(child: appContent);
+        }
+        return appContent;
       },
       locale: locale == 'en' ? null : Locale(locale),
       supportedLocales: const [

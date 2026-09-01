@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -8,10 +9,12 @@ import '../../core/utils/validators.dart';
 import '../../core/widgets/app_fields.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/widgets/premium/premium_button.dart';
+import '../../core/widgets/web/rate_limiter.dart';
 import '../../core/providers/providers.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/remote/cloud_backend.dart';
 import 'auth_layout.dart';
+import 'auth_layout_web.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -46,11 +49,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    // Rate limiting check (web only)
+    if (kIsWeb) {
+      final limiter = LoginRateLimiter.instance;
+      if (limiter.isLimited(_email.text)) {
+        final secs = limiter.secondsRemaining(_email.text);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Too many attempts. Try again in ${secs}s'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+        return;
+      }
+      limiter.recordAttempt(_email.text);
+    }
     FocusScope.of(context).unfocus();
     final ok = await ref
         .read(authProvider.notifier)
         .signInWithEmail(_email.text, _password.text, remember: _remember);
-    if (ok && mounted) context.go('/home');
+    if (ok) {
+      if (kIsWeb) LoginRateLimiter.instance.clear(_email.text);
+      if (mounted) context.go('/home');
+    }
   }
 
   Future<void> _google() async {
@@ -119,7 +142,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final auth = ref.watch(authProvider);
     final error = auth.error;
 
-    return AuthLayout(
+    final Widget Function({Key? key, required String title, required String subtitle, required List<Widget> children, Widget? footer}) layoutBuilder =
+        kIsWeb ? AuthLayoutWeb.new : AuthLayout.new;
+
+    return layoutBuilder(
       title: 'Welcome back',
       subtitle: 'Sign in to open your private gallery',
       // Wrap instead of Row: on narrow widths or large text scales the

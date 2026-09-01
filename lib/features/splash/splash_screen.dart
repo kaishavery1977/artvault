@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -38,10 +39,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final Animation<double> _exitScale;
   late final Animation<double> _exitOpacity;
 
-  static const Duration _introFull = Duration(milliseconds: 3000);
+  static Duration get _introFull => kIsWeb 
+      ? const Duration(milliseconds: 5500)
+      : const Duration(milliseconds: 3000);
   static const Duration _introResume = Duration(milliseconds: 900);
   static const Duration _introReduced = Duration(milliseconds: 150);
-  static const Duration _exitHoldFull = Duration(milliseconds: 350);
+  static Duration get _exitHoldFull => kIsWeb 
+      ? const Duration(milliseconds: 600)
+      : const Duration(milliseconds: 350);
 
   late final bool _resumeReplay;
 
@@ -261,7 +266,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
           // Stage 3: wordmark reveals letter-by-letter, gold shimmer sweep.
           _StaggeredWordmark(color: fg)
-              .animate(delay: 1000.ms)
+              .animate(delay: kIsWeb ? 2200.ms : 1000.ms)
               .shimmer(
                 duration: 1000.ms,
                 color: AppColors.accent.withValues(alpha: 0.45),
@@ -276,14 +281,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               letterSpacing: 1.4,
             ),
           )
-              .animate(delay: 1400.ms)
+              .animate(delay: kIsWeb ? 3200.ms : 1400.ms)
               .slideY(begin: 0.25)
               .fadeIn(duration: 600.ms),
           const SizedBox(height: AppSpacing.xxl),
 
           // Stage 5: pulsing dot loader.
           _PulsingDots(color: fg)
-              .animate(delay: 1700.ms)
+              .animate(delay: kIsWeb ? 4000.ms : 1700.ms)
               .fadeIn(duration: 400.ms),
         ],
       );
@@ -426,7 +431,7 @@ class _SplashFooterState extends State<_SplashFooter>
     );
     if (!widget.reducedMotion) {
       // Delay start so it plays after the intro lands.
-      Future.delayed(1800.ms, () {
+      Future.delayed(kIsWeb ? 3500.ms : 1800.ms, () {
         if (mounted) {
           _glowCtrl.repeat(reverse: true);
           _sparkleCtrl.repeat();
@@ -461,13 +466,13 @@ class _SplashFooterState extends State<_SplashFooter>
       children: [
         // Animated gradient divider
         _AnimatedDivider(ctrl: _glowCtrl)
-            .animate(delay: 1800.ms)
+            .animate(delay: kIsWeb ? 4200.ms : 1800.ms)
             .fadeIn(duration: 600.ms)
             .scaleX(begin: 0, end: 1, curve: Curves.easeOutCubic),
         const SizedBox(height: 18),
         // Glowing name row with sparkle
         _GlowingBy(glowCtrl: _glowCtrl, sparkleCtrl: _sparkleCtrl)
-            .animate(delay: 1900.ms)
+            .animate(delay: kIsWeb ? 4400.ms : 1900.ms)
             .fadeIn(duration: 700.ms)
             .slideY(begin: 0.3, curve: Curves.easeOutCubic),
         const SizedBox(height: 10),
@@ -479,7 +484,7 @@ class _SplashFooterState extends State<_SplashFooter>
             letterSpacing: 1.2,
             color: Colors.white.withValues(alpha: 0.40),
           ),
-        ).animate(delay: 2100.ms).fadeIn(duration: 600.ms),
+        ).animate(delay: kIsWeb ? 4700.ms : 2100.ms).fadeIn(duration: 600.ms),
       ],
     );
   }
