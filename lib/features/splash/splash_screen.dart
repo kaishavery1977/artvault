@@ -399,37 +399,262 @@ class _StaggeredWordmark extends StatelessWidget {
   }
 }
 
-/// Professional footer — "Crafted by Kaisha Very" — fades in after the main intro.
-class _SplashFooter extends StatelessWidget {
+/// Professional footer — "Crafted by Kais Havery" — with glowing text,
+/// animated gradient divider, and sparkle accents.
+class _SplashFooter extends StatefulWidget {
   final bool reducedMotion;
   const _SplashFooter({required this.reducedMotion});
 
   @override
-  Widget build(BuildContext context) {
-    final line = Container(width: 32, height: 1, color: Colors.white.withValues(alpha: 0.15));
-    final by = Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.favorite_rounded, size: 10, color: AppColors.accent.withValues(alpha: 0.7)),
-        const SizedBox(width: 6),
-        Text('Crafted by Kaisha Very', style: TextStyle(fontSize: 11, letterSpacing: 1.6, fontWeight: FontWeight.w500, color: Colors.white.withValues(alpha: 0.55))),
-      ],
-    );
-    final sub = Text('Made with passion for art collectors', style: TextStyle(fontSize: 10, letterSpacing: 0.8, color: Colors.white.withValues(alpha: 0.28)));
+  State<_SplashFooter> createState() => _SplashFooterState();
+}
 
-    if (reducedMotion) {
-      return Column(mainAxisSize: MainAxisSize.min, children: [line, const SizedBox(height: 12), by, const SizedBox(height: 4), sub]);
+class _SplashFooterState extends State<_SplashFooter>
+    with TickerProviderStateMixin {
+  late final AnimationController _glowCtrl;
+  late final AnimationController _sparkleCtrl;
+
+  @override
+  void initState() {
+    super.initState();      _glowCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 4000),
+    );
+    _sparkleCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 5000),
+    );
+    if (!widget.reducedMotion) {
+      // Delay start so it plays after the intro lands.
+      Future.delayed(1800.ms, () {
+        if (mounted) {
+          _glowCtrl.repeat(reverse: true);
+          _sparkleCtrl.repeat();
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _glowCtrl.dispose();
+    _sparkleCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.reducedMotion) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          _StaticDivider(),
+          SizedBox(height: 12),
+          _StaticBy(),
+          SizedBox(height: 4),
+          _StaticSub(),
+        ],
+      );
     }
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        line.animate(delay: 1800.ms).fadeIn(duration: 600.ms).scaleX(begin: 0, end: 1, curve: Curves.easeOutCubic),
-        const SizedBox(height: 12),
-        by.animate(delay: 1900.ms).fadeIn(duration: 700.ms).slideY(begin: 0.3, curve: Curves.easeOutCubic),
-        const SizedBox(height: 4),
-        sub.animate(delay: 2100.ms).fadeIn(duration: 600.ms),
+        // Animated gradient divider
+        _AnimatedDivider(ctrl: _glowCtrl)
+            .animate(delay: 1800.ms)
+            .fadeIn(duration: 600.ms)
+            .scaleX(begin: 0, end: 1, curve: Curves.easeOutCubic),
+        const SizedBox(height: 18),
+        // Glowing name row with sparkle
+        _GlowingBy(glowCtrl: _glowCtrl, sparkleCtrl: _sparkleCtrl)
+            .animate(delay: 1900.ms)
+            .fadeIn(duration: 700.ms)
+            .slideY(begin: 0.3, curve: Curves.easeOutCubic),
+        const SizedBox(height: 10),
+        // Tagline
+        Text(
+          'Made with passion for art collectors',
+          style: TextStyle(
+            fontSize: 13,
+            letterSpacing: 1.2,
+            color: Colors.white.withValues(alpha: 0.40),
+          ),
+        ).animate(delay: 2100.ms).fadeIn(duration: 600.ms),
       ],
     );
+  }
+}
+
+/// Animated gradient divider that pulses width + glow.
+class _AnimatedDivider extends StatelessWidget {
+  final AnimationController ctrl;
+  const _AnimatedDivider({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: ctrl,
+      builder: (_, _) {
+        final t = ctrl.value;
+        final w = 64 + 14 * t; // 64→78→64
+        final alpha = 0.18 + 0.14 * t;
+        return Container(
+          width: w,
+          height: 2,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(99),
+            gradient: LinearGradient(
+              colors: [
+                AppColors.accent.withValues(alpha: alpha),
+                Colors.white.withValues(alpha: alpha * 1.2),
+                AppColors.accent.withValues(alpha: alpha),
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.accent.withValues(alpha: alpha * 0.6),
+                blurRadius: 10 + 4 * t,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// "Crafted by" row with glowing name + rotating sparkle dots.
+class _GlowingBy extends StatelessWidget {
+  final AnimationController glowCtrl;
+  final AnimationController sparkleCtrl;
+  const _GlowingBy({required this.glowCtrl, required this.sparkleCtrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: Listenable.merge([glowCtrl, sparkleCtrl]),
+      builder: (_, _) {
+        final g = glowCtrl.value;
+        final s = sparkleCtrl.value;
+        final glowAlpha = 0.55 + 0.35 * g; // 0.55→0.9
+        final glowSpread = 2.0 + 3.0 * g;
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Left sparkle
+            _SparkleDot(phase: s, offset: 0),
+            const SizedBox(width: 10),
+            Icon(
+              Icons.favorite_rounded,
+              size: 14,
+              color: AppColors.accent.withValues(alpha: 0.7 + 0.2 * g),
+            ),
+            const SizedBox(width: 8),
+            // Glowing name
+            Text(
+              'Crafted by ',
+              style: TextStyle(
+                fontSize: 15,
+                letterSpacing: 1.8,
+                fontWeight: FontWeight.w500,
+                color: Colors.white.withValues(alpha: 0.50),
+              ),
+            ),
+            Text(
+              'Kais Havery',
+              style: TextStyle(
+                fontSize: 16,
+                letterSpacing: 1.8,
+                fontWeight: FontWeight.w800,
+                color: AppColors.accent.withValues(alpha: glowAlpha),
+                shadows: [
+                  Shadow(
+                    color: AppColors.accent.withValues(alpha: glowAlpha * 0.7),
+                    blurRadius: glowSpread * 1.5,
+                  ),
+                  Shadow(
+                    color: AppColors.accent.withValues(alpha: glowAlpha * 0.4),
+                    blurRadius: glowSpread * 3,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            // Right sparkle
+            _SparkleDot(phase: s, offset: 0.5),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Tiny rotating sparkle dot.
+class _SparkleDot extends StatelessWidget {
+  final double phase; // 0..1
+  final double offset; // offset to desync left/right
+  const _SparkleDot({required this.phase, required this.offset});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = ((phase + offset) % 1.0);
+    final pulse = (t < 0.5) ? t * 2 : 2 - t * 2; // triangle wave 0→1→0
+    final size = 5.0 + 3.0 * pulse;
+    final alpha = 0.3 + 0.6 * pulse;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppColors.accent.withValues(alpha: alpha),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.accent.withValues(alpha: alpha * 0.6),
+            blurRadius: 6 * pulse,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Static divider for reduced-motion mode.
+class _StaticDivider extends StatelessWidget {
+  const _StaticDivider();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 60,
+      height: 1.5,
+      color: Colors.white.withValues(alpha: 0.15),
+    );
+  }
+}
+
+/// Static by-line for reduced-motion mode.
+class _StaticBy extends StatelessWidget {
+  const _StaticBy();
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.favorite_rounded, size: 14, color: AppColors.accent.withValues(alpha: 0.7)),
+        const SizedBox(width: 8),
+        Text('Crafted by Kais Havery', style: TextStyle(fontSize: 16, letterSpacing: 1.8, fontWeight: FontWeight.w700, color: Colors.white.withValues(alpha: 0.65))),
+      ],
+    );
+  }
+}
+
+/// Static subtext for reduced-motion mode.
+class _StaticSub extends StatelessWidget {
+  const _StaticSub();
+  @override
+  Widget build(BuildContext context) {
+    return Text('Made with passion for art collectors', style: TextStyle(fontSize: 13, letterSpacing: 1.2, color: Colors.white.withValues(alpha: 0.40)));
   }
 }
 
