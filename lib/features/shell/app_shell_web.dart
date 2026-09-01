@@ -88,42 +88,99 @@ class _AppShellWebState extends ConsumerState<AppShellWeb>
     );
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF08090F) : const Color(0xFFF8F8FC),
-      body: Row(
+      backgroundColor: isDark ? const Color(0xFF05070F) : const Color(0xFFF6F7FB),
+      body: Stack(
         children: [
-          // Immersive sidebar
-          _WebSidebar(
-            index: shell.currentIndex,
-            onSelect: _go,
-            destinations: _destinations,
-            hoveredIndex: _hoveredIndex,
-            onHover: (i) => setState(() => _hoveredIndex = i),
-            onHoverExit: () => setState(() => _hoveredIndex = -1),
-          ),
-          // Main content with smooth transition
-          Expanded(
-            child: Column(
-              children: [
-                // Top header bar
-                _WebHeader(
-                  currentIndex: shell.currentIndex,
-                  onSearch: () => context.push('/search'),
-                  onNotifications: () => context.push('/notifications'),
-                  canEdit: canEdit,
-                  onUpload: () => context.push('/painting/new'),
-                ),
-                // Breadcrumb navigation
-                const WebBreadcrumb(),
-                // Page content with scroll-to-top
-                Expanded(
-                  child: Stack(
-                    children: [
-                      content,
-                    ],
+          // Ambient 3D orbs behind everything
+          Positioned.fill(
+            child: IgnorePointer(
+              child: Stack(
+                children: [
+                  Positioned(
+                    top: -80,
+                    left: -60,
+                    child: Container(
+                      width: 420,
+                      height: 420,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            AppColors.violet500.withValues(alpha: isDark ? 0.18 : 0.10),
+                            AppColors.violet500.withValues(alpha: 0),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                  Positioned(
+                    bottom: -100,
+                    right: -80,
+                    child: Container(
+                      width: 560,
+                      height: 560,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            AppColors.cyan400.withValues(alpha: isDark ? 0.14 : 0.08),
+                            AppColors.cyan400.withValues(alpha: 0),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+          ),
+          Row(
+            children: [
+              // Premium 3D sidebar
+              _WebSidebar(
+                index: shell.currentIndex,
+                onSelect: _go,
+                destinations: _destinations,
+                hoveredIndex: _hoveredIndex,
+                onHover: (i) => setState(() => _hoveredIndex = i),
+                onHoverExit: () => setState(() => _hoveredIndex = -1),
+              ),
+              // Main content with glass + depth
+              Expanded(
+                child: Column(
+                  children: [
+                    _WebHeader(
+                      currentIndex: shell.currentIndex,
+                      onSearch: () => context.push('/search'),
+                      onNotifications: () => context.push('/notifications'),
+                      canEdit: canEdit,
+                      onUpload: () => context.push('/painting/new'),
+                    ),
+                    const WebBreadcrumb(),
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white.withValues(alpha: 0.72),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06)),
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08), blurRadius: 32, offset: const Offset(0, 16)),
+                            BoxShadow(color: AppColors.violet500.withValues(alpha: isDark ? 0.08 : 0.04), blurRadius: 48, offset: const Offset(0, 8)),
+                          ],
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Stack(
+                          children: [
+                            content,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -192,44 +249,55 @@ class _WebSidebarState extends State<_WebSidebar>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      width: 72,
+      width: 260,
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.03)
-            : Colors.black.withValues(alpha: 0.02),
+        color: isDark ? const Color(0xFF0F111A).withValues(alpha: 0.92) : Colors.white.withValues(alpha: 0.82),
         border: Border(
-          right: BorderSide(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.06)
-                : Colors.black.withValues(alpha: 0.06),
-          ),
+          right: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06)),
         ),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 28, offset: const Offset(8, 0)),
+        ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Logo
+          // Logo + wordmark with glow
           const SizedBox(height: 20),
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [AppColors.secondary, AppColors.accent],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.accent.withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.secondary, AppColors.accent]),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(color: AppColors.accent.withValues(alpha: 0.35), blurRadius: 18, offset: const Offset(0, 6)),
+                      BoxShadow(color: AppColors.violet500.withValues(alpha: 0.25), blurRadius: 24, offset: const Offset(0, 10)),
+                    ],
+                  ),
+                  child: const Icon(Icons.palette_rounded, size: 24, color: Colors.white),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('ArtVault', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+                    Text('Private Gallery • 3D', style: TextStyle(fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45))),
+                  ],
                 ),
               ],
             ),
-            child: const Icon(Icons.palette_rounded, size: 22, color: Colors.white),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Container(height: 1, decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.white.withValues(alpha: 0), isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06), Colors.white.withValues(alpha: 0)]))),
+          ),
+          const SizedBox(height: 16),
           // Navigation items
           Expanded(
             child: Column(
@@ -288,40 +356,40 @@ class _SidebarItem extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected
-                ? activeColor.withValues(alpha: 0.12)
-                : isHovered
-                    ? (isDark ? Colors.white : Colors.black).withValues(alpha: 0.04)
-                    : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+            color: isSelected ? activeColor.withValues(alpha: 0.14) : isHovered ? (isDark ? Colors.white : Colors.black).withValues(alpha: 0.04) : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: isSelected ? activeColor.withValues(alpha: 0.18) : Colors.transparent, width: 1),
+            boxShadow: isSelected ? [BoxShadow(color: activeColor.withValues(alpha: 0.22), blurRadius: 16, offset: const Offset(0, 6)), BoxShadow(color: activeColor.withValues(alpha: 0.12), blurRadius: 28, offset: const Offset(0, 12))] : null,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: Row(
             children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 24,
-                height: 24,
-                child: Icon(
-                  isSelected ? dest.selected : dest.icon,
-                  size: 22,
-                  color: isSelected ? activeColor : inactiveColor,
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: isSelected ? activeColor.withValues(alpha: 0.16) : (isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: isSelected ? activeColor.withValues(alpha: 0.22) : Colors.transparent),
+                ),
+                child: Icon(isSelected ? dest.selected : dest.icon, size: 18, color: isSelected ? activeColor : inactiveColor),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(dest.label, style: TextStyle(fontSize: 14, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600, color: isSelected ? activeColor : Theme.of(context).colorScheme.onSurface)),
+                    const SizedBox(height: 2),
+                    Container(width: isSelected ? 24 : 0, height: 2, decoration: BoxDecoration(color: activeColor, borderRadius: BorderRadius.circular(2))),
+                  ],
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                dest.label,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? activeColor : inactiveColor,
-                ),
-              ),
+              if (isSelected) Icon(Icons.chevron_right_rounded, size: 16, color: activeColor.withValues(alpha: 0.7)),
             ],
           ),
         ),
