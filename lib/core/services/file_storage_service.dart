@@ -1,6 +1,7 @@
 import 'package:artvault/utils/io_shim.dart';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -19,6 +20,10 @@ class FileStorageService {
   bool _ready = false;
 
   Future<void> init() async {
+    if (kIsWeb) {
+      _ready = true;
+      return;
+    }
     final docs = await getApplicationDocumentsDirectory();
     _root = Directory(p.join(docs.path, 'artvault'));
     await _root!.create(recursive: true);
@@ -33,18 +38,20 @@ class FileStorageService {
 
   Directory get root {
     assert(_ready, 'FileStorageService.init() must be called first.');
+    if (kIsWeb || _root == null) return Directory('');
     return _root!;
   }
 
-  Directory get imagesDir => Directory(p.join(root.path, 'images'));
-  Directory get thumbsDir => Directory(p.join(root.path, 'thumbnails'));
-  Directory get documentsDir => Directory(p.join(root.path, 'documents'));
-  Directory get exportsDir => Directory(p.join(root.path, 'exports'));
+  Directory get imagesDir => kIsWeb ? Directory('') : Directory(p.join(root.path, 'images'));
+  Directory get thumbsDir => kIsWeb ? Directory('') : Directory(p.join(root.path, 'thumbnails'));
+  Directory get documentsDir => kIsWeb ? Directory('') : Directory(p.join(root.path, 'documents'));
+  Directory get exportsDir => kIsWeb ? Directory('') : Directory(p.join(root.path, 'exports'));
 
   String get imageExtension => 'jpg';
 
   /// Copies a picked image into the vault and returns its local path.
   Future<String> importImage(File source) async {
+    if (kIsWeb) return source.path;
     final dir = imagesDir;
     final name = 'img_${DateTime.now().millisecondsSinceEpoch}.$imageExtension';
     final target = File(p.join(dir.path, name));
@@ -60,6 +67,7 @@ class FileStorageService {
 
   /// Generates and stores a grid thumbnail. Returns its path.
   Future<String> makeThumbnail(String imagePath) async {
+    if (kIsWeb) return imagePath;
     final file = File(imagePath);
     if (!await file.exists()) return imagePath;
     final thumb = await ImageUtils.thumbnail(file);
@@ -70,6 +78,7 @@ class FileStorageService {
   /// after a reinstall) into the vault and returns the local path. The
   /// bytes are assumed to be a final JPEG, so no re-compression happens.
   Future<String> saveImageBytes(Uint8List bytes) async {
+    if (kIsWeb) return 'web_${DateTime.now().millisecondsSinceEpoch}.jpg';
     final dir = imagesDir;
     final name = 'img_${DateTime.now().millisecondsSinceEpoch}.$imageExtension';
     final target = File(p.join(dir.path, name));
