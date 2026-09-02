@@ -67,8 +67,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             _SettingTile(
               icon: Icons.language,
               title: 'Language',
-              subtitle: _languageName(SettingsRepository.instance.locale),
-              onTap: () => _showLanguageSheet(context, ref),
+              subtitle: 'English (more languages coming soon)',
             ),
           ],
         ),
@@ -331,22 +330,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  static const _languages = <(String, String)>[
-    ('en', 'English'),
-    ('es', 'Español'),
-    ('fr', 'Français'),
-    ('de', 'Deutsch'),
-    ('it', 'Italiano'),
-    ('pt', 'Português'),
-    ('hi', 'हिन्दी'),
-    ('zh', '中文'),
-    ('ja', '日本語'),
-    ('ko', '한국어'),
-    ('ar', 'العربية'),
-    ('ru', 'Русский'),
-    ('tr', 'Türkçe'),
-  ];
-
   static String _trashSubtitle(WidgetRef ref) {
     final paintings =
         ref.watch(paintingsProvider).valueOrNull ?? const <Painting>[];
@@ -378,50 +361,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     };
   }
 
-  static String _languageName(String code) {
-    for (final entry in _languages) {
-      if (entry.$1 == code) return entry.$2;
-    }
-    return 'English';
-  }
-
-  static void _showLanguageSheet(BuildContext context, WidgetRef ref) {
-    final current = SettingsRepository.instance.locale;
-    showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            for (final entry in _languages)
-              ListTile(
-                title: Text(
-                  entry.$2,
-                  style: TextStyle(
-                    fontWeight: current == entry.$1 ? FontWeight.w700 : null,
-                  ),
-                ),
-                subtitle: Text(entry.$1, style: const TextStyle(fontSize: 11)),
-                trailing: current == entry.$1 ? const Icon(Icons.check) : null,
-                onTap: () => Navigator.pop(context, entry.$1),
-              ),
-          ],
-        ),
-      ),
-    ).then((locale) {
-      if (locale != null && context.mounted) {
-        try {
-          SettingsRepository.instance.setLocale(locale);
-          ref.read(localeProvider.notifier).state = locale;
-        } catch (e) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not change language: $e')));
-          }
-        }
-      }
-    });
-  }
 
   static void _showCurrencySheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet<String>(

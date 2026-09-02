@@ -84,7 +84,6 @@ class ArtVaultApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
-    final locale = ref.watch(localeProvider);
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
@@ -127,17 +126,9 @@ class ArtVaultApp extends ConsumerWidget {
         }
         return appContent;
       },
-      locale: locale == 'en' ? null : Locale(locale),
+      locale: null,
       supportedLocales: const [
         Locale('en'),
-        Locale('de'),
-        Locale('fr'),
-        Locale('es'),
-        Locale('it'),
-        Locale('pt'),
-        Locale('ar'),
-        Locale('zh'),
-        Locale('ja'),
       ],
       // Wire the real localization delegates so MaterialLocalizations is
       // always available (AppBar, NavigationBar, tooltips, …). Without these,

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/providers/providers.dart';
 import '../../core/widgets/a11y.dart';
+import '../../core/widgets/web/pwa_install_banner.dart';
 import '../../core/widgets/web/web_breadcrumb.dart';
 import '../../core/widgets/web/sync_status_indicator.dart';
 
@@ -158,6 +159,8 @@ class _AppShellWebState extends ConsumerState<AppShellWeb>
               Expanded(
                 child: Column(
                   children: [
+                    // PWA install prompt banner
+                    const PwaInstallBanner(),
                     _WebHeader(
                       currentIndex: shell.currentIndex,
                       onSearch: () => context.push('/search'),
