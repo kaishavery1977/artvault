@@ -384,6 +384,7 @@ class PaintingRepository {
 
       // Upload any local images not yet mirrored — parallel for speed (mobile+web same account)
       final urls = [...working.imageUrls];
+      final driveIds = [...working.driveFileIds];
       final toUpload = <int>[];
       for (var i = 0; i < working.images.length; i++) {
         if (i < urls.length && urls[i].isNotEmpty) continue;
@@ -398,19 +399,29 @@ class PaintingRepository {
           final raw = await file.readAsBytes();
           final compressed = await ImageUtils.compress(file, maxDimension: 2048, quality: 85);
           final bytes = compressed.existsSync() ? await compressed.readAsBytes() : raw;
-          return cloud.uploadBytes('paintings/${working.id}/$name', bytes, contentType: 'image/jpeg');
+          final ref = await cloud.uploadBytes('paintings/${working.id}/$name', bytes, contentType: 'image/jpeg');
+          return ref;
         }));
-        for (final url in uploaded) {
-          if (url != null) urls.add(url);
+        for (final ref in uploaded) {
+          if (ref != null) {
+            urls.add(ref);
+            // Track Google Drive file IDs separately for future operations.
+            if (ref.startsWith('gdrive:')) {
+              driveIds.add(ref.substring(7));
+            } else {
+              driveIds.add('');
+            }
+          }
         }
       }
       if (urls.length < working.images.length) {
         // Missing remote mirrors for some images — keep dirty.
-        working = working.copyWith(imageUrls: urls, needsSync: true);
+        working = working.copyWith(imageUrls: urls, driveFileIds: driveIds, needsSync: true);
       } else {
         working = working
             .copyWith(
               imageUrls: urls,
+              driveFileIds: driveIds,
               coverImageUrl: urls.isNotEmpty
                   ? urls.first
                   : working.coverImageUrl,

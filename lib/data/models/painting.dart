@@ -40,6 +40,7 @@ class Painting {
   final String coverImageUrl; // remote (Firebase Storage) URL
   final List<String> images; // all local paths
   final List<String> imageUrls; // all remote urls
+  final List<String> driveFileIds; // Google Drive file IDs (parallel to imageUrls)
 
   // AI
   final String aiHash; // perceptual hash for duplicate detection
@@ -90,6 +91,7 @@ class Painting {
     this.coverImageUrl = '',
     this.images = const [],
     this.imageUrls = const [],
+    this.driveFileIds = const [],
     this.aiHash = '',
     this.aiTags = const [],
     this.dominantColors = const [],
@@ -136,6 +138,7 @@ class Painting {
     String? coverImageUrl,
     List<String>? images,
     List<String>? imageUrls,
+    List<String>? driveFileIds,
     String? aiHash,
     List<String>? aiTags,
     List<String>? dominantColors,
@@ -181,6 +184,7 @@ class Painting {
       coverImageUrl: coverImageUrl ?? this.coverImageUrl,
       images: images ?? this.images,
       imageUrls: imageUrls ?? this.imageUrls,
+      driveFileIds: driveFileIds ?? this.driveFileIds,
       aiHash: aiHash ?? this.aiHash,
       aiTags: aiTags ?? this.aiTags,
       dominantColors: dominantColors ?? this.dominantColors,
@@ -236,6 +240,7 @@ class Painting {
     'coverImageUrl': coverImageUrl,
     'images': images,
     'imageUrls': imageUrls,
+    'driveFileIds': driveFileIds,
     'aiHash': aiHash,
     'aiTags': aiTags,
     'dominantColors': dominantColors,
@@ -283,6 +288,7 @@ class Painting {
     coverImageUrl: (json['coverImageUrl'] as String?) ?? '',
     images: _list(json['images']),
     imageUrls: _list(json['imageUrls']),
+    driveFileIds: _list(json['driveFileIds']),
     aiHash: (json['aiHash'] as String?) ?? '',
     aiTags: _list(json['aiTags']),
     dominantColors: _list(json['dominantColors']),

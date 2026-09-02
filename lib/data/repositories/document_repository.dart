@@ -217,15 +217,21 @@ class DocumentRepository {
       if (!working.isDeleted) {
         await cloud.upsert(_collection, working.id, working.toJson());
       }
-      if (working.localPath.isNotEmpty && working.remoteUrl.isEmpty) {
+      if (working.localPath.isNotEmpty && working.remoteUrl.isEmpty && working.driveFileId.isEmpty) {
         final file = File(working.localPath);
         if (await file.exists()) {
-          final url = await cloud.uploadBytes(
+          final ref = await cloud.uploadBytes(
             'documents/${working.id}/${working.name}',
             await file.readAsBytes(),
             contentType: working.mimeType,
           );
-          if (url != null) working = working.copyWith(remoteUrl: url);
+          if (ref != null) {
+            if (ref.startsWith('gdrive:')) {
+              working = working.copyWith(driveFileId: ref.substring(7));
+            } else {
+              working = working.copyWith(remoteUrl: ref);
+            }
+          }
         }
       }
       if (working.isDeleted) {

@@ -6,6 +6,7 @@ class ArtDocument {
   final String name;
   final String localPath;
   final String remoteUrl;
+  final String driveFileId; // Google Drive file ID (for Drive-stored files)
   final String mimeType;
   final int sizeBytes;
   final bool isDeleted;
@@ -21,6 +22,7 @@ class ArtDocument {
     required this.name,
     this.localPath = '',
     this.remoteUrl = '',
+    this.driveFileId = '',
     this.mimeType = 'application/pdf',
     this.sizeBytes = 0,
     this.isDeleted = false,
@@ -36,6 +38,7 @@ class ArtDocument {
     String? name,
     String? localPath,
     String? remoteUrl,
+    String? driveFileId,
     String? mimeType,
     int? sizeBytes,
     bool? isDeleted,
@@ -50,6 +53,7 @@ class ArtDocument {
       name: name ?? this.name,
       localPath: localPath ?? this.localPath,
       remoteUrl: remoteUrl ?? this.remoteUrl,
+      driveFileId: driveFileId ?? this.driveFileId,
       mimeType: mimeType ?? this.mimeType,
       sizeBytes: sizeBytes ?? this.sizeBytes,
       isDeleted: isDeleted ?? this.isDeleted,
@@ -67,6 +71,7 @@ class ArtDocument {
     'name': name,
     'localPath': localPath,
     'remoteUrl': remoteUrl,
+    'driveFileId': driveFileId,
     'mimeType': mimeType,
     'sizeBytes': sizeBytes,
     'isDeleted': isDeleted,
@@ -83,6 +88,7 @@ class ArtDocument {
     name: (json['name'] as String?) ?? 'Untitled',
     localPath: (json['localPath'] as String?) ?? '',
     remoteUrl: (json['remoteUrl'] as String?) ?? '',
+    driveFileId: (json['driveFileId'] as String?) ?? '',
     mimeType: (json['mimeType'] as String?) ?? 'application/octet-stream',
     sizeBytes: (json['sizeBytes'] as num?)?.toInt() ?? 0,
     isDeleted: (json['isDeleted'] as bool?) ?? false,

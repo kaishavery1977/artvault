@@ -16,6 +16,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' as supa;
 
 import '../../core/config/supabase_config.dart';
 import '../../core/services/app_logger.dart';
+import '../../core/services/google_drive_service.dart';
 import '../../firebase_options.dart';
 
 /// Centralised gateway to Firebase (auth, analytics, crashlytics) and
@@ -196,6 +197,8 @@ class CloudBackend {
     if (email != null) {
       await _ensureSupabaseAuth(email, _socialPassword(email));
     }
+    // Authenticate Google Drive for private vault storage.
+    await GoogleDriveService.instance.authenticate();
     return cred.user;
   }
 
@@ -240,6 +243,8 @@ class CloudBackend {
     try {
       await GoogleSignIn.instance.signOut();
     } catch (_) {}
+    // Clear Google Drive credentials.
+    GoogleDriveService.instance.signOut();
     // Sign out of Supabase too.
     try {
       await _db.auth.signOut();
@@ -373,65 +378,91 @@ class CloudBackend {
 
   Future<List<Map<String, dynamic>>> fetchUsers() async => fetchAll('users');
 
-  // ---------------------------------------------------------- Supabase Storage --
+  // ---------------------------------------------------------- Cloud Storage --
+  // Upload order: Google Drive → Supabase Storage → Firebase Storage.
+  // Download order: Google Drive file ID → Supabase URL → HTTPS allow-list.
+  // Public URLs always use Firebase Storage (Drive files can't be hotlinked).
 
   /// Maximum upload size in bytes (50 MB — Supabase free plan limit).
   static const int maxUploadBytes = 50 * 1024 * 1024;
 
-  /// Uploads bytes to Supabase Storage and returns the public download URL.
+  /// Google Drive is the primary file storage when the user is signed in
+  /// with Google. Returns true when Drive is available for uploads.
+  bool get _driveReady => GoogleDriveService.instance.isReady;
+
+  /// Uploads bytes to cloud storage and returns a download URL.
+  ///
+  /// Priority: Google Drive (user's own 15 GB) → Supabase → Firebase.
+  /// For public-facing images (galleries), callers should also push a copy
+  /// to Firebase Storage via [uploadToFirebasePublic] since Drive files
+  /// cannot be hotlinked.
   Future<String?> uploadBytes(
     String path,
     Uint8List bytes, {
     String? contentType,
   }) async {
-    if (!_ready) {
-      AppLogger.warning('uploadBytes: Supabase not ready — skipping');
-      return null;
-    }
-    // Ensure the Supabase client has an auth session for storage RLS.
-    await _refreshSupabaseSession();
-    // Enforce free-plan 50 MB limit client-side before hitting the network.
-    if (bytes.length > maxUploadBytes) {
-      throw Exception(
-        'File is ${(bytes.length / 1024 / 1024).toStringAsFixed(1)} MB '
-        '— maximum is 50 MB on the free plan.',
-      );
-    }
-    // Retry loop with exponential backoff.
-    for (var attempt = 1; attempt <= uploadMaxRetries; attempt++) {
+    // --- 1. Try Google Drive first ---
+    if (_driveReady) {
       try {
-        return await _trackUpload(() async {
-          final bucket = _bucketForPath(path);
-          AppLogger.info('uploadBytes: attempt $attempt/$uploadMaxRetries — $bucket/${_stripBucket(path)} (${bytes.length} bytes)');
-          await _storage
-              .from(bucket)
-              .uploadBinary(
-                _stripBucket(path),
-                bytes,
-                fileOptions: supa.FileOptions(
-                  contentType: contentType ?? 'image/jpeg',
-                  upsert: true,
-                ),
-              );
-          final url = _storage.from(bucket).getPublicUrl(_stripBucket(path));
-          AppLogger.info('uploadBytes: success → $url');
-          return url;
-        });
+        final driveId = await GoogleDriveService.instance.uploadBytes(
+          drivePath: path,
+          bytes: bytes,
+          contentType: contentType ?? 'image/jpeg',
+        );
+        if (driveId != null) {
+          // Return a Drive file ID marker — downloadBytes recognises this prefix.
+          final driveRef = 'gdrive:$driveId';
+          AppLogger.info('uploadBytes: Google Drive success → $driveRef');
+          lastUploadError.value = '';
+          if (failedUploadStreak.value > 0) failedUploadStreak.value = 0;
+          return driveRef;
+        }
       } catch (e) {
-        final msg = _friendlyError(e);
-        lastUploadError.value = msg;
-        AppLogger.warning('uploadBytes: attempt $attempt/$uploadMaxRetries FAILED — $msg');
-        if (attempt < uploadMaxRetries) {
-          final delay = uploadRetryBaseDelay * (1 << (attempt - 1)); // 2s, 4s, 8s
-          AppLogger.info('uploadBytes: retrying in ${delay.inSeconds}s…');
-          await Future<void>.delayed(delay);
-          // Re-authenticate before retry in case session expired.
-          await _refreshSupabaseSession();
+        AppLogger.warning('uploadBytes: Google Drive failed, falling back', error: e);
+      }
+    }
+
+    // --- 2. Try Supabase Storage ---
+    if (_ready) {
+      await _refreshSupabaseSession();
+      if (bytes.length > maxUploadBytes) {
+        AppLogger.warning('uploadBytes: file exceeds Supabase 50 MB limit — skipping Supabase');
+      } else {
+        for (var attempt = 1; attempt <= uploadMaxRetries; attempt++) {
+          try {
+            return await _trackUpload(() async {
+              final bucket = _bucketForPath(path);
+              AppLogger.info('uploadBytes: Supabase attempt $attempt/$uploadMaxRetries — $bucket/${_stripBucket(path)} (${bytes.length} bytes)');
+              await _storage
+                  .from(bucket)
+                  .uploadBinary(
+                    _stripBucket(path),
+                    bytes,
+                    fileOptions: supa.FileOptions(
+                      contentType: contentType ?? 'image/jpeg',
+                      upsert: true,
+                    ),
+                  );
+              final url = _storage.from(bucket).getPublicUrl(_stripBucket(path));
+              AppLogger.info('uploadBytes: Supabase success → $url');
+              return url;
+            });
+          } catch (e) {
+            final msg = _friendlyError(e);
+            lastUploadError.value = msg;
+            AppLogger.warning('uploadBytes: Supabase attempt $attempt/$uploadMaxRetries FAILED — $msg');
+            if (attempt < uploadMaxRetries) {
+              final delay = uploadRetryBaseDelay * (1 << (attempt - 1));
+              await Future<void>.delayed(delay);
+              await _refreshSupabaseSession();
+            }
+          }
         }
       }
     }
-    // All Supabase retries exhausted — try Firebase Storage as fallback.
-    AppLogger.info('uploadBytes: Supabase failed, trying Firebase Storage fallback…');
+
+    // --- 3. Firebase Storage fallback ---
+    AppLogger.info('uploadBytes: trying Firebase Storage fallback…');
     try {
       final url = await _uploadToFirebase(path, bytes, contentType);
       if (url != null) {
@@ -443,8 +474,19 @@ class CloudBackend {
     } catch (fbError) {
       AppLogger.warning('uploadBytes: Firebase fallback also failed', error: fbError);
     }
-    // Both Supabase and Firebase failed — rethrow last Supabase error.
-    throw Exception(lastUploadError.value);
+    throw Exception(lastUploadError.value.isNotEmpty
+        ? lastUploadError.value
+        : 'All storage backends failed');
+  }
+
+  /// Uploads bytes to Firebase Storage directly (for public-facing images
+  /// that need a hotlinkable URL, e.g. gallery pages).
+  Future<String?> uploadToFirebasePublic(
+    String path,
+    Uint8List bytes, {
+    String? contentType,
+  }) async {
+    return _uploadToFirebase(path, bytes, contentType);
   }
 
   /// Uploads bytes and returns a public URL (same as [uploadBytes]).
@@ -457,18 +499,33 @@ class CloudBackend {
   }
 
   /// Returns the public download URL for [path] without uploading.
+  /// For Drive files, returns null (Drive files can't be hotlinked).
   String? publicUrlFor(String path) {
     if (!_ready) return null;
     final bucket = _bucketForPath(path);
     return _storage.from(bucket).getPublicUrl(_stripBucket(path));
   }
 
-  /// Downloads bytes from a Supabase Storage path or an allow-listed HTTPS URL.
-  /// Non-allow-listed hosts and plain-http are rejected — prevents the
-  /// on-device SSRF where a poisoned `photoUrl` in the DB could make the
-  /// app fetch `http://169.254.169.254/` or other private targets.
+  /// Downloads bytes from cloud storage.
+  ///
+  /// Recognises three URL/ref formats:
+  /// - `gdrive:{fileId}` — Google Drive file ID (primary)
+  /// - Supabase Storage URL (`/storage/v1/object/`)
+  /// - Allow-listed HTTPS URLs
   Future<Uint8List?> downloadBytes(String url) async {
-    if (!_ready || url.isEmpty) return null;
+    if (url.isEmpty) return null;
+
+    // --- Google Drive file ID ---
+    if (url.startsWith('gdrive:')) {
+      final fileId = url.substring(7);
+      if (_driveReady) {
+        return GoogleDriveService.instance.downloadBytes(fileId);
+      }
+      return null;
+    }
+
+    // --- Supabase / HTTPS ---
+    if (!_ready) return null;
     try {
       if (url.contains('/storage/v1/object/')) {
         final uri = Uri.parse(url);
@@ -481,7 +538,6 @@ class CloudBackend {
       }
       final uri = Uri.tryParse(url);
       if (uri == null || uri.scheme != 'https') return null;
-      // Allow-list: only Supabase project + Google storage/CDN hosts.
       const allowedSuffixes = [
         '.supabase.co',
         '.supabase.in',
@@ -495,7 +551,6 @@ class CloudBackend {
           allowedSuffixes.any((s) => host.endsWith(s)) ||
           host == 'mtwinlbgvuxezadbsrrl.supabase.co';
       if (!allowed) return null;
-      // Block private/link-local/metadata IPs even if host was spoofed via DNS.
       if (RegExp(
         r'^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|127\.|169\.254\.|::1)',
       ).hasMatch(host)) {
@@ -509,12 +564,24 @@ class CloudBackend {
     }
   }
 
+  /// Deletes a file from cloud storage.
+  /// Handles Google Drive refs, Supabase paths, and Firebase paths.
   Future<void> deleteFile(String path) async {
-    if (!_ready) return;
-    try {
-      final bucket = _bucketForPath(path);
-      await _storage.from(bucket).remove([_stripBucket(path)]);
-    } catch (_) {}
+    // Google Drive file ID
+    if (path.startsWith('gdrive:')) {
+      final fileId = path.substring(7);
+      if (_driveReady) {
+        await GoogleDriveService.instance.deleteFile(fileId);
+      }
+      return;
+    }
+    // Supabase Storage
+    if (_ready) {
+      try {
+        final bucket = _bucketForPath(path);
+        await _storage.from(bucket).remove([_stripBucket(path)]);
+      } catch (_) {}
+    }
   }
 
   /// Maps a storage path to the correct Supabase bucket.

@@ -8,6 +8,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/backup_service.dart';
 import '../../core/services/device_resolution_service.dart';
+import '../../core/services/google_drive_service.dart';
 import '../../core/widgets/bits.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/widgets/surfaces.dart';
@@ -131,6 +132,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 }
               },
             ),
+            const Divider(height: 1),
+            _GoogleDriveTile(),
           ],
         ),
         _Group(
@@ -873,5 +876,87 @@ class _ThemeSelector extends ConsumerWidget {
       }
       ref.read(themeModeProvider.notifier).state = SettingsRepository.instance.themeMode;
     });
+  }
+}
+
+/// Toggle for connecting/disconnecting Google Drive for private vault storage.
+class _GoogleDriveTile extends StatefulWidget {
+  const _GoogleDriveTile();
+
+  @override
+  State<_GoogleDriveTile> createState() => _GoogleDriveTileState();
+}
+
+class _GoogleDriveTileState extends State<_GoogleDriveTile> {
+  bool _connecting = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final drive = GoogleDriveService.instance;
+    final connected = drive.isReady;
+
+    return ListTile(
+      leading: Icon(
+        connected ? Icons.cloud_done_outlined : Icons.cloud_outlined,
+        color: connected ? Colors.green : null,
+      ),
+      title: const Text('Google Drive'),
+      subtitle: Text(
+        connected
+            ? 'Connected — vault files stored in your Drive'
+            : 'Store vault files in your personal Google Drive (15 GB free)',
+      ),
+      trailing: _connecting
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Switch(
+              value: connected,
+              onChanged: _connecting ? null : (v) => _toggleDrive(v),
+            ),
+      onTap: _connecting ? null : () => _toggleDrive(!connected),
+    );
+  }
+
+  Future<void> _toggleDrive(bool enable) async {
+    if (enable) {
+      setState(() => _connecting = true);
+      try {
+        final success = await GoogleDriveService.instance.authenticate();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                success
+                    ? 'Google Drive connected — vault files will sync to your Drive'
+                    : 'Could not connect to Google Drive. Please try again.',
+              ),
+              backgroundColor: success ? Colors.green : null,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Drive connection failed: $e'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _connecting = false);
+      }
+    } else {
+      // Disconnect — clear Drive credentials.
+      GoogleDriveService.instance.signOut();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Google Drive disconnected')),
+        );
+      }
+    }
   }
 }
