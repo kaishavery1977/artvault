@@ -267,6 +267,19 @@ final vaultStatsProvider = Provider<VaultStats>((ref) {
   );
 });
 
+/// Count of local items (paintings + artists + documents) that haven't
+/// been synced to the cloud yet. The home screen and sync indicator
+/// use this to show a pending count.
+final pendingSyncCountProvider = Provider<int>((ref) {
+  final paintings = ref.watch(paintingsProvider).valueOrNull ?? [];
+  final artists = ref.watch(artistsProvider).valueOrNull ?? [];
+  final documents = ref.watch(documentsProvider).valueOrNull ?? [];
+  final pending = paintings.where((p) => p.needsSync).length +
+      artists.where((a) => a.needsSync).length +
+      documents.where((d) => d.needsSync).length;
+  return pending;
+});
+
 /// Whether the gallery is in multi-select (batch delete) mode.
 /// The shell hides its upload FAB while this is true so the two don't overlap.
 final gallerySelectModeProvider = StateProvider<bool>((ref) => false);
