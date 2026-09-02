@@ -65,3 +65,4 @@ functions/node_modules/
 # Build artifacts
 *.apk
 *.aab
+scripts/
