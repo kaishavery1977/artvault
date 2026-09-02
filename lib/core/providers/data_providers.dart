@@ -44,14 +44,26 @@ final notificationsProvider = StreamProvider<List<AppNotification>>((ref) {
 final usersProvider = StreamProvider<List<AppUser>>((ref) async* {
   final cloud = CloudBackend.instance;
   if (cloud.isReady) {
-    yield* cloud.watchUsers().map(
-      (list) => list.map(AppUser.fromJson).toList()
-        ..sort(
-          (a, b) => a.displayName.toLowerCase().compareTo(
-            b.displayName.toLowerCase(),
-          ),
-        ),
-    );
+    // Realtime may fail with WebSocket state 3 when same uid on 2 devices.
+    // Fallback to REST polling so "Could not load users" never shows.
+    try {
+      await for (final list in cloud.watchUsers()) {
+        yield list.map(AppUser.fromJson).toList()
+          ..sort((a, b) => a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
+      }
+    } catch (_) {
+      final cached = await cloud.fetchUsers();
+      yield cached.map(AppUser.fromJson).toList()
+        ..sort((a, b) => a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
+      // Poll every 10s as fallback when realtime is down
+      await for (final _ in Stream.periodic(const Duration(seconds: 10))) {
+        try {
+          final polled = await cloud.fetchUsers();
+          yield polled.map(AppUser.fromJson).toList()
+            ..sort((a, b) => a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
+        } catch (_) {}
+      }
+    }
   } else {
     yield [AuthRepository.instance.cachedUser];
   }

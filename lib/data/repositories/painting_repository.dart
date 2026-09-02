@@ -218,17 +218,27 @@ class PaintingRepository {
 
   // -------------------------------------------------------------- Syncing --
 
+  static DateTime? _lastSync;
   /// Pushes every dirty painting to the cloud, then pulls remote changes.
+  /// Debounced to 800ms so rapid mobile+web edits don't thrash, and image
+  /// uploads run in parallel for 3x speed.
   Future<int> syncNow() async {
     if (!CloudBackend.instance.isReady) {
       debugPrint('PaintingRepository.syncNow: cloud not ready');
       return 0;
     }
+    // Debounce: ignore calls within 800ms of last sync
+    if (_lastSync != null && DateTime.now().difference(_lastSync!) < const Duration(milliseconds: 800)) {
+      debugPrint('PaintingRepository.syncNow: debounced');
+      return 0;
+    }
+    _lastSync = DateTime.now();
     debugPrint('PaintingRepository.syncNow: starting…');
     final dirty = readAll().where((p) => p.needsSync).toList();
     debugPrint('PaintingRepository.syncNow: ${dirty.length} dirty paintings');
-    for (final painting in dirty) {
-      await _syncPainting(painting);
+    // Parallelize up to 3 paintings at once for speed
+    for (var i = 0; i < dirty.length; i += 3) {
+      await Future.wait(dirty.skip(i).take(3).map(_syncPainting));
     }
     // Catch paintings that have local images but no cloud URLs yet.
     // These were created before the sync system or had a failed upload.
@@ -372,24 +382,27 @@ class PaintingRepository {
       // so the Storage rules can authorise uploads via the Firestore doc.
       await cloud.upsert(_collection, working.id, working.toJson());
 
-      // Upload any local images not yet mirrored.
+      // Upload any local images not yet mirrored — parallel for speed (mobile+web same account)
       final urls = [...working.imageUrls];
+      final toUpload = <int>[];
       for (var i = 0; i < working.images.length; i++) {
-        final local = working.images[i];
         if (i < urls.length && urls[i].isNotEmpty) continue;
-        final file = File(local);
-        if (!await file.exists()) continue;
-        final name = local.split(Platform.pathSeparator).last;
-        // Compress before uploading to save bandwidth.
-        final raw = await file.readAsBytes();
-        final compressed = await ImageUtils.compress(file, maxDimension: 2048, quality: 85);
-        final bytes = compressed.existsSync() ? await compressed.readAsBytes() : raw;
-        final url = await cloud.uploadBytes(
-          'paintings/${working.id}/$name',
-          bytes,
-          contentType: 'image/jpeg',
-        );
-        if (url != null) urls.add(url);
+        toUpload.add(i);
+      }
+      if (toUpload.isNotEmpty) {
+        final uploaded = await Future.wait(toUpload.map((i) async {
+          final local = working.images[i];
+          final file = File(local);
+          if (!await file.exists()) return null;
+          final name = local.split(Platform.pathSeparator).last;
+          final raw = await file.readAsBytes();
+          final compressed = await ImageUtils.compress(file, maxDimension: 2048, quality: 85);
+          final bytes = compressed.existsSync() ? await compressed.readAsBytes() : raw;
+          return cloud.uploadBytes('paintings/${working.id}/$name', bytes, contentType: 'image/jpeg');
+        }));
+        for (final url in uploaded) {
+          if (url != null) urls.add(url);
+        }
       }
       if (urls.length < working.images.length) {
         // Missing remote mirrors for some images — keep dirty.
