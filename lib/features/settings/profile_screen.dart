@@ -12,6 +12,7 @@ import '../../core/widgets/motion.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/app_user.dart';
+import 'package:go_router/go_router.dart';
 import '../../data/repositories/auth_repository.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -214,9 +215,83 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   : const Icon(Icons.save_outlined),
               label: const Text('Save profile'),
             ),
+            const SizedBox(height: AppSpacing.xxl),
+            // Danger zone
+            GlassCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Danger zone', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: AppSpacing.sm),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.delete_forever, color: Colors.red),
+                    title: const Text('Delete account', style: TextStyle(color: Colors.red)),
+                    subtitle: const Text('Permanently delete your account and all data'),
+                    onTap: () => _confirmDeleteAccount(context),
+                  ),
+                ],
+              ),
+            ),
           ], context: context),
         ],
       ),
     );
+  }
+
+  Future<void> _confirmDeleteAccount(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.warning, color: Colors.red, size: 48),
+        title: const Text('Delete account?'),
+        content: const Text(
+          'This will permanently delete your account, all paintings, artists, '
+          'documents, and settings. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete forever'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    // Show loading
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Deleting account...')),
+      );
+    }
+
+    try {
+      await AuthRepository.instance.deleteAccount();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Account deleted. You will be signed out.')),
+        );
+      }
+      // Navigate to login
+      if (context.mounted) {
+        context.go('/login');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete account: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 }

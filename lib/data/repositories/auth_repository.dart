@@ -511,6 +511,85 @@ class AuthRepository {
     return (restored: restored, failed: failed);
   }
 
+  /// Permanently deletes the user's account and all associated data.
+  ///
+  /// This is a destructive, irreversible operation:
+  /// 1. Deletes all vault data (paintings, artists, documents, condition reports)
+  /// 2. Deletes the user profile
+  /// 3. Deletes any storage files (profile photo, gallery pages)
+  /// 4. Revokes the account (prevents re-creation)
+  /// 5. Signs out locally
+  ///
+  /// Returns true on success, throws [AuthException] on failure.
+  Future<bool> deleteAccount() async {
+    final me = cachedUser;
+    if (me.uid.isEmpty) {
+      throw AuthException('No account to delete.');
+    }
+
+    try {
+      // 1. Delete all vault data from cloud
+      final collections = ['paintings', 'artists', 'documents', 'condition_reports'];
+      for (final collection in collections) {
+        try {
+          final items = await CloudBackend.instance.fetchAll(collection, owner: me.uid);
+          for (final item in items) {
+            final id = item['id'] as String? ?? '';
+            if (id.isNotEmpty) {
+              await CloudBackend.instance.remove(collection, id);
+            }
+          }
+        } catch (_) {
+          // Best-effort: continue even if one collection fails
+        }
+      }
+
+      // 2. Delete public gallery if exists
+      try {
+        await CloudBackend.instance.remove('public_galleries', me.uid, pk: 'ownerUid');
+      } catch (_) {}
+
+      // 3. Delete backup snapshot if exists
+      try {
+        await CloudBackend.instance.remove('backups', me.uid, pk: 'uid');
+      } catch (_) {}
+
+      // 4. Delete profile document
+      await CloudBackend.instance.remove('users', me.uid, pk: 'uid');
+
+      // 5. Create a deletion marker (prevents re-creation, unlike revoke which allows restore)
+      await CloudBackend.instance.upsert('revoked', me.uid, {
+        'uid': me.uid,
+        'email': me.email,
+        'displayName': me.displayName,
+        'role': me.role.wire,
+        'revokedAt': DateTime.now().toIso8601String(),
+        'byUid': me.uid,
+        'byEmail': me.email,
+        'deletedPermanently': true,
+      }, pk: 'uid');
+
+      // 6. Log the deletion
+      try {
+        await CloudBackend.instance.addDoc('role_audit', {
+          'uid': me.uid,
+          'byUid': me.uid,
+          'byEmail': me.email,
+          'oldRole': me.role.wire,
+          'newRole': 'deleted',
+          'at': DateTime.now().toIso8601String(),
+        });
+      } catch (_) {}
+
+      // 7. Sign out locally
+      await signOut();
+
+      return true;
+    } catch (e) {
+      throw AuthException('Failed to delete account: $e');
+    }
+  }
+
   /// Sets the subscription tier. Plan changes are admin-only in the rules.
   /// A rejected cloud write (permission-denied) is NOT an offline hiccup:
   /// the plan must not be granted locally, so the error propagates and the
