@@ -1,11 +1,13 @@
 /// Web shim — provides minimal stubs for dart:io types so the codebase
 /// compiles to Web without errors.  On web these are no-ops; real file I/O
 /// only happens on native.
+library;
+
 import 'dart:typed_data';
 
 /// Stub [File] — enough surface area so existing code compiles.
 class File extends FileSystemEntity {
-  File(String path) : super(path);
+  File(super.path);
 
   bool existsSync() => false;
   Future<bool> exists() async => false;
