@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/providers.dart';
+import '../../providers/data_providers.dart';
 
 /// Real-time sync status indicator for the web header.
 /// Shows connection health (online/offline/syncing) and last sync time.
