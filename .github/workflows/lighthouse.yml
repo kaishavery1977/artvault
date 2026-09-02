@@ -41,6 +41,48 @@ jobs:
         env:
           LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
 
+      - name: Accessibility contrast audit
+        if: always()
+        run: |
+          echo "=== Color Contrast Audit ==="
+          echo "Lighthouse asserts color-contrast rule (WCAG AA: 4.5:1 normal, 3:1 large)"
+          echo "Any contrast failures will appear above in the Lighthouse output."
+          echo "The lighthouserc.js enforces color-contrast: error — CI fails on violations."
+          # Parse Lighthouse JSON reports for color-contrast details
+          if [ -d ".lighthouseci" ]; then
+            for report in .lighthouseci/*.json; do
+              if [ -f "$report" ]; then
+                echo ""
+                echo "--- Report: $(basename $report) ---"
+                node -e "
+                  const fs = require('fs');
+                  const data = JSON.parse(fs.readFileSync('$report', 'utf8'));
+                  const audits = data.audits || {};
+                  const cc = audits['color-contrast'];
+                  if (cc) {
+                    console.log('Score:', cc.score === 1 ? 'PASS' : 'FAIL (' + cc.score + ')');
+                    console.log('Description:', cc.description || 'N/A');
+                    if (cc.details && cc.details.items) {
+                      cc.details.items.forEach(item => {
+                        console.log('  -', JSON.stringify(item.node?.snippet || item, null, 0));
+                      });
+                    }
+                  }
+                  // Also report other accessibility failures
+                  const a11y = data.categories?.accessibility;
+                  if (a11y && a11y.score < 1) {
+                    console.log('\\nAccessibility audit failures:');
+                    Object.values(audits).forEach(a => {
+                      if (a.score !== null && a.score < 1 && a.id?.includes('color-contrast') === false) {
+                        console.log('  -', a.id + ':', a.title);
+                      }
+                    });
+                  }
+                " 2>/dev/null || echo "  (Could not parse report)"
+              fi
+            done
+          fi
+
       - name: Upload Lighthouse reports
         uses: actions/upload-artifact@v4
         if: always()
