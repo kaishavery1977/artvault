@@ -1,45 +1,99 @@
 # ArtVault — Project State
 
-## Current Milestone: Cinematic Launch Experience
-Goal: the app's opening moments (splash → onboarding → login) feel deliberate and coherent.
+## Current State: Production-Ready MVP
 
-### Done
-- **Splash intro** (`lib/features/splash/splash_screen.dart`): spotlight bloom, logo settle, letter-by-letter wordmark with shimmer, pulsing dots, camera-push exit
-- **Staggered login fields** (`lib/features/auth/login_screen.dart` + `lib/core/widgets/motion.dart` `staggerReveal` helper)
-- **Onboarding first-slide reveal** (`lib/features/onboarding/onboarding_screen.dart`): glow + expanding ring + badge settle + staggered text, matching the splash hand-off
-- **Pacing**: all stages stretched ~1.5× so the choreography can be felt (splash intro 3.4s, login cascade ~1.4s, onboarding reveal ~1.7s)
-- **Phase 1.6 — launch experience v2**: full 3.4s intro on first launch; ~700ms quick logo+wordmark fade on repeat launches; static render + no camera-push under reduced motion. Flag write is best-effort so a storage hiccup never blocks the hand-off. Widget tests cover all three variants (full / quick / reduced-motion via `FakeAccessibilityFeatures`).
-- **RalphLoop goal C — onboarding complete & delightful**: best-effort persistence on finish (fire-and-forget; worst case onboarding replays), slide reveal gates on `MediaQuery.disableAnimationsOf` (roadmap 1.7 ✅). Verification surfaced and fixed two real device bugs: AuthLayout `Border` per-side colors + `borderRadius` paint assert, and login footer/remember-me rows overflowing on narrow widths. New Hive test harness (fake `PathProviderPlatform` over a temp dir) + shared test helpers (providers pinned, google_fonts runtime fetch off); 3 new onboarding tests (Skip → login, Next walkthrough, reduced-motion static).
-- Widget tests re-timed for the longer timeline (wordmark asserted as letters; mount-time delay timers drained)
-- **RalphLoop goals A (offline-first) & B (premium browsing)**: PR #2 (sync edge fixes: trash/purge resurrection, tombstone queue; 10 no-network tests) and PR #3 (debounced instant search, lightbox Hero hand-off, cascade gallery stagger; 5 tests). Both open for CodeRabbit review.
-- **RalphLoop goal — auth flows complete**: biometric manage sheets (re-scan face, test/remove fingerprint), offline guards for Google/Apple sign-in, guarded secure-storage reads so Security can't freeze, GlassCard paint-crash fix; 'Built by Kais Havery' About credit; 12 new auth tests.
-- **Restore & profile fixes** (PR #5 `feat/vault-restore-fixes`): auto-pull vault on login so the home section populates without pressing Sync; `_pullRemote` URL adoption + `_syncPainting` URL alignment (photos no longer missing after cloud restore); local-first profile restore so name/avatar edits survive re-login; avatar upload to storage with `photoUrl`; storage.rules avatar entry; 13 tests.
-- **App-wide animation overhaul** (PR #6 `feat/app-animations`): ticker-only `RevealEntrance`/`KenBurns`/`GradientShimmerText`/`ShakeOnError` primitives (no pending timers, reduced-motion gated); shell tab fade+drift; home greeting shimmer + welcome spotlight; gallery/search/trash/artist/documents/notifications/reports/users item cascades; detail Ken Burns hero; register/forgot cascade; lock-screen PIN shake; settings/profile/security/storage/backup card cascades; shimmering About credit.
+The app is a fully functional art collection manager with:
+- **Cross-platform**: Android, iOS, Web, Windows
+- **Offline-first**: Hive local storage, syncs when online
+- **Multi-user**: Admin/Curator/Viewer roles via Supabase RLS
+- **Cloud storage**: Google Drive (primary) → Supabase → Firebase Storage
+- **Real-time sync**: Supabase Postgres streaming
+- **Public galleries**: Shareable HTML pages with analytics
 
-### Commits
-- `3c54379` feat: cinematic splash intro and staggered login fields
-- `d95df19` feat(onboarding): cinematic first-slide reveal to match splash hand-off
-- `82c455d` perf(ui): slow the cinematic intros so they can be felt
-- `3193316` docs(gsd): add planning scaffold and launch-experience-v2 phase plan
-- `23494f4` feat(splash): add persisted splash-intro-shown flag
-- `d3f3fed` feat(splash): quick intro and static reduced-motion variants
-- `6aa254e` docs(gsd): mark launch-experience-v2 phase complete
-- `85e0393` docs(gsd): adopt branch-per-phase workflow with CodeRabbit PR review
-- `1dfb0d0` feat(onboarding): best-effort persistence on finish, reduced-motion gating (branch `feat/onboarding-polish`)
-- `993e11e` fix(auth): prevent paint crash and narrow-screen overflows
-- `9415114` test(onboarding): cover skip, walkthrough, and reduced-motion render
-- `64aca61` fix(auth): replace illegal per-side borders and overflow-prone rows (branch `feat/auth-flows-polish`)
-- `b15a1e4` feat(security): manage face lock and fingerprint after enrollment
-- `02ebf84` feat(about): credit the builder on the About screen
-- `6d38076` test(auth): cover validation, offline social guard, biometric manage
+### Tech Stack
+- Flutter 3.44.8 (stable)
+- Firebase (Auth, Analytics, Crashlytics, Messaging, Storage fallback)
+- Supabase (PostgreSQL DB, Storage, Realtime)
+- Google Drive (user's own 15 GB for file storage)
+- Hive (local offline-first storage)
 
-### Verification
-- `flutter analyze`: clean
-- `flutter test`: 33/33 green (3 boot + 12 auth + 5 browse + 13 restore/profile)
-- PRs #1–#5 merged into `main`; PR #6 (`feat/app-animations` → main) open for CodeRabbit review
-- Working tree: clean (on `feat/app-animations`)
+### Test Coverage
+- **182 tests passing**, 0 analyzer issues
+- Covers: auth, gallery, painting CRUD, sync, offline, RBAC, onboarding, animations
+
+## Recent Work (this session)
+
+### PR #17 — Web Support & UI Polish (merged to main)
+1. **Google Drive storage** — primary file storage with 3-tier fallback (Drive → Supabase → Firebase)
+2. **Web performance** — preconnect hints, stale-while-revalidate SW, skip mobile init, 5 MB tflite removal
+3. **Cleanup** — 4.2 GB of build artifacts, temp files, dev scripts removed
+4. **Lint fixes** — all 11 analyzer warnings resolved
+
+### Commits (this session)
+- `6b939ec` fix: resolve all flutter analyze warnings (11 → 0)
+- `94cd8c5` feat(storage): Google Drive as primary file storage with 3-tier fallback
+- `303eb67` chore: clean up 4.2 GB of build artifacts, temp files, and dev scripts
+- `c9952bb` perf(web): optimize load time and bundle size for web
+
+## What's Done (comprehensive)
+
+### Launch Experience
+- ✅ Cinematic splash intro (3.4s full, 700ms quick, reduced-motion static)
+- ✅ Staggered login fields
+- ✅ Onboarding first-slide reveal with glow + ring + badge settle
+- ✅ Pacing stretched ~1.5× for choreography feel
+
+### Auth & Security
+- ✅ Email/password, Google, Apple sign-in
+- ✅ Biometric manage (face lock, fingerprint)
+- ✅ Passcode lock with PBKDF2 hashing
+- ✅ Offline guards for social sign-in
+- ✅ Admin code gate for role management
+
+### Vault Core
+- ✅ Painting CRUD with images, metadata, AI tags
+- ✅ Artist profiles with photos, biography, social links
+- ✅ Document attachments (certificates, invoices, provenance)
+- ✅ Condition reports with chips, notes, photos
+- ✅ Trash/restore with tombstone protection
+- ✅ Batch operations (select, delete, export)
+
+### Cloud & Sync
+- ✅ Offline-first with Hive, background sync to Supabase
+- ✅ Google Drive as primary file storage
+- ✅ Real-time sync via Supabase Postgres streaming
+- ✅ Public gallery links with view analytics
+- ✅ PDF exports (insurance schedule, QR labels, print reports)
+
+### Web
+- ✅ Desktop-first 3D shell with sidebar navigation
+- ✅ Command palette (Ctrl+K)
+- ✅ Keyboard shortcuts
+- ✅ Drag-and-drop upload
+- ✅ Context menus
+- ✅ Stale-while-revalidate service worker
+- ✅ Preconnect hints for faster first paint
+
+### UI & Motion
+- ✅ App-wide animation overhaul (ticker-only, reduced-motion gated)
+- ✅ Ken Burns hero transitions
+- ✅ Gradient shimmer text
+- ✅ Shake on error
+- ✅ Ambient background with floating orbs
 
 ## Next Steps (candidate)
-- Land PR #6 (`feat/app-animations`) after CodeRabbit review; squash merge per branch-per-phase workflow
-- Build merged `main` onto the phone via wireless debugging so the animation overhaul can be felt live
-- Auth flows: remaining sign-in path completeness (social provider scopes, account recovery UX)
+
+### High Priority
+- **Auth flows completion** — social provider scopes, account recovery UX
+- **Deploy to device** — feel-check animations and flow on real hardware
+- **Update ROADMAP.md** — reflect current state, plan next milestones
+
+### Medium Priority
+- **Performance monitoring** — add Lighthouse CI for web, track bundle size
+- **Accessibility audit** — screen reader testing, keyboard navigation
+- **Error handling** — comprehensive error states for all failure modes
+
+### Low Priority
+- **Localization** — translate remaining screens (currently English + 8 locales declared)
+- **Dark mode polish** — verify all web widgets respect theme
+- **PWA improvements** — better offline experience, install prompt

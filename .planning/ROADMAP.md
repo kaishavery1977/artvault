@@ -1,30 +1,54 @@
 # ArtVault — Roadmap
 
-## Phase 1: Launch Polish (in progress)
+## Phase 1: Launch Polish ✅ COMPLETE
 1.1 ✅ Cinematic splash intro
 1.2 ✅ Staggered login fields
 1.3 ✅ Onboarding first-slide reveal
 1.4 ✅ Pacing stretch (~1.5×)
-1.5 ⬜ CodeRabbit review of 1.1–1.4 + Phase 1.6, fix findings
-1.6 ✅ Repeat-launch quick intro + reduced-motion splash (committed `23494f4` `d3f3fed` `85857a4`)
-1.7 ✅ Onboarding reveal gated on reduced motion (committed `1dfb0d0` on `feat/onboarding-polish`, PR #1)
-1.8 ⬜ Land PR #1 after CodeRabbit review (squash merge)
+1.5 ✅ CodeRabbit review + fixes
+1.6 ✅ Repeat-launch quick intro + reduced-motion splash
+1.7 ✅ Onboarding reveal gated on reduced motion
+1.8 ✅ Landing complete
 
-## Phase 2: Auth & Onboarding Completion
-1.1 ✅ Auth flows polish (biometric manage sheets, offline Google/Apple guards, About credit) — `feat/auth-flows-polish`, PR #4
-1.2 ⬜ Land PRs #1–#4 after CodeRabbit review (squash merge)
-1.3 ⬜ Social provider scopes / account recovery UX
-- Onboarding completion → main vault entry
+## Phase 2: Auth & Onboarding ✅ COMPLETE
+2.1 ✅ Auth flows polish (biometric manage, offline guards, About credit)
+2.2 ✅ All PRs merged
+2.3 ✅ Social provider integration (Google, Apple)
 
-## Phase 3: Vault Core
-- Artwork storage/browsing (Firestore + Storage rules enforcement)
-- Main vault UI
+## Phase 3: Vault Core ✅ COMPLETE
+3.1 ✅ Painting CRUD with images, metadata, AI tags
+3.2 ✅ Artist profiles with photos, biography
+3.3 ✅ Document attachments
+3.4 ✅ Condition reports
+3.5 ✅ Trash/restore with tombstone protection
+3.6 ✅ Batch operations
 
-## Phase 4: App-Wide Motion (in progress)
-4.1 ✅ Ticker-only motion primitives (RevealEntrance, KenBurns, GradientShimmerText, ShakeOnError) — no pending timers, reduced-motion gated
-4.2 ✅ Browse choreography: shell tab fade+drift, home greeting shimmer + welcome spotlight, gallery/search/trash/artist cascades, detail Ken Burns hero
-4.3 ✅ Auth choreography: gradient wordmark, register/forgot cascade, lock-screen PIN shake
-4.4 ✅ Settings/admin/lists cascades + shimmering About credit
-4.5 ⬜ Land PR #6 after CodeRabbit review (squash merge); build onto phone for live feel-check
+## Phase 4: App-Wide Motion ✅ COMPLETE
+4.1 ✅ Ticker-only motion primitives
+4.2 ✅ Browse choreography
+4.3 ✅ Auth choreography
+4.4 ✅ Settings/admin/lists cascades
+4.5 ✅ All merged
 
-*Phases 2–3 are placeholders to be refined via GSD planning; do not treat as commitments.*
+## Phase 5: Web Support ✅ COMPLETE
+5.1 ✅ Desktop-first 3D shell with sidebar
+5.2 ✅ Command palette, keyboard shortcuts
+5.3 ✅ Drag-and-drop, context menus
+5.4 ✅ Google Drive as primary file storage
+5.5 ✅ Web performance optimizations
+5.6 ✅ Cleanup (4.2 GB removed)
+5.7 ✅ All merged to main
+
+## Phase 6: Production Readiness (current)
+6.1 ⬜ Auth flows completion (social provider scopes, account recovery UX)
+6.2 ⬜ Deploy to device — feel-check on real hardware
+6.3 ⬜ Performance monitoring (Lighthouse CI, bundle size tracking)
+6.4 ⬜ Accessibility audit (screen reader, keyboard navigation)
+6.5 ⬜ Error handling (comprehensive failure states)
+
+## Phase 7: Polish & Launch (future)
+7.1 ⬜ Localization (translate remaining screens)
+7.2 ⬜ Dark mode polish (verify all web widgets)
+7.3 ⬜ PWA improvements (offline experience, install prompt)
+7.4 ⬜ App Store / Play Store listing
+7.5 ⬜ Marketing site
