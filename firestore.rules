@@ -109,13 +109,12 @@ service cloud.firestore {
     }
 
     // Bootstrap: the secret code that grants the very first admin.
-    // The code itself is never readable by clients — rules read it with
-    // get() only — so a brand-new project's owner can create it once via
-    // `firebase firestore:set` and register an admin with it, no console
-    // editing of the users collection needed. Once an admin exists they can
-    // rotate or delete the code here.
+    // Any signed-in user may read bootstrap/config to verify the admin code
+    // (AdminCodeGateScreen fetches it live so rotation works without an app
+    // update). Only admins may rotate/delete it.
     match /bootstrap/{doc} {
-      allow read, write: if isAdmin();
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
 
     // Revoked accounts: when an admin revokes a user, a marker doc is left
