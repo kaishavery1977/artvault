@@ -99,6 +99,26 @@
   </script>
 </head>
 <body>
+  <!-- Instant HTML splash while Flutter downloads (perceived fast) -->
+  <div id="av-html-splash" style="position:fixed;inset:0;background:#05070F;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.45s ease;">
+    <div style="width:112px;height:112px;border-radius:32px;background:linear-gradient(135deg,#8B5CF6,#22D3EE);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 32px rgba(139,92,246,0.40);animation:av-pulse 1.6s ease infinite alternate;">
+      <span style="font-size:56px;line-height:1;">🎨</span>
+    </div>
+    <div style="margin-top:28px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:28px;font-weight:800;letter-spacing:-0.5px;color:#fff;">ArtVault</div>
+    <div style="margin-top:6px;font-size:11px;letter-spacing:1.6px;font-weight:600;color:rgba(255,255,255,0.45);">PRIVATE GALLERY • 3D</div>
+    <div style="margin-top:28px;width:32px;height:2px;border-radius:99px;background:linear-gradient(90deg,rgba(139,92,246,0.5),rgba(255,255,255,0.5),rgba(139,92,246,0.5));opacity:0.6;"></div>
+    <div style="margin-top:12px;font-size:11px;letter-spacing:1.2px;color:rgba(255,255,255,0.35);">Loading your gallery…</div>
+    <style>@keyframes av-pulse { from { transform:scale(0.97);} to { transform:scale(1.03);} }</style>
+  </div>
+  <script>
+    // Hide HTML splash once Flutter renders first frame
+    window.addEventListener('flutter-first-frame', function() {
+      var el = document.getElementById('av-html-splash');
+      if (el) { el.style.opacity = '0'; setTimeout(function(){ el.remove(); }, 500); }
+    });
+    // Fallback: hide after 8s even if event missed
+    setTimeout(function(){ var el=document.getElementById('av-html-splash'); if(el) el.style.display='none'; }, 8000);
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -68,10 +69,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     await Future<void>.delayed(Duration.zero);
     if (!mounted) return;
 
-    final reducedMotion = MediaQuery.disableAnimationsOf(context);
+    // On web, always show the full cinematic intro (ring + glow + wordmark)
+    // — never honor reduced-motion or resume-shortcut, which makes it look
+    // like a 1-sec flash. Mobile still respects system preference.
+    final reducedMotion = !kIsWeb && MediaQuery.disableAnimationsOf(context);
     final present = reducedMotion
         ? _introReduced
-        : (_resumeReplay ? _introResume : _introFull);
+        : (_resumeReplay && !kIsWeb ? _introResume : _introFull);
 
     final boot = ref.read(authProvider.notifier).bootstrap();
     await Future.wait([boot, Future<void>.delayed(present)]);
