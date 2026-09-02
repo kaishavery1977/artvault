@@ -27,17 +27,21 @@ Future<void> main() async {
   ArtVaultHttpOverrides.install();
 
   // Offline-first boot: local storage + services first, Firebase best-effort.
+  // On web, skip mobile-only services (notifications, orientation, file I/O)
+  // to cut ~500ms from the initial load.
   try {
     await LocalDatabase.instance.init();
-    await FileStorageService.instance.init();
+    if (!kIsWeb) await FileStorageService.instance.init();
   } catch (e) {
     debugPrint('ArtVault boot (local): $e');
   }
 
-  try {
-    await NotificationService.instance.init();
-  } catch (e) {
-    debugPrint('ArtVault boot (notifications): $e');
+  if (!kIsWeb) {
+    try {
+      await NotificationService.instance.init();
+    } catch (e) {
+      debugPrint('ArtVault boot (notifications): $e');
+    }
   }
 
   final cloudReady = await CloudBackend.instance.initialize();
@@ -48,12 +52,15 @@ Future<void> main() async {
   // Start the sync retry service (persists in Hive, retries with backoff).
   SyncService.instance.start();
 
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      systemNavigationBarColor: Colors.transparent,
-    ),
-  ); // Pre-detect resolution from the first view (available before runApp).
+  if (!kIsWeb) {
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: Colors.transparent,
+      ),
+    );
+  }
+  // Pre-detect resolution from the first view (available before runApp).
   // This captures install-time resolution; subsequent launches refresh it.
   final firstView = WidgetsBinding.instance.platformDispatcher.views.first;
   final mq = MediaQueryData.fromView(firstView);

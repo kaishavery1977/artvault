@@ -4,18 +4,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'package:artvault/core/providers/providers.dart';
 import 'package:artvault/core/theme/adaptive_layout.dart';
 import 'package:artvault/core/services/device_resolution_service.dart';
 
-/// Stops google_fonts from fetching fonts over HTTP in tests (the test
-/// HttpClient returns 400 for every request); it falls back to the default
-/// font family instead. Call from each test file's `setUpAll`.
-void disableRuntimeFontFetching() {
-  GoogleFonts.config.allowRuntimeFetching = false;
-}
+/// No-op: google_fonts was removed from the project. Kept for backward
+/// compatibility with existing test files that call this.
+void disableRuntimeFontFetching() {}
 
 /// Auth controller whose [bootstrap] never touches local/secure storage.
 ///

@@ -1,18 +1,8 @@
-// ArtVault Service Worker — offline caching + push notifications
-const CACHE_NAME = 'artvault-v1';
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/flutter_bootstrap.js',
-  '/main.dart.js',
-  '/manifest.json',
-];
+// ArtVault Service Worker — stale-while-revalidate + push notifications
+const CACHE_NAME = 'artvault-v2';
 
-// Install: cache critical assets
+// Install: skip waiting for new SW to activate immediately
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
-  );
   self.skipWaiting();
 });
 
@@ -26,7 +16,7 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: network-first for API, cache-first for static
+// Fetch: stale-while-revalidate for static assets, network-first for API
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
@@ -35,23 +25,30 @@ self.addEventListener('fetch', (event) => {
   if (url.hostname.includes('firebaseio.com') ||
       url.hostname.includes('googleapis.com') ||
       url.hostname.includes('firebasestorage.app') ||
-      url.hostname.includes('gstatic.com')) {
+      url.hostname.includes('gstatic.com') ||
+      url.hostname.includes('supabase.co') ||
+      url.hostname.includes('supabase.in')) {
     event.respondWith(
       fetch(event.request).catch(() => caches.match(event.request))
     );
     return;
   }
 
-  // Static assets: cache-first
+  // Static assets: stale-while-revalidate
+  // Serve cached version immediately, fetch update in background
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        }
-        return response;
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.match(event.request).then((cached) => {
+        const fetchPromise = fetch(event.request).then((response) => {
+          // Only cache successful responses
+          if (response.ok) {
+            cache.put(event.request, response.clone());
+          }
+          return response;
+        }).catch(() => cached); // Offline fallback to cache
+
+        // Return cached version immediately if available, otherwise wait for network
+        return cached || fetchPromise;
       });
     })
   );

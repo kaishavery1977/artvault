@@ -63,8 +63,8 @@ class MainActivity : FlutterFragmentActivity() {
         // Flutter bundles app assets under flutter_assets/ inside the APK.
         var bytes: ByteArray? = null
         for (path in listOf(
-            "flutter_assets/assets/models/mobilefacenet.tflite",
-            "assets/models/mobilefacenet.tflite",
+            "flutter_assets/assets/models/mobile/mobilefacenet.tflite",
+            "assets/models/mobile/mobilefacenet.tflite",
         )) {
             try {
                 bytes = assets.open(path).use { it.readBytes() }
