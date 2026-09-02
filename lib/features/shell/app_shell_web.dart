@@ -169,11 +169,10 @@ class _AppShellWebState extends ConsumerState<AppShellWeb>
                             BoxShadow(color: AppColors.violet500.withValues(alpha: isDark ? 0.08 : 0.04), blurRadius: 48, offset: const Offset(0, 8)),
                           ],
                         ),
-                        clipBehavior: Clip.antiAlias,
-                        child: Stack(
-                          children: [
-                            content,
-                          ],
+                        clipBehavior: Clip.none,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: content,
                         ),
                       ),
                     ),
@@ -298,28 +297,29 @@ class _WebSidebarState extends State<_WebSidebar>
             child: Container(height: 1, decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.white.withValues(alpha: 0), isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06), Colors.white.withValues(alpha: 0)]))),
           ),
           const SizedBox(height: 16),
-          // Navigation items
+          // Navigation + admin — scrollable so no overflow on short screens
           Expanded(
-            child: Column(
-              children: [
-                for (var i = 0; i < widget.destinations.length; i++)
-                  _SidebarItem(
-                    dest: widget.destinations[i],
-                    isSelected: i == widget.index,
-                    isHovered: i == widget.hoveredIndex,
-                    onTap: () => widget.onSelect(i),
-                    onHover: () => widget.onHover(i),
-                    onHoverExit: widget.onHoverExit,
-                  ),
-              ],
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  for (var i = 0; i < widget.destinations.length; i++)
+                    _SidebarItem(
+                      dest: widget.destinations[i],
+                      isSelected: i == widget.index,
+                      isHovered: i == widget.hoveredIndex,
+                      onTap: () => widget.onSelect(i),
+                      onHover: () => widget.onHover(i),
+                      onHoverExit: widget.onHoverExit,
+                    ),
+                  _AdminSidebarSection(),
+                ],
+              ),
             ),
           ),
-          // Admin section (shown for admin users)
-          _AdminSidebarSection(),
-          // Bottom: user avatar
-          const SizedBox(height: 16),
+          // Bottom: user avatar (always visible)
+          const SizedBox(height: 12),
           _SidebarAvatar(),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
         ],
       ),
     );

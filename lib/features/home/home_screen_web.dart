@@ -347,7 +347,6 @@ class _QuickActionsWeb extends ConsumerWidget {
       _WebAction(Icons.grid_view, 'Gallery', () => context.go('/gallery'), AppColors.cyan500),
       _WebAction(Icons.person, 'Artists', () => context.go('/artists'), AppColors.rose500),
       _WebAction(Icons.insights, 'Reports', () => context.push('/reports'), AppColors.amber500),
-      _WebAction(Icons.qr_code_scanner, 'Scan', () => context.push('/scan'), AppColors.indigo500),
     ];
 
     return Padding(
