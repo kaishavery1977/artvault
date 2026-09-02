@@ -235,6 +235,9 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
           HapticFeedback.mediumImpact();
           ref.invalidate(paintingsProvider);
         },
+        child: Semantics(
+        label: '${visible.length} paintings in gallery',
+        liveRegion: true,
         child: CustomScrollView(
         controller: _controller,
         slivers: [
@@ -394,6 +397,7 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
             ),
           ),
         ],
+      ),
       ),
       ),
       ),

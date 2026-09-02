@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/providers/providers.dart';
+import '../../core/widgets/a11y.dart';
 import '../../core/widgets/web/web_breadcrumb.dart';
 import '../../core/widgets/web/sync_status_indicator.dart';
 
@@ -25,6 +26,7 @@ class _AppShellWebState extends ConsumerState<AppShellWeb>
   late final AnimationController _pageIn;
   late final AnimationController _sidebarHover;
   int _hoveredIndex = -1;
+  final FocusNode _mainContentFocusNode = FocusNode();
 
   static const _destinations = [
     _NavDest(Icons.space_dashboard_outlined, Icons.space_dashboard, 'Home', Color(0xFF8B5CF6)),
@@ -60,6 +62,7 @@ class _AppShellWebState extends ConsumerState<AppShellWeb>
   void dispose() {
     _pageIn.dispose();
     _sidebarHover.dispose();
+    _mainContentFocusNode.dispose();
     super.dispose();
   }
 
@@ -91,6 +94,8 @@ class _AppShellWebState extends ConsumerState<AppShellWeb>
       backgroundColor: isDark ? const Color(0xFF05070F) : const Color(0xFFF6F7FB),
       body: Stack(
         children: [
+          // Skip navigation link for keyboard users (visually hidden until focused)
+          SkipNavigation(contentFocusNode: _mainContentFocusNode),
           // Ambient 3D orbs behind everything
           Positioned.fill(
             child: IgnorePointer(
@@ -136,14 +141,18 @@ class _AppShellWebState extends ConsumerState<AppShellWeb>
           ),
           Row(
             children: [
-              // Premium 3D sidebar
-              _WebSidebar(
+              // Premium 3D sidebar with navigation landmark for screen readers
+              Semantics(
+                explicitChildNodes: true,
+                label: 'Main navigation',
+                child: _WebSidebar(
                 index: shell.currentIndex,
                 onSelect: _go,
                 destinations: _destinations,
                 hoveredIndex: _hoveredIndex,
                 onHover: (i) => setState(() => _hoveredIndex = i),
                 onHoverExit: () => setState(() => _hoveredIndex = -1),
+              ),
               ),
               // Main content with glass + depth
               Expanded(
@@ -158,7 +167,9 @@ class _AppShellWebState extends ConsumerState<AppShellWeb>
                     ),
                     const WebBreadcrumb(),
                     Expanded(
-                      child: Container(
+                      child: Focus(
+                        focusNode: _mainContentFocusNode,
+                        child: Container(
                         margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                         decoration: BoxDecoration(
                           color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white.withValues(alpha: 0.72),
@@ -172,7 +183,11 @@ class _AppShellWebState extends ConsumerState<AppShellWeb>
                         clipBehavior: Clip.none,
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(20),
-                          child: content,
+                          child: Semantics(
+                            label: 'Main content area',
+                            child: content,
+                          ),
+                        ),
                         ),
                       ),
                     ),
@@ -349,7 +364,11 @@ class _SidebarItem extends StatelessWidget {
     final activeColor = dest.color;
     final inactiveColor = Theme.of(context).colorScheme.onSurfaceVariant;
 
-    return MouseRegion(
+    return Semantics(
+      label: '${dest.label}${isSelected ? ', current page' : ''}',
+      selected: isSelected,
+      button: true,
+      child: MouseRegion(
       onEnter: (_) => onHover(),
       onExit: (_) => onHoverExit(),
       cursor: SystemMouseCursors.click,
@@ -394,6 +413,7 @@ class _SidebarItem extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
   }
 }
@@ -405,7 +425,10 @@ class _SidebarAvatar extends ConsumerWidget {
     final user = auth.user;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return MouseRegion(
+    return Semantics(
+      label: 'User profile for ${user?.displayName ?? 'Guest'}. Tap to open settings.',
+      button: true,
+      child: MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: () => context.push('/settings'),
@@ -439,6 +462,7 @@ class _SidebarAvatar extends ConsumerWidget {
           ),
         ),
       ),
+    ),
     );
   }
 }
@@ -640,8 +664,11 @@ class _WebHeader extends StatelessWidget {
           _ThemeToggle(),
           if (canEdit) ...[
             const SizedBox(width: 12),
-            // Upload button
-            MouseRegion(
+            // Upload button with semantic label
+            Semantics(
+              button: true,
+              label: 'Upload new artwork',
+              child: MouseRegion(
               cursor: SystemMouseCursors.click,
               child: GestureDetector(
                 onTap: onUpload,
@@ -677,6 +704,7 @@ class _WebHeader extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
             ),
           ],
         ],
