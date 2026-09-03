@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -267,21 +268,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
 
     final screenPad = context.adaptiveSpace(AppSpacing.md);
+    // The web shell's top bar already names this page, so drop the in-page
+    // duplicate title there and tighten the top spacing; mobile keeps its
+    // own large title.
+    final topPad = kIsWeb
+        ? AppSpacing.xs
+        : AppSpacing.lg + MediaQuery.paddingOf(context).top * 0.4;
 
     return Scaffold(
       body: ListView(
         padding: EdgeInsets.fromLTRB(
           screenPad,
-          AppSpacing.lg + MediaQuery.paddingOf(context).top * 0.4,
+          topPad,
           screenPad,
           AppSpacing.xxl,
         ),
         children: [
-          Text(
-            'Settings',
-            style: AppTheme.display(context, size: context.adaptiveFont(28)),
-          ),
-          const SizedBox(height: AppSpacing.md),
+          if (!kIsWeb) ...[
+            Text(
+              'Settings',
+              style: AppTheme.display(context, size: context.adaptiveFont(28)),
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
           ...sections,
           if (_debugVisible) ...[
             const SizedBox(height: AppSpacing.lg),

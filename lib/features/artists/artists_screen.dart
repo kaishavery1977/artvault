@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -49,21 +50,26 @@ class ArtistsScreen extends ConsumerWidget {
               child: CustomScrollView(
                 slivers: [
                   SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        context.adaptiveSpace(AppSpacing.md),
-                        AppSpacing.lg + MediaQuery.paddingOf(context).top * 0.4,
-                        context.adaptiveSpace(AppSpacing.md),
-                        AppSpacing.md,
-                      ),
-                      child: Text(
-                        'Artists',
-                        style: AppTheme.display(
-                          context,
-                          size: context.adaptiveFont(28),
-                        ),
-                      ),
-                    ),
+                    child: kIsWeb
+                        // The web shell's top bar already names this page —
+                        // keep only a little breathing room under it.
+                        ? const SizedBox(height: AppSpacing.xs)
+                        : Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              context.adaptiveSpace(AppSpacing.md),
+                              AppSpacing.lg +
+                                  MediaQuery.paddingOf(context).top * 0.4,
+                              context.adaptiveSpace(AppSpacing.md),
+                              AppSpacing.md,
+                            ),
+                            child: Text(
+                              'Artists',
+                              style: AppTheme.display(
+                                context,
+                                size: context.adaptiveFont(28),
+                              ),
+                            ),
+                          ),
                   ),
                   SliverPadding(
                     padding: AppSpacing.screenPadding,

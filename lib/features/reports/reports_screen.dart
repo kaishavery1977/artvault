@@ -80,21 +80,25 @@ class ReportsScreen extends ConsumerWidget {
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                context.adaptiveSpace(AppSpacing.md),
-                AppSpacing.lg + MediaQuery.paddingOf(context).top * 0.4,
-                context.adaptiveSpace(AppSpacing.md),
-                AppSpacing.sm,
-              ),
-              child: Text(
-                'Reports & Analytics',
-                style: AppTheme.display(
-                  context,
-                  size: context.adaptiveFont(28),
-                ),
-              ),
-            ),
+            child: kIsWeb
+                // The web shell's top bar already names this page — keep
+                // only a little breathing room under it.
+                ? const SizedBox(height: AppSpacing.xs)
+                : Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      context.adaptiveSpace(AppSpacing.md),
+                      AppSpacing.lg + MediaQuery.paddingOf(context).top * 0.4,
+                      context.adaptiveSpace(AppSpacing.md),
+                      AppSpacing.sm,
+                    ),
+                    child: Text(
+                      'Reports & Analytics',
+                      style: AppTheme.display(
+                        context,
+                        size: context.adaptiveFont(28),
+                      ),
+                    ),
+                  ),
           ),
           SliverPadding(
             padding: AppSpacing.screenPadding,
