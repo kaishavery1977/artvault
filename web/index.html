@@ -28,8 +28,11 @@
   <!--
     Content Security Policy is served as an HTTP header by firebase.json
     hosting headers (meta CSP cannot enforce frame-ancestors and is ignored
-    by CSP scanners). The policy drops 'unsafe-inline' from script-src —
-    the inline scripts below were moved to web/app.js to make that possible.
+    by CSP scanners). The browser bootstrap inline scripts live in web/app.js
+    so our own code needs no inline-script allowance; script-src still
+    permits 'unsafe-inline' only because Google Identity Services
+    (accounts.google.com/gsi/client) injects its own inline bootstrap
+    scripts at runtime and does not support nonces/hashes reliably.
   -->
 
   <!-- iOS meta tags & icons -->
