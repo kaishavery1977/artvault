@@ -34,10 +34,17 @@ jobs:
       - name: Build web
         run: flutter build web --release
 
+      # Deploys the app build (firebase.json hosting.public = build/web) to the
+      # live channel of the project's default Hosting site.
+      #
+      # GitHub repo requirements:
+      #   - Secret FIREBASE_SERVICE_ACCOUNT_ARTVAULT: JSON of a Google service
+      #     account with Firebase Hosting Admin (roles/firebasehosting.admin,
+      #     or firebase.admin).
+      #   - Target project comes from the checked-in .firebaserc (artvault-d69d0).
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ARTVAULT }}
           channelId: live
-          projectId: ${{ vars.FIREBASE_PROJECT_ID }}
