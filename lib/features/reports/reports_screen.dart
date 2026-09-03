@@ -15,6 +15,7 @@ import '../../core/utils/formatters.dart';
 import '../../core/widgets/bits.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/widgets/surfaces.dart';
+import '../../core/widgets/web/content_column.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/painting.dart';
 
@@ -76,6 +77,37 @@ class ReportsScreen extends ConsumerWidget {
       authProvider.select((a) => a.canSeeAnalytics),
     );
 
+    final content = staggerReveal([
+      _SummaryRow(
+        paintings: paintings,
+        artists: artists,
+        currency: ref.watch(currencyProvider),
+      ),
+      const SizedBox(height: AppSpacing.lg),
+      // Web-only: enhanced charts and dashboard
+      if (kIsWeb && canSeeAnalytics) ...[
+        const CollectionValuationChart(),
+        const SizedBox(height: AppSpacing.lg),
+        const ActivityDashboardWeb(),
+        const SizedBox(height: AppSpacing.lg),
+      ],
+      if (canSeeAnalytics) ...[
+        SectionHeader(title: 'Collection breakdown'),
+        _BarCard(title: 'Most common mediums', data: _topMediums(paintings)),
+        const SizedBox(height: AppSpacing.md),
+        _BarCard(
+          title: 'Upload trend (last 6 months)',
+          data: _uploadTrend(paintings),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _InsightsCard(paintings: paintings),
+      ],
+      const SizedBox(height: AppSpacing.lg),
+      SectionHeader(title: 'Export & print'),
+      _ExportCard(onExport: (kind) => _export(context, kind, paintings)),
+      const SizedBox(height: AppSpacing.xl),
+    ], context: context);
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -102,45 +134,19 @@ class ReportsScreen extends ConsumerWidget {
           ),
           SliverPadding(
             padding: AppSpacing.screenPadding,
-            sliver: SliverList(
-              delegate: SliverChildListDelegate(
-                staggerReveal([
-                  _SummaryRow(
-                    paintings: paintings,
-                    artists: artists,
-                    currency: ref.watch(currencyProvider),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  // Web-only: enhanced charts and dashboard
-                  if (kIsWeb && canSeeAnalytics) ...[
-                    const CollectionValuationChart(),
-                    const SizedBox(height: AppSpacing.lg),
-                    const ActivityDashboardWeb(),
-                    const SizedBox(height: AppSpacing.lg),
-                  ],
-                  if (canSeeAnalytics) ...[
-                    SectionHeader(title: 'Collection breakdown'),
-                    _BarCard(
-                      title: 'Most common mediums',
-                      data: _topMediums(paintings),
+            sliver: kIsWeb
+                // On web, reports cards sit in a centered reading column so
+                // charts don't stretch across the whole desktop viewport.
+                ? SliverToBoxAdapter(
+                    child: WebContentColumn(
+                      maxWidth: 1120,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: content,
+                      ),
                     ),
-                    const SizedBox(height: AppSpacing.md),
-                    _BarCard(
-                      title: 'Upload trend (last 6 months)',
-                      data: _uploadTrend(paintings),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    _InsightsCard(paintings: paintings),
-                  ],
-                  const SizedBox(height: AppSpacing.lg),
-                  SectionHeader(title: 'Export & print'),
-                  _ExportCard(
-                    onExport: (kind) => _export(context, kind, paintings),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                ], context: context),
-              ),
-            ),
+                  )
+                : SliverList(delegate: SliverChildListDelegate(content)),
           ),
         ],
       ),
