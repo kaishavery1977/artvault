@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -82,7 +81,9 @@ class _GalleryTableViewState extends ConsumerState<GalleryTableView> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text('Delete ${_selectedIds.length} painting${_selectedIds.length > 1 ? 's' : ''}?'),
+        title: Text(
+          'Delete ${_selectedIds.length} painting${_selectedIds.length > 1 ? 's' : ''}?',
+        ),
         content: const Text('This action cannot be undone.'),
         actions: [
           TextButton(
@@ -94,7 +95,8 @@ class _GalleryTableViewState extends ConsumerState<GalleryTableView> {
               Navigator.pop(context);
               WebToast.show(
                 context,
-                message: '${_selectedIds.length} painting${_selectedIds.length > 1 ? 's' : ''} deleted',
+                message:
+                    '${_selectedIds.length} painting${_selectedIds.length > 1 ? 's' : ''} deleted',
                 icon: Icons.delete_rounded,
                 color: AppColors.error,
               );
@@ -136,7 +138,8 @@ class _GalleryTableViewState extends ConsumerState<GalleryTableView> {
         .where((p) => !p.isDeleted)
         .toList();
     final sorted = _sorted(paintings);
-    final isLoading = paintingsAsync.isLoading && paintingsAsync.valueOrNull == null;
+    final isLoading =
+        paintingsAsync.isLoading && paintingsAsync.valueOrNull == null;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final scheme = Theme.of(context).colorScheme;
 
@@ -146,11 +149,17 @@ class _GalleryTableViewState extends ConsumerState<GalleryTableView> {
       onKeyEvent: (node, event) {
         // Arrow navigation
         if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-          setState(() => _focusedIndex = (_focusedIndex + 1).clamp(0, sorted.length - 1));
+          setState(
+            () =>
+                _focusedIndex = (_focusedIndex + 1).clamp(0, sorted.length - 1),
+          );
           return KeyEventResult.handled;
         }
         if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-          setState(() => _focusedIndex = (_focusedIndex - 1).clamp(0, sorted.length - 1));
+          setState(
+            () =>
+                _focusedIndex = (_focusedIndex - 1).clamp(0, sorted.length - 1),
+          );
           return KeyEventResult.handled;
         }
         // Enter to open
@@ -164,17 +173,25 @@ class _GalleryTableViewState extends ConsumerState<GalleryTableView> {
           return KeyEventResult.handled;
         }
         // Delete to trash
-        if (event.logicalKey == LogicalKeyboardKey.delete && sorted.isNotEmpty) {
-          WebToast.show(context, message: 'Moved to trash', icon: Icons.delete_rounded, color: AppColors.error);
+        if (event.logicalKey == LogicalKeyboardKey.delete &&
+            sorted.isNotEmpty) {
+          WebToast.show(
+            context,
+            message: 'Moved to trash',
+            icon: Icons.delete_rounded,
+            color: AppColors.error,
+          );
           return KeyEventResult.handled;
         }
         // Ctrl+A to select all
-        if (event.logicalKey == LogicalKeyboardKey.keyA && HardwareKeyboard.instance.isControlPressed) {
+        if (event.logicalKey == LogicalKeyboardKey.keyA &&
+            HardwareKeyboard.instance.isControlPressed) {
           _selectAll(sorted);
           return KeyEventResult.handled;
         }
         // Ctrl+E to export
-        if (event.logicalKey == LogicalKeyboardKey.keyE && HardwareKeyboard.instance.isControlPressed) {
+        if (event.logicalKey == LogicalKeyboardKey.keyE &&
+            HardwareKeyboard.instance.isControlPressed) {
           _exportCSV(sorted);
           return KeyEventResult.handled;
         }
@@ -195,192 +212,276 @@ class _GalleryTableViewState extends ConsumerState<GalleryTableView> {
             child: isLoading
                 ? _SkeletonTable()
                 : sorted.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.grid_view_rounded, size: 64, color: scheme.onSurfaceVariant.withValues(alpha: 0.3)),
-                            const SizedBox(height: 16),
-                            Text('No paintings yet', style: TextStyle(fontSize: 16, color: scheme.onSurfaceVariant)),
-                            const SizedBox(height: 8),
-                            FilledButton.icon(
-                              onPressed: () => context.push('/painting/new'),
-                              icon: const Icon(Icons.add),
-                              label: const Text('Upload your first painting'),
-                            ),
-                          ],
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.grid_view_rounded,
+                          size: 64,
+                          color: scheme.onSurfaceVariant.withValues(alpha: 0.3),
                         ),
-                      )
-                    : SingleChildScrollView(
-                        controller: _scrollController,
-                        child: DataTable(
-                          showCheckboxColumn: true,
-                          headingRowColor: WidgetStateProperty.all(
-                            (isDark ? Colors.white : Colors.black).withValues(alpha: 0.03),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No paintings yet',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: scheme.onSurfaceVariant,
                           ),
-                          dataRowColor: WidgetStateProperty.resolveWith((states) {
-                            if (states.contains(WidgetState.selected)) {
-                              return AppColors.accent.withValues(alpha: 0.06);
-                            }
-                            return null;
-                          }),
-                          columns: [
-                            DataColumn(
-                              label: SizedBox(
-                                width: 40,
-                                child: Checkbox(
-                                  value: _selectedIds.length == sorted.length && sorted.isNotEmpty,
-                                  onChanged: (_) => _selectAll(sorted),
-                                  tristate: true,
+                        ),
+                        const SizedBox(height: 8),
+                        FilledButton.icon(
+                          onPressed: () => context.push('/painting/new'),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Upload your first painting'),
+                        ),
+                      ],
+                    ),
+                  )
+                : SingleChildScrollView(
+                    controller: _scrollController,
+                    child: DataTable(
+                      showCheckboxColumn: true,
+                      headingRowColor: WidgetStateProperty.all(
+                        (isDark ? Colors.white : Colors.black).withValues(
+                          alpha: 0.03,
+                        ),
+                      ),
+                      dataRowColor: WidgetStateProperty.resolveWith((states) {
+                        if (states.contains(WidgetState.selected)) {
+                          return AppColors.accent.withValues(alpha: 0.06);
+                        }
+                        return null;
+                      }),
+                      columns: [
+                        DataColumn(
+                          label: SizedBox(
+                            width: 40,
+                            child: Checkbox(
+                              value:
+                                  _selectedIds.length == sorted.length &&
+                                  sorted.isNotEmpty,
+                              onChanged: (_) => _selectAll(sorted),
+                              tristate: true,
+                            ),
+                          ),
+                        ),
+                        DataColumn(label: const Text('Title'), onSort: _sort),
+                        DataColumn(label: const Text('Artist'), onSort: _sort),
+                        DataColumn(label: const Text('Medium'), onSort: _sort),
+                        DataColumn(
+                          label: const Text('Value'),
+                          numeric: true,
+                          onSort: _sort,
+                        ),
+                        DataColumn(label: const Text('Date'), onSort: _sort),
+                        const DataColumn(label: Text('')),
+                      ],
+                      rows: List.generate(sorted.length, (i) {
+                        final p = sorted[i];
+                        final isSelected = _selectedIds.contains(p.id);
+                        final isFocused = i == _focusedIndex;
+
+                        return DataRow(
+                          selected: isSelected,
+                          onSelectChanged: (selected) {
+                            setState(() {
+                              if (selected == true) {
+                                _selectedIds.add(p.id);
+                              } else {
+                                _selectedIds.remove(p.id);
+                              }
+                            });
+                          },
+                          cells: [
+                            DataCell(
+                              Checkbox(
+                                value: isSelected,
+                                onChanged: (selected) {
+                                  setState(() {
+                                    if (selected == true) {
+                                      _selectedIds.add(p.id);
+                                    } else {
+                                      _selectedIds.remove(p.id);
+                                    }
+                                  });
+                                },
+                              ),
+                            ),
+                            DataCell(
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  // Thumbnail
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(8),
+                                      color: scheme.surfaceContainerHighest,
+                                    ),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: p.coverImagePath.isNotEmpty
+                                        ? Image.network(
+                                            p.coverImagePath,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, _, _) => Icon(
+                                              Icons.palette_rounded,
+                                              size: 18,
+                                              color: scheme.onSurfaceVariant
+                                                  .withValues(alpha: 0.5),
+                                            ),
+                                          )
+                                        : Icon(
+                                            Icons.palette_rounded,
+                                            size: 18,
+                                            color: scheme.onSurfaceVariant
+                                                .withValues(alpha: 0.5),
+                                          ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    p.title,
+                                    style: TextStyle(
+                                      fontWeight: isFocused
+                                          ? FontWeight.w700
+                                          : FontWeight.w600,
+                                      color: isFocused
+                                          ? AppColors.accent
+                                          : null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            DataCell(
+                              Text(
+                                p.artistName.isNotEmpty ? p.artistName : '—',
+                              ),
+                            ),
+                            DataCell(
+                              p.medium.isNotEmpty
+                                  ? Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.accent.withValues(
+                                          alpha: 0.08,
+                                        ),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        p.medium,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.accent,
+                                        ),
+                                      ),
+                                    )
+                                  : const Text('—'),
+                            ),
+                            DataCell(
+                              Text(
+                                p.price != null
+                                    ? Formatters.money(p.price!)
+                                    : '—',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: p.price != null
+                                      ? AppColors.amber500
+                                      : null,
                                 ),
                               ),
                             ),
-                            DataColumn(
-                              label: const Text('Title'),
-                              onSort: _sort,
-                            ),
-                            DataColumn(
-                              label: const Text('Artist'),
-                              onSort: _sort,
-                            ),
-                            DataColumn(
-                              label: const Text('Medium'),
-                              onSort: _sort,
-                            ),
-                            DataColumn(
-                              label: const Text('Value'),
-                              numeric: true,
-                              onSort: _sort,
-                            ),
-                            DataColumn(
-                              label: const Text('Date'),
-                              onSort: _sort,
-                            ),
-                            const DataColumn(label: Text('')),
-                          ],
-                          rows: List.generate(sorted.length, (i) {
-                            final p = sorted[i];
-                            final isSelected = _selectedIds.contains(p.id);
-                            final isFocused = i == _focusedIndex;
-
-                            return DataRow(
-                              selected: isSelected,
-                              onSelectChanged: (selected) {
-                                setState(() {
-                                  if (selected == true) {
-                                    _selectedIds.add(p.id);
-                                  } else {
-                                    _selectedIds.remove(p.id);
-                                  }
-                                });
-                              },
-                              cells: [
-                                DataCell(
-                                  Checkbox(
-                                    value: isSelected,
-                                    onChanged: (selected) {
-                                      setState(() {
-                                        if (selected == true) {
-                                          _selectedIds.add(p.id);
-                                        } else {
-                                          _selectedIds.remove(p.id);
-                                        }
-                                      });
-                                    },
+                            DataCell(
+                              Text(
+                                '${p.createdAt.day}/${p.createdAt.month}/${p.createdAt.year}',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: scheme.onSurfaceVariant.withValues(
+                                    alpha: 0.7,
                                   ),
                                 ),
-                                DataCell(
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      // Thumbnail
-                                      Container(
-                                        width: 36,
-                                        height: 36,
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(8),
-                                          color: scheme.surfaceContainerHighest,
+                              ),
+                            ),
+                            DataCell(
+                              PopupMenuButton<String>(
+                                itemBuilder: (_) => [
+                                  PopupMenuItem(
+                                    value: 'view',
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.visibility_rounded,
+                                          size: 16,
                                         ),
-                                        clipBehavior: Clip.antiAlias,
-                                        child: p.coverImagePath.isNotEmpty
-                                            ? Image.network(
-                                                p.coverImagePath,
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (_, _, _) => Icon(
-                                                  Icons.palette_rounded,
-                                                  size: 18,
-                                                  color: scheme.onSurfaceVariant.withValues(alpha: 0.5),
-                                                ),
-                                              )
-                                            : Icon(
-                                                Icons.palette_rounded,
-                                                size: 18,
-                                                color: scheme.onSurfaceVariant.withValues(alpha: 0.5),
-                                              ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        p.title,
-                                        style: TextStyle(
-                                          fontWeight: isFocused ? FontWeight.w700 : FontWeight.w600,
-                                          color: isFocused ? AppColors.accent : null,
-                                        ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 8),
+                                        const Text('View'),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                DataCell(Text(p.artistName.isNotEmpty ? p.artistName : '—')),
-                                DataCell(
-                                  p.medium.isNotEmpty
-                                      ? Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.accent.withValues(alpha: 0.08),
-                                            borderRadius: BorderRadius.circular(6),
+                                  PopupMenuItem(
+                                    value: 'edit',
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.edit_rounded,
+                                          size: 16,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        const Text('Edit'),
+                                      ],
+                                    ),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'delete',
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.delete_rounded,
+                                          size: 16,
+                                          color: AppColors.error,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Delete',
+                                          style: TextStyle(
+                                            color: AppColors.error,
                                           ),
-                                          child: Text(p.medium, style: TextStyle(fontSize: 12, color: AppColors.accent)),
-                                        )
-                                      : const Text('—'),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                                onSelected: (action) {
+                                  switch (action) {
+                                    case 'view':
+                                      context.push('/painting/${p.id}');
+                                    case 'edit':
+                                      context.push('/painting/edit/${p.id}');
+                                    case 'delete':
+                                      WebToast.show(
+                                        context,
+                                        message: 'Moved to trash',
+                                        icon: Icons.delete_rounded,
+                                        color: AppColors.error,
+                                      );
+                                  }
+                                },
+                                icon: Icon(
+                                  Icons.more_vert_rounded,
+                                  size: 18,
+                                  color: scheme.onSurfaceVariant,
                                 ),
-                                DataCell(Text(
-                                  p.price != null ? Formatters.money(p.price!) : '—',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    color: p.price != null ? AppColors.amber500 : null,
-                                  ),
-                                )),
-                                DataCell(Text(
-                                  '${p.createdAt.day}/${p.createdAt.month}/${p.createdAt.year}',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
-                                  ),
-                                )),
-                                DataCell(
-                                  PopupMenuButton<String>(
-                                    itemBuilder: (_) => [
-                                      PopupMenuItem(value: 'view', child: Row(children: [const Icon(Icons.visibility_rounded, size: 16), const SizedBox(width: 8), const Text('View')])),
-                                      PopupMenuItem(value: 'edit', child: Row(children: [const Icon(Icons.edit_rounded, size: 16), const SizedBox(width: 8), const Text('Edit')])),
-                                      PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_rounded, size: 16, color: AppColors.error), const SizedBox(width: 8), Text('Delete', style: TextStyle(color: AppColors.error))])),
-                                    ],
-                                    onSelected: (action) {
-                                      switch (action) {
-                                        case 'view':
-                                          context.push('/painting/${p.id}');
-                                        case 'edit':
-                                          context.push('/painting/edit/${p.id}');
-                                        case 'delete':
-                                          WebToast.show(context, message: 'Moved to trash', icon: Icons.delete_rounded, color: AppColors.error);
-                                      }
-                                    },
-                                    icon: Icon(Icons.more_vert_rounded, size: 18, color: scheme.onSurfaceVariant),
-                                  ),
-                                ),
-                              ],
-                            );
-                          }),
-                        ),
-                      ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }),
+                    ),
+                  ),
           ),
         ],
       ),
@@ -428,7 +529,9 @@ class _TableToolbar extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: selectedCount > 0 ? AppColors.accent : scheme.onSurfaceVariant,
+              color: selectedCount > 0
+                  ? AppColors.accent
+                  : scheme.onSurfaceVariant,
             ),
           ),
           const Spacer(),
@@ -441,7 +544,10 @@ class _TableToolbar extends StatelessWidget {
             ),
             child: Text(
               '↑↓ navigate  Enter open  E edit  Del trash  Ctrl+A select  Ctrl+E export',
-              style: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant.withValues(alpha: 0.6)),
+              style: TextStyle(
+                fontSize: 10,
+                color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -472,7 +578,12 @@ class _ToolButton extends StatefulWidget {
   final Color? color;
   final VoidCallback onTap;
 
-  const _ToolButton({required this.icon, required this.label, required this.onTap, this.color});
+  const _ToolButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color,
+  });
 
   @override
   State<_ToolButton> createState() => _ToolButtonState();
@@ -494,22 +605,39 @@ class _ToolButtonState extends State<_ToolButton> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: _hovered
-                ? (widget.color ?? Theme.of(context).colorScheme.primary).withValues(alpha: 0.1)
+                ? (widget.color ?? Theme.of(context).colorScheme.primary)
+                      .withValues(alpha: 0.1)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: _hovered
-                  ? (widget.color ?? Theme.of(context).colorScheme.primary).withValues(alpha: 0.3)
-                  : Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3),
+                  ? (widget.color ?? Theme.of(context).colorScheme.primary)
+                        .withValues(alpha: 0.3)
+                  : Theme.of(
+                      context,
+                    ).colorScheme.outlineVariant.withValues(alpha: 0.3),
               width: 0.6,
             ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(widget.icon, size: 14, color: widget.color ?? Theme.of(context).colorScheme.onSurfaceVariant),
+              Icon(
+                widget.icon,
+                size: 14,
+                color:
+                    widget.color ??
+                    Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               const SizedBox(width: 6),
-              Text(widget.label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: widget.color)),
+              Text(
+                widget.label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: widget.color,
+                ),
+              ),
             ],
           ),
         ),
@@ -524,16 +652,18 @@ class _SkeletonTable extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 8,
-      itemBuilder: (_, i) => Container(
-        height: 52,
-        margin: const EdgeInsets.only(bottom: 2),
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerHighest.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(4),
-        ),
-      ),
-    ).animate(onPlay: (c) => c.repeat(reverse: true)).shimmer(duration: 1200.ms);
+          padding: const EdgeInsets.all(16),
+          itemCount: 8,
+          itemBuilder: (_, i) => Container(
+            height: 52,
+            margin: const EdgeInsets.only(bottom: 2),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        )
+        .animate(onPlay: (c) => c.repeat(reverse: true))
+        .shimmer(duration: 1200.ms);
   }
 }

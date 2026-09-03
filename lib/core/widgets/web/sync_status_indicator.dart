@@ -80,10 +80,7 @@ class _SyncStatusIndicatorState extends ConsumerState<SyncStatusIndicator>
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: color.withValues(alpha: 0.25),
-              width: 1,
-            ),
+            border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -92,8 +89,9 @@ class _SyncStatusIndicatorState extends ConsumerState<SyncStatusIndicator>
               AnimatedBuilder(
                 animation: _pulseCtrl,
                 builder: (_, _) {
-                  final opacity =
-                      status == _SyncStatus.online ? 0.5 + 0.5 * _pulseCtrl.value : 1.0;
+                  final opacity = status == _SyncStatus.online
+                      ? 0.5 + 0.5 * _pulseCtrl.value
+                      : 1.0;
                   return Container(
                     width: 7,
                     height: 7,

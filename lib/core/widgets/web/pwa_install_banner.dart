@@ -90,17 +90,11 @@ class _PwaInstallBannerState extends State<PwaInstallBanner> {
                   ],
           ),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: scheme.primary.withValues(alpha: 0.2),
-          ),
+          border: Border.all(color: scheme.primary.withValues(alpha: 0.2)),
         ),
         child: Row(
           children: [
-            Icon(
-              Icons.install_mobile_rounded,
-              size: 22,
-              color: scheme.primary,
-            ),
+            Icon(Icons.install_mobile_rounded, size: 22, color: scheme.primary),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

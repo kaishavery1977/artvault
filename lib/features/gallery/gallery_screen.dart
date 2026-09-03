@@ -155,7 +155,9 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('$count painting${count > 1 ? 's' : ''} moved to trash'),
+          content: Text(
+            '$count painting${count > 1 ? 's' : ''} moved to trash',
+          ),
           action: SnackBarAction(
             label: 'Undo',
             onPressed: () async {
@@ -189,217 +191,228 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
         if (!didPop && _selectMode) _exitSelectMode();
       },
       child: Scaffold(
-      appBar: _selectMode
-          ? AppBar(
-              leading: IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: _exitSelectMode,
-              ),
-              title: Text('${_selectedIds.length} selected'),
-              actions: [
-                IconButton(
-                  tooltip: 'Select all',
-                  icon: const Icon(Icons.select_all),
-                  onPressed: () {
-                    setState(() {
-                      final all = _filter(
-                        ref.read(paintingsProvider).valueOrNull ?? const [],
-                      );
-                      _selectedIds.addAll(all.map((p) => p.id));
-                    });
-                  },
+        appBar: _selectMode
+            ? AppBar(
+                leading: IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: _exitSelectMode,
                 ),
-                IconButton(
-                  tooltip: 'Delete selected',
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: _batchDelete,
+                title: Text('${_selectedIds.length} selected'),
+                actions: [
+                  IconButton(
+                    tooltip: 'Select all',
+                    icon: const Icon(Icons.select_all),
+                    onPressed: () {
+                      setState(() {
+                        final all = _filter(
+                          ref.read(paintingsProvider).valueOrNull ?? const [],
+                        );
+                        _selectedIds.addAll(all.map((p) => p.id));
+                      });
+                    },
+                  ),
+                  IconButton(
+                    tooltip: 'Delete selected',
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: _batchDelete,
+                  ),
+                ],
+              )
+            : null,
+        floatingActionButton: _selectMode && _selectedIds.isNotEmpty
+            ? FloatingActionButton.extended(
+                onPressed: _batchDelete,
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
+                icon: const Icon(Icons.delete_outline),
+                label: Text('Delete ${_selectedIds.length}'),
+              )
+            : null,
+        body: RefreshIndicator(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).colorScheme.primary,
+          strokeWidth: 2.5,
+          displacement: 60,
+          onRefresh: () async {
+            HapticFeedback.mediumImpact();
+            ref.invalidate(paintingsProvider);
+          },
+          child: Semantics(
+            label: '${visible.length} paintings in gallery',
+            liveRegion: true,
+            child: CustomScrollView(
+              controller: _controller,
+              slivers: [
+                SliverToBoxAdapter(
+                  child: _GalleryHeader(
+                    view: _view,
+                    onViewChanged: (v) => setState(() => _view = v),
+                    onSortChanged: (s) => setState(() => _sort = s),
+                    onSearchTap: () => context.push('/search'),
+                    favoritesOnly: _favoritesOnly,
+                    onFavoritesToggle: () =>
+                        setState(() => _favoritesOnly = !_favoritesOnly),
+                  ),
                 ),
-              ],
-            )
-          : null,
-      floatingActionButton: _selectMode && _selectedIds.isNotEmpty
-          ? FloatingActionButton.extended(
-              onPressed: _batchDelete,
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: Theme.of(context).colorScheme.onError,
-              icon: const Icon(Icons.delete_outline),
-              label: Text('Delete ${_selectedIds.length}'),
-            )
-          : null,
-      body: RefreshIndicator(
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        color: Theme.of(context).colorScheme.primary,
-        strokeWidth: 2.5,
-        displacement: 60,
-        onRefresh: () async {
-          HapticFeedback.mediumImpact();
-          ref.invalidate(paintingsProvider);
-        },
-        child: Semantics(
-        label: '${visible.length} paintings in gallery',
-        liveRegion: true,
-        child: CustomScrollView(
-        controller: _controller,
-        slivers: [
-          SliverToBoxAdapter(
-            child: _GalleryHeader(
-              view: _view,
-              onViewChanged: (v) => setState(() => _view = v),
-              onSortChanged: (s) => setState(() => _sort = s),
-              onSearchTap: () => context.push('/search'),
-              favoritesOnly: _favoritesOnly,
-              onFavoritesToggle: () =>
-                  setState(() => _favoritesOnly = !_favoritesOnly),
-            ),
-          ),
-          if (categories.isNotEmpty)
-            SliverToBoxAdapter(
-              child: SizedBox(
-                height: 44,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: AppSpacing.screenPadding,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(right: AppSpacing.xs),
-                      child: ChoiceChip(
-                        label: const Text('All'),
-                        selected: _category == null,
-                        onSelected: (_) {
-                          HapticFeedback.selectionClick();
-                          setState(() => _category = null);
-                        },
+                if (categories.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: 44,
+                      child: ListView(
+                        scrollDirection: Axis.horizontal,
+                        padding: AppSpacing.screenPadding,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(
+                              right: AppSpacing.xs,
+                            ),
+                            child: ChoiceChip(
+                              label: const Text('All'),
+                              selected: _category == null,
+                              onSelected: (_) {
+                                HapticFeedback.selectionClick();
+                                setState(() => _category = null);
+                              },
+                            ),
+                          ),
+                          for (final c in categories)
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                right: AppSpacing.xs,
+                              ),
+                              child: ChoiceChip(
+                                label: Text(c),
+                                selected: _category == c,
+                                onSelected: (_) {
+                                  HapticFeedback.selectionClick();
+                                  setState(() => _category = c);
+                                },
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                    for (final c in categories)
-                      Padding(
-                        padding: const EdgeInsets.only(right: AppSpacing.xs),
-                        child: ChoiceChip(
-                          label: Text(c),
-                          selected: _category == c,
-                          onSelected: (_) {
-                            HapticFeedback.selectionClick();
-                            setState(() => _category = c);
-                          },
+                  ),
+                if (loading)
+                  SliverPadding(
+                    padding: AppSpacing.screenPadding,
+                    sliver: SliverGrid(
+                      delegate: SliverChildBuilderDelegate(
+                        addAutomaticKeepAlives: false,
+                        addRepaintBoundaries: true,
+                        (context, i) => const _GallerySkeletonCard(),
+                        childCount: 12,
+                      ),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: AppBreakpoints.galleryColumns(context),
+                        mainAxisSpacing: AppSpacing.sm,
+                        crossAxisSpacing: AppSpacing.sm,
+                        childAspectRatio: 0.82,
+                      ),
+                    ),
+                  )
+                else if (visible.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: EmptyState(
+                      icon: Icons.photo_library_outlined,
+                      title: 'No artworks here yet',
+                      subtitle:
+                          'Upload a painting to start building your gallery.',
+                      actionLabel: 'Add painting',
+                      onAction: () => context.push('/painting/new'),
+                    ),
+                  )
+                else
+                  switch (_view) {
+                    GalleryView.grid => SliverPadding(
+                      padding: AppSpacing.screenPadding,
+                      sliver: SliverGrid(
+                        delegate: SliverChildBuilderDelegate(
+                          addAutomaticKeepAlives: false,
+                          addRepaintBoundaries: true,
+                          (context, i) => PaintingGridCard(
+                            painting: visible[i],
+                            heroTag: 'painting-${visible[i].id}',
+                            staggerIndex: i,
+                            selectMode: _selectMode,
+                            selected: _selectedIds.contains(visible[i].id),
+                            onSelect: () => _toggleSelect(visible[i].id),
+                            onLongPress: () => _enterSelectMode(visible[i].id),
+                          ),
+                          childCount: visible.length,
+                        ),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: AppBreakpoints.galleryColumns(
+                            context,
+                          ),
+                          mainAxisSpacing: AppSpacing.sm,
+                          crossAxisSpacing: AppSpacing.sm,
+                          childAspectRatio: 0.82,
                         ),
                       ),
-                  ],
-                ),
-              ),
-            ),
-          if (loading)
-            SliverPadding(
-              padding: AppSpacing.screenPadding,
-              sliver: SliverGrid(
-                delegate: SliverChildBuilderDelegate(
-                  addAutomaticKeepAlives: false,
-                  addRepaintBoundaries: true,
-                  (context, i) => const _GallerySkeletonCard(),
-                  childCount: 12,
-                ),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: AppBreakpoints.galleryColumns(context),
-                  mainAxisSpacing: AppSpacing.sm,
-                  crossAxisSpacing: AppSpacing.sm,
-                  childAspectRatio: 0.82,
-                ),
-              ),
-            )
-          else if (visible.isEmpty)
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: EmptyState(
-                icon: Icons.photo_library_outlined,
-                title: 'No artworks here yet',
-                subtitle: 'Upload a painting to start building your gallery.',
-                actionLabel: 'Add painting',
-                onAction: () => context.push('/painting/new'),
-              ),
-            )
-          else
-            switch (_view) {
-              GalleryView.grid => SliverPadding(
-                padding: AppSpacing.screenPadding,
-                sliver: SliverGrid(
-                  delegate: SliverChildBuilderDelegate(
-                  addAutomaticKeepAlives: false,
-                  addRepaintBoundaries: true,
-                    (context, i) => PaintingGridCard(
-                      painting: visible[i],
-                      heroTag: 'painting-${visible[i].id}',
-                      staggerIndex: i,
-                      selectMode: _selectMode,
-                      selected: _selectedIds.contains(visible[i].id),
-                      onSelect: () => _toggleSelect(visible[i].id),
-                      onLongPress: () => _enterSelectMode(visible[i].id),
                     ),
-                    childCount: visible.length,
-                  ),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: AppBreakpoints.galleryColumns(context),
-                    mainAxisSpacing: AppSpacing.sm,
-                    crossAxisSpacing: AppSpacing.sm,
-                    childAspectRatio: 0.82,
-                  ),
-                ),
-              ),
-              GalleryView.list => SliverPadding(
-                padding: AppSpacing.screenPadding,
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                  addAutomaticKeepAlives: false,
-                  addRepaintBoundaries: true,
-                    (context, i) => Padding(
-                      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                      child: PaintingListTile(
-                        painting: visible[i],
-                        selectMode: _selectMode,
-                        selected: _selectedIds.contains(visible[i].id),
-                        onSelect: () => _toggleSelect(visible[i].id),
-                        onLongPress: () => _enterSelectMode(visible[i].id),
+                    GalleryView.list => SliverPadding(
+                      padding: AppSpacing.screenPadding,
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          addAutomaticKeepAlives: false,
+                          addRepaintBoundaries: true,
+                          (context, i) => Padding(
+                            padding: const EdgeInsets.only(
+                              bottom: AppSpacing.sm,
+                            ),
+                            child: PaintingListTile(
+                              painting: visible[i],
+                              selectMode: _selectMode,
+                              selected: _selectedIds.contains(visible[i].id),
+                              onSelect: () => _toggleSelect(visible[i].id),
+                              onLongPress: () =>
+                                  _enterSelectMode(visible[i].id),
+                            ),
+                          ),
+                          childCount: visible.length,
+                        ),
                       ),
                     ),
-                    childCount: visible.length,
-                  ),
-                ),
-              ),
-              GalleryView.masonry => SliverPadding(
-                padding: AppSpacing.screenPadding,
-                sliver: SliverMasonryGrid.count(
-                  crossAxisCount:
-                      AppBreakpoints.galleryColumns(context) ~/ 2 + 1,
-                  mainAxisSpacing: AppSpacing.sm,
-                  crossAxisSpacing: AppSpacing.sm,
-                  childCount: visible.length,
-                  itemBuilder: (context, i) =>
-                      _MasonryCard(painting: visible[i], staggerIndex: i),
-                ),
-              ),
-              GalleryView.table => SliverToBoxAdapter(
-                child: Padding(
-                  padding: AppSpacing.screenPadding,
+                    GalleryView.masonry => SliverPadding(
+                      padding: AppSpacing.screenPadding,
+                      sliver: SliverMasonryGrid.count(
+                        crossAxisCount:
+                            AppBreakpoints.galleryColumns(context) ~/ 2 + 1,
+                        mainAxisSpacing: AppSpacing.sm,
+                        crossAxisSpacing: AppSpacing.sm,
+                        childCount: visible.length,
+                        itemBuilder: (context, i) =>
+                            _MasonryCard(painting: visible[i], staggerIndex: i),
+                      ),
+                    ),
+                    GalleryView.table => SliverToBoxAdapter(
+                      child: Padding(
+                        padding: AppSpacing.screenPadding,
+                        child: SizedBox(
+                          height: MediaQuery.of(context).size.height - 200,
+                          child: const GalleryTableView(),
+                        ),
+                      ),
+                    ),
+                    GalleryView.split => SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: MediaQuery.of(context).size.height - 100,
+                        child: const SplitPanelView(),
+                      ),
+                    ),
+                  },
+                SliverToBoxAdapter(
                   child: SizedBox(
-                    height: MediaQuery.of(context).size.height - 200,
-                    child: const GalleryTableView(),
+                    height:
+                        AppSpacing.xl + MediaQuery.paddingOf(context).bottom,
                   ),
                 ),
-              ),
-              GalleryView.split => SliverToBoxAdapter(
-                child: SizedBox(
-                  height: MediaQuery.of(context).size.height - 100,
-                  child: const SplitPanelView(),
-                ),
-              ),
-            },
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: AppSpacing.xl + MediaQuery.paddingOf(context).bottom,
+              ],
             ),
           ),
-        ],
-      ),
-      ),
-      ),
+        ),
       ),
     );
   }
@@ -475,12 +488,30 @@ class _GalleryHeader extends StatelessWidget {
                     tooltip: 'Sort',
                     onSelected: onSortChanged,
                     itemBuilder: (context) => const [
-                      PopupMenuItem(value: GallerySort.newest, child: Text('Newest first')),
-                      PopupMenuItem(value: GallerySort.oldest, child: Text('Oldest first')),
-                      PopupMenuItem(value: GallerySort.title, child: Text('Title (A–Z)')),
-                      PopupMenuItem(value: GallerySort.artist, child: Text('Artist name')),
-                      PopupMenuItem(value: GallerySort.priceHigh, child: Text('Price: high → low')),
-                      PopupMenuItem(value: GallerySort.priceLow, child: Text('Price: low → high')),
+                      PopupMenuItem(
+                        value: GallerySort.newest,
+                        child: Text('Newest first'),
+                      ),
+                      PopupMenuItem(
+                        value: GallerySort.oldest,
+                        child: Text('Oldest first'),
+                      ),
+                      PopupMenuItem(
+                        value: GallerySort.title,
+                        child: Text('Title (A–Z)'),
+                      ),
+                      PopupMenuItem(
+                        value: GallerySort.artist,
+                        child: Text('Artist name'),
+                      ),
+                      PopupMenuItem(
+                        value: GallerySort.priceHigh,
+                        child: Text('Price: high → low'),
+                      ),
+                      PopupMenuItem(
+                        value: GallerySort.priceLow,
+                        child: Text('Price: low → high'),
+                      ),
                     ],
                     icon: const Icon(Icons.sort),
                   ),
@@ -510,18 +541,32 @@ class _GalleryHeader extends StatelessWidget {
                       color: scheme.primary.withValues(alpha: 0.06),
                       borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusSm,
+                        ),
                         onTap: onSearchTap,
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.search, size: 16, color: scheme.onSurface.withValues(alpha: 0.6)),
+                              Icon(
+                                Icons.search,
+                                size: 16,
+                                color: scheme.onSurface.withValues(alpha: 0.6),
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 'Search',
-                                style: TextStyle(fontSize: 12, color: scheme.onSurface.withValues(alpha: 0.6)),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: scheme.onSurface.withValues(
+                                    alpha: 0.6,
+                                  ),
+                                ),
                               ),
                             ],
                           ),
@@ -536,7 +581,8 @@ class _GalleryHeader extends StatelessWidget {
         )
         .animate(
           key: ValueKey('gallery-header'),
-          onPlay: (c) => MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
+          onPlay: (c) =>
+              MediaQuery.disableAnimationsOf(context) ? c.stop() : null,
         )
         .fadeIn(duration: 420.ms, curve: Curves.easeOutCubic)
         .slideY(begin: 0.04, duration: 420.ms, curve: Curves.easeOutCubic);
@@ -590,7 +636,9 @@ class _ViewPill extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: selected ? scheme.onPrimary : scheme.onSurface.withValues(alpha: 0.7),
+                    color: selected
+                        ? scheme.onPrimary
+                        : scheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
               ],

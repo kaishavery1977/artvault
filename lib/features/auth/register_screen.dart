@@ -129,7 +129,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 suffixIcon: IconButton(
                   tooltip: _obscure ? 'Show password' : 'Hide password',
                   icon: Icon(
-                    _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                    _obscure
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
                     size: 20,
                   ),
                   onPressed: () => setState(() => _obscure = !_obscure),
@@ -147,16 +149,29 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 suffixIcon: IconButton(
                   tooltip: _confirmObscure ? 'Show password' : 'Hide password',
                   icon: Icon(
-                    _confirmObscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                    _confirmObscure
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
                     size: 20,
                   ),
-                  onPressed: () => setState(() => _confirmObscure = !_confirmObscure),
+                  onPressed: () =>
+                      setState(() => _confirmObscure = !_confirmObscure),
                 ),
               ),
               TextButton.icon(
-                onPressed: () => setState(() => _showAdminCode = !_showAdminCode),
-                icon: Icon(_showAdminCode ? Icons.expand_less : Icons.admin_panel_settings_outlined, size: 18),
-                label: Text(_showAdminCode ? 'Hide admin setup code' : 'First admin? Enter setup code'),
+                onPressed: () =>
+                    setState(() => _showAdminCode = !_showAdminCode),
+                icon: Icon(
+                  _showAdminCode
+                      ? Icons.expand_less
+                      : Icons.admin_panel_settings_outlined,
+                  size: 18,
+                ),
+                label: Text(
+                  _showAdminCode
+                      ? 'Hide admin setup code'
+                      : 'First admin? Enter setup code',
+                ),
               ),
               if (_showAdminCode) ...[
                 const SizedBox(height: AppSpacing.xs),
@@ -168,13 +183,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   textInputAction: TextInputAction.done,
                   suffixIcon: IconButton(
                     tooltip: _adminCodeObscure ? 'Show code' : 'Hide code',
-                    icon: Icon(_adminCodeObscure ? Icons.visibility_outlined : Icons.visibility_off_outlined, size: 20),
-                    onPressed: () => setState(() => _adminCodeObscure = !_adminCodeObscure),
+                    icon: Icon(
+                      _adminCodeObscure
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined,
+                      size: 20,
+                    ),
+                    onPressed: () =>
+                        setState(() => _adminCodeObscure = !_adminCodeObscure),
                   ),
                 ),
               ],
               const SizedBox(height: AppSpacing.md),
-              PremiumButton(label: 'Create Account', loading: auth.busy, onPressed: _submit),
+              PremiumButton(
+                label: 'Create Account',
+                loading: auth.busy,
+                onPressed: _submit,
+              ),
             ],
             initialDelay: const Duration(milliseconds: 100),
             context: context,
@@ -183,8 +208,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       ),
     ];
     if (kIsWeb) {
-      return AuthLayoutWeb(title: title, subtitle: subtitle, footer: footer, children: children);
+      return AuthLayoutWeb(
+        title: title,
+        subtitle: subtitle,
+        footer: footer,
+        children: children,
+      );
     }
-    return AuthLayout(title: title, subtitle: subtitle, footer: footer, children: children);
+    return AuthLayout(
+      title: title,
+      subtitle: subtitle,
+      footer: footer,
+      children: children,
+    );
   }
 }

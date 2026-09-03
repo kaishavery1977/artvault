@@ -52,7 +52,9 @@ void main() {
     });
 
     test('downloadByPath returns null', () async {
-      final result = await service.downloadByPath('paintings/test-id/cover.jpg');
+      final result = await service.downloadByPath(
+        'paintings/test-id/cover.jpg',
+      );
       expect(result, isNull);
     });
 

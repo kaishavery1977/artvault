@@ -113,117 +113,123 @@ class _HoverCardWidgetState extends State<_HoverCardWidget> {
     return Positioned(
       left: widget.position.dx,
       top: widget.position.dy,
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) {
-          setState(() => _hovered = false);
-          widget.onDismiss();
-        },
-        child: GestureDetector(
-          onTap: () {
-            widget.onDismiss();
-            context.push('/artist/${widget.artistId}');
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: 220,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1C1F30) : Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: _hovered
-                    ? AppColors.accent.withValues(alpha: 0.3)
-                    : (isDark
-                        ? Colors.white.withValues(alpha: 0.1)
-                        : Colors.black.withValues(alpha: 0.08)),
-                width: 0.8,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-                if (_hovered)
-                  BoxShadow(
-                    color: AppColors.accent.withValues(alpha: 0.1),
-                    blurRadius: 12,
-                  ),
-              ],
-            ),
-            child: Row(
-              children: [
-                // Avatar
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.violet500.withValues(alpha: 0.3),
-                        AppColors.cyan400.withValues(alpha: 0.3),
+      child:
+          MouseRegion(
+                onEnter: (_) => setState(() => _hovered = true),
+                onExit: (_) {
+                  setState(() => _hovered = false);
+                  widget.onDismiss();
+                },
+                child: GestureDetector(
+                  onTap: () {
+                    widget.onDismiss();
+                    context.push('/artist/${widget.artistId}');
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 220,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1C1F30) : Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: _hovered
+                            ? AppColors.accent.withValues(alpha: 0.3)
+                            : (isDark
+                                  ? Colors.white.withValues(alpha: 0.1)
+                                  : Colors.black.withValues(alpha: 0.08)),
+                        width: 0.8,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                        if (_hovered)
+                          BoxShadow(
+                            color: AppColors.accent.withValues(alpha: 0.1),
+                            blurRadius: 12,
+                          ),
                       ],
                     ),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.accent.withValues(alpha: 0.2),
-                      width: 1.5,
+                    child: Row(
+                      children: [
+                        // Avatar
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.violet500.withValues(alpha: 0.3),
+                                AppColors.cyan400.withValues(alpha: 0.3),
+                              ],
+                            ),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.accent.withValues(alpha: 0.2),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              widget.artistName[0].toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.accent,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                widget.artistName,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: scheme.onSurface,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${widget.paintingCount} painting${widget.paintingCount != 1 ? 's' : ''}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: scheme.onSurfaceVariant.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 12,
+                          color: scheme.onSurfaceVariant.withValues(alpha: 0.3),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Center(
-                    child: Text(
-                      widget.artistName[0].toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.accent,
-                      ),
-                    ),
-                  ),
                 ),
-                const SizedBox(width: 12),
-                // Info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        widget.artistName,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: scheme.onSurface,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${widget.paintingCount} painting${widget.paintingCount != 1 ? 's' : ''}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 12,
-                  color: scheme.onSurfaceVariant.withValues(alpha: 0.3),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ).animate().fadeIn(duration: 150.ms).slideY(
-        begin: -0.05,
-        duration: 150.ms,
-        curve: Curves.easeOutCubic,
-      ),
+              )
+              .animate()
+              .fadeIn(duration: 150.ms)
+              .slideY(
+                begin: -0.05,
+                duration: 150.ms,
+                curve: Curves.easeOutCubic,
+              ),
     );
   }
 }

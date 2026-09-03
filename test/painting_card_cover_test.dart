@@ -137,7 +137,9 @@ void main() {
 
     final image = tester.widget<Image>(find.byType(Image));
     final provider = image.image;
-    final file = provider is ResizeImage ? (provider.imageProvider as FileImage).file.path : (provider as FileImage).file.path;
+    final file = provider is ResizeImage
+        ? (provider.imageProvider as FileImage).file.path
+        : (provider as FileImage).file.path;
     expect(file, img);
   });
 }

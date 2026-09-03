@@ -68,7 +68,15 @@ class WebContextMenu extends StatelessWidget {
           label: 'Edit painting',
           onTap: onEdit ?? () => context.push('/painting/edit/$paintingId'),
         ),
-        PopupMenuItem<String>(enabled: false, child: SizedBox(height: 1, child: Divider(color: Theme.of(context).dividerColor.withValues(alpha: 0.3)))),
+        PopupMenuItem<String>(
+          enabled: false,
+          child: SizedBox(
+            height: 1,
+            child: Divider(
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+            ),
+          ),
+        ),
         _menuItem(
           context,
           icon: Icons.share_rounded,
@@ -81,7 +89,15 @@ class WebContextMenu extends StatelessWidget {
           label: 'Download',
           onTap: onDownload,
         ),
-        PopupMenuItem<String>(enabled: false, child: SizedBox(height: 1, child: Divider(color: Theme.of(context).dividerColor.withValues(alpha: 0.3)))),
+        PopupMenuItem<String>(
+          enabled: false,
+          child: SizedBox(
+            height: 1,
+            child: Divider(
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
+            ),
+          ),
+        ),
         _menuItem(
           context,
           icon: Icons.delete_rounded,

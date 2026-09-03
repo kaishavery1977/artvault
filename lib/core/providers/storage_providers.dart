@@ -22,8 +22,9 @@ class StorageUsage {
   int get countedBytes => images + documents;
 }
 
-final storageUsageProvider =
-    FutureProvider.autoDispose<StorageUsage>((ref) async {
+final storageUsageProvider = FutureProvider.autoDispose<StorageUsage>((
+  ref,
+) async {
   final breakdown = await FileStorageService.instance.storageBreakdown();
   return StorageUsage(
     images: breakdown.images,
@@ -50,8 +51,9 @@ class DeviceStorage {
 ///
 /// `disk_space_2` returns values in mebibytes (2^20 bytes) on Android and
 /// iOS, so convert to bytes with 1024*1024 — not 1024^3.
-final deviceStorageProvider =
-    FutureProvider.autoDispose<DeviceStorage?>((ref) async {
+final deviceStorageProvider = FutureProvider.autoDispose<DeviceStorage?>((
+  ref,
+) async {
   try {
     final freeMiB = await DiskSpace.getFreeDiskSpace;
     final totalMiB = await DiskSpace.getTotalDiskSpace;

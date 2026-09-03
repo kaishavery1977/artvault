@@ -34,18 +34,20 @@ class _ActivityLogScreenWebState extends ConsumerState<ActivityLogScreenWeb> {
             decoration: BoxDecoration(
               border: Border(
                 bottom: BorderSide(
-                    color: scheme.outlineVariant.withValues(alpha: 0.15)),
+                  color: scheme.outlineVariant.withValues(alpha: 0.15),
+                ),
               ),
             ),
             child: Row(
               children: [
                 Icon(Icons.history, size: 22, color: scheme.primary),
                 const SizedBox(width: 10),
-                Text('Activity Log',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700)),
+                Text(
+                  'Activity Log',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const Spacer(),
                 // Search
                 SizedBox(
@@ -57,12 +59,16 @@ class _ActivityLogScreenWebState extends ConsumerState<ActivityLogScreenWeb> {
                       prefixIcon: const Icon(Icons.search, size: 18),
                       isDense: true,
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       filled: true,
-                      fillColor: scheme.surfaceContainerHighest
-                          .withValues(alpha: 0.3),
+                      fillColor: scheme.surfaceContainerHighest.withValues(
+                        alpha: 0.3,
+                      ),
                     ),
                   ),
                 ),
@@ -80,8 +86,7 @@ class _ActivityLogScreenWebState extends ConsumerState<ActivityLogScreenWeb> {
           ),
           // Filter chips
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Row(
               children: [
                 _FilterChipWidget(
@@ -104,25 +109,27 @@ class _ActivityLogScreenWebState extends ConsumerState<ActivityLogScreenWeb> {
           // Table
           Expanded(
             child: auditAsync.when(
-              loading: () =>
-                  const Padding(
-                    padding: EdgeInsets.all(20),
-                    child: TableSkeleton(rows: 6, columns: 4),
-                  ),
+              loading: () => const Padding(
+                padding: EdgeInsets.all(20),
+                child: TableSkeleton(rows: 6, columns: 4),
+              ),
               error: (e, _) => Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.error_outline,
-                        size: 48,
-                        color: scheme.error.withValues(alpha: 0.5)),
+                    Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: scheme.error.withValues(alpha: 0.5),
+                    ),
                     const SizedBox(height: 12),
-                    Text('Could not load activity log',
-                        style: TextStyle(color: scheme.onSurface)),
+                    Text(
+                      'Could not load activity log',
+                      style: TextStyle(color: scheme.onSurface),
+                    ),
                     const SizedBox(height: 8),
                     FilledButton.tonal(
-                      onPressed: () =>
-                          ref.invalidate(activityAuditProvider),
+                      onPressed: () => ref.invalidate(activityAuditProvider),
                       child: const Text('Retry'),
                     ),
                   ],
@@ -133,10 +140,12 @@ class _ActivityLogScreenWebState extends ConsumerState<ActivityLogScreenWeb> {
                 if (_searchQuery.isNotEmpty) {
                   final q = _searchQuery.toLowerCase();
                   filtered = filtered
-                      .where((e) =>
-                          e.userName.toLowerCase().contains(q) ||
-                          e.userEmail.toLowerCase().contains(q) ||
-                          e.description.toLowerCase().contains(q))
+                      .where(
+                        (e) =>
+                            e.userName.toLowerCase().contains(q) ||
+                            e.userEmail.toLowerCase().contains(q) ||
+                            e.description.toLowerCase().contains(q),
+                      )
                       .toList();
                 }
                 if (_filterType != null) {
@@ -150,14 +159,18 @@ class _ActivityLogScreenWebState extends ConsumerState<ActivityLogScreenWeb> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.history,
-                            size: 48,
-                            color: scheme.onSurface.withValues(alpha: 0.2)),
+                        Icon(
+                          Icons.history,
+                          size: 48,
+                          color: scheme.onSurface.withValues(alpha: 0.2),
+                        ),
                         const SizedBox(height: 12),
-                        Text('No activity found',
-                            style: TextStyle(
-                                color:
-                                    scheme.onSurface.withValues(alpha: 0.5))),
+                        Text(
+                          'No activity found',
+                          style: TextStyle(
+                            color: scheme.onSurface.withValues(alpha: 0.5),
+                          ),
+                        ),
                       ],
                     ),
                   );
@@ -168,14 +181,16 @@ class _ActivityLogScreenWebState extends ConsumerState<ActivityLogScreenWeb> {
                     // Entry count
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 8),
+                        horizontal: 20,
+                        vertical: 8,
+                      ),
                       alignment: Alignment.centerLeft,
                       child: Text(
                         '${filtered.length} of ${entries.length} entries',
                         style: TextStyle(
-                            fontSize: 12,
-                            color:
-                                scheme.onSurface.withValues(alpha: 0.5)),
+                          fontSize: 12,
+                          color: scheme.onSurface.withValues(alpha: 0.5),
+                        ),
                       ),
                     ),
                     // Table
@@ -185,99 +200,152 @@ class _ActivityLogScreenWebState extends ConsumerState<ActivityLogScreenWeb> {
                           width: double.infinity,
                           child: DataTable(
                             headingRowColor: WidgetStateProperty.all(
-                                scheme.surfaceContainerHighest
-                                    .withValues(alpha: 0.4)),
+                              scheme.surfaceContainerHighest.withValues(
+                                alpha: 0.4,
+                              ),
+                            ),
                             columns: const [
-                              DataColumn(label: Text('Time', style: TextStyle(fontSize: 12))),
-                              DataColumn(label: Text('User', style: TextStyle(fontSize: 12))),
-                              DataColumn(label: Text('Action', style: TextStyle(fontSize: 12))),
-                              DataColumn(label: Text('Details', style: TextStyle(fontSize: 12))),
+                              DataColumn(
+                                label: Text(
+                                  'Time',
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                              ),
+                              DataColumn(
+                                label: Text(
+                                  'User',
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                              ),
+                              DataColumn(
+                                label: Text(
+                                  'Action',
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                              ),
+                              DataColumn(
+                                label: Text(
+                                  'Details',
+                                  style: TextStyle(fontSize: 12),
+                                ),
+                              ),
                             ],
                             rows: filtered.map((entry) {
-                              return DataRow(cells: [
-                                DataCell(
-                                  Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(DateFormat('MMM d, HH:mm').format(entry.at),
-                                          style: const TextStyle(fontSize: 12)),
-                                      Text(_formatTimeAgo(entry.at),
+                              return DataRow(
+                                cells: [
+                                  DataCell(
+                                    Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          DateFormat(
+                                            'MMM d, HH:mm',
+                                          ).format(entry.at),
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                        Text(
+                                          _formatTimeAgo(entry.at),
                                           style: TextStyle(
-                                              fontSize: 10,
-                                              color: scheme.onSurface
-                                                  .withValues(alpha: 0.4))),
-                                    ],
+                                            fontSize: 10,
+                                            color: scheme.onSurface.withValues(
+                                              alpha: 0.4,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                DataCell(
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 12,
-                                        backgroundColor: entry.type.color
-                                            .withValues(alpha: 0.12),
-                                        child: Icon(entry.type.icon,
+                                  DataCell(
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 12,
+                                          backgroundColor: entry.type.color
+                                              .withValues(alpha: 0.12),
+                                          child: Icon(
+                                            entry.type.icon,
                                             size: 14,
-                                            color: entry.type.color),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(entry.userName.isNotEmpty
-                                              ? entry.userName
-                                              : 'Unknown',
+                                            color: entry.type.color,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              entry.userName.isNotEmpty
+                                                  ? entry.userName
+                                                  : 'Unknown',
                                               style: const TextStyle(
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.w500)),
-                                          if (entry.userEmail.isNotEmpty)
-                                            Text(entry.userEmail,
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            if (entry.userEmail.isNotEmpty)
+                                              Text(
+                                                entry.userEmail,
                                                 style: TextStyle(
-                                                    fontSize: 10,
-                                                    color: scheme.onSurface
-                                                        .withValues(alpha: 0.4))),
-                                        ],
+                                                  fontSize: 10,
+                                                  color: scheme.onSurface
+                                                      .withValues(alpha: 0.4),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  DataCell(
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
                                       ),
-                                    ],
-                                  ),
-                                ),
-                                DataCell(
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: entry.type.color
-                                          .withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(entry.type.label,
+                                      decoration: BoxDecoration(
+                                        color: entry.type.color.withValues(
+                                          alpha: 0.1,
+                                        ),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        entry.type.label,
                                         style: TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                            color: entry.type.color)),
-                                  ),
-                                ),
-                                DataCell(
-                                  ConstrainedBox(
-                                    constraints:
-                                        const BoxConstraints(maxWidth: 300),
-                                    child: Text(
-                                      entry.description.isNotEmpty
-                                          ? entry.description
-                                          : entry.type.label,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                          fontSize: 12,
-                                          color: scheme.onSurface
-                                              .withValues(alpha: 0.6)),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: entry.type.color,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ]);
+                                  DataCell(
+                                    ConstrainedBox(
+                                      constraints: const BoxConstraints(
+                                        maxWidth: 300,
+                                      ),
+                                      child: Text(
+                                        entry.description.isNotEmpty
+                                            ? entry.description
+                                            : entry.type.label,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: scheme.onSurface.withValues(
+                                            alpha: 0.6,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
                             }).toList(),
                           ),
                         ),
@@ -299,10 +367,12 @@ class _ActivityLogScreenWebState extends ConsumerState<ActivityLogScreenWeb> {
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       filtered = filtered
-          .where((e) =>
-              e.userName.toLowerCase().contains(q) ||
-              e.userEmail.toLowerCase().contains(q) ||
-              e.description.toLowerCase().contains(q))
+          .where(
+            (e) =>
+                e.userName.toLowerCase().contains(q) ||
+                e.userEmail.toLowerCase().contains(q) ||
+                e.description.toLowerCase().contains(q),
+          )
           .toList();
     }
     if (_filterType != null) {
@@ -312,18 +382,19 @@ class _ActivityLogScreenWebState extends ConsumerState<ActivityLogScreenWeb> {
     final buffer = StringBuffer('Time,User,Email,Action,Details\n');
     for (final e in filtered) {
       buffer.writeln(
-          '${DateFormat('yyyy-MM-dd HH:mm').format(e.at)},'
-          '${_csvEscape(e.userName)},'
-          '${_csvEscape(e.userEmail)},'
-          '${_csvEscape(e.type.label)},'
-          '${_csvEscape(e.description)}');
+        '${DateFormat('yyyy-MM-dd HH:mm').format(e.at)},'
+        '${_csvEscape(e.userName)},'
+        '${_csvEscape(e.userEmail)},'
+        '${_csvEscape(e.type.label)},'
+        '${_csvEscape(e.description)}',
+      );
     }
 
     Clipboard.setData(ClipboardData(text: buffer.toString()));
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('CSV copied to clipboard')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('CSV copied to clipboard')));
     }
   }
 
@@ -387,14 +458,14 @@ class _FilterChipWidget extends StatelessWidget {
               Icon(icon, size: 14, color: c),
               const SizedBox(width: 4),
             ],
-            Text(label,
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight:
-                        selected ? FontWeight.w700 : FontWeight.w500,
-                    color: selected
-                        ? c
-                        : scheme.onSurface.withValues(alpha: 0.6))),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                color: selected ? c : scheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
           ],
         ),
       ),
@@ -417,16 +488,21 @@ class _ExportButton extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-              color: scheme.outlineVariant.withValues(alpha: 0.3)),
+            color: scheme.outlineVariant.withValues(alpha: 0.3),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.download, size: 14, color: scheme.onSurface),
             const SizedBox(width: 4),
-            Text('Export CSV',
-                style: TextStyle(
-                    fontSize: 12, color: scheme.onSurface.withValues(alpha: 0.7))),
+            Text(
+              'Export CSV',
+              style: TextStyle(
+                fontSize: 12,
+                color: scheme.onSurface.withValues(alpha: 0.7),
+              ),
+            ),
           ],
         ),
       ),

@@ -294,7 +294,9 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                             if (!biometricOk && context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Authentication required to export data'),
+                                  content: Text(
+                                    'Authentication required to export data',
+                                  ),
                                 ),
                               );
                               return;
@@ -354,8 +356,12 @@ class _BackupScreenState extends ConsumerState<BackupScreen> {
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                          padding: EdgeInsets.symmetric(
+                            vertical: AppSpacing.sm,
+                          ),
+                          child: Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
                         );
                       }
                       final backups = snapshot.data ?? [];
@@ -488,10 +494,7 @@ class _BackupFileInfoState extends State<_BackupFileInfo> {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       dense: true,
-      leading: const Icon(
-        Icons.description_outlined,
-        size: 20,
-      ),
+      leading: const Icon(Icons.description_outlined, size: 20),
       title: Text(
         p.basename(widget.file.path),
         maxLines: 1,

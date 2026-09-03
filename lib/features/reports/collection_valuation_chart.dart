@@ -49,7 +49,8 @@ class CollectionValuationChart extends ConsumerWidget {
       }
     }
 
-    final entries = monthlyData.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
+    final entries = monthlyData.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
     final spots = <FlSpot>[];
     final labels = <String>[];
 
@@ -58,7 +59,9 @@ class CollectionValuationChart extends ConsumerWidget {
       labels.add(_monthLabel(entries[i].key));
     }
 
-    final maxValue = spots.isEmpty ? 0.0 : spots.map((s) => s.y).reduce((a, b) => a > b ? a : b);
+    final maxValue = spots.isEmpty
+        ? 0.0
+        : spots.map((s) => s.y).reduce((a, b) => a > b ? a : b);
     final currency = ref.watch(currencyProvider);
 
     return Container(
@@ -79,11 +82,17 @@ class CollectionValuationChart extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.trending_up_rounded, size: 20, color: AppColors.emerald500),
+              Icon(
+                Icons.trending_up_rounded,
+                size: 20,
+                color: AppColors.emerald500,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Portfolio Value',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
               const Spacer(),
               Text(
@@ -103,7 +112,11 @@ class CollectionValuationChart extends ConsumerWidget {
                 ? Center(
                     child: Text(
                       'Add more paintings to see value trend',
-                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+                      style: TextStyle(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                      ),
                     ),
                   )
                 : LineChart(
@@ -113,13 +126,19 @@ class CollectionValuationChart extends ConsumerWidget {
                         drawVerticalLine: false,
                         horizontalInterval: maxValue > 0 ? maxValue / 4 : 1,
                         getDrawingHorizontalLine: (value) => FlLine(
-                          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.2),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.outlineVariant.withValues(alpha: 0.2),
                           strokeWidth: 0.5,
                         ),
                       ),
                       titlesData: FlTitlesData(
-                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
                         leftTitles: AxisTitles(
                           sideTitles: SideTitles(
                             showTitles: true,
@@ -127,7 +146,13 @@ class CollectionValuationChart extends ConsumerWidget {
                             getTitlesWidget: (value, meta) {
                               return Text(
                                 Formatters.money(value, currency: currency),
-                                style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant
+                                      .withValues(alpha: 0.5),
+                                ),
                               );
                             },
                           ),
@@ -138,10 +163,21 @@ class CollectionValuationChart extends ConsumerWidget {
                             reservedSize: 24,
                             getTitlesWidget: (value, meta) {
                               final idx = value.toInt();
-                              if (idx < 0 || idx >= labels.length) return const SizedBox.shrink();
+                              if (idx < 0 || idx >= labels.length)
+                                return const SizedBox.shrink();
                               // Show every other label
-                              if (idx % 2 != 0 && labels.length > 6) return const SizedBox.shrink();
-                              return Text(labels[idx], style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5)));
+                              if (idx % 2 != 0 && labels.length > 6)
+                                return const SizedBox.shrink();
+                              return Text(
+                                labels[idx],
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant
+                                      .withValues(alpha: 0.5),
+                                ),
+                              );
                             },
                           ),
                         ),
@@ -182,7 +218,9 @@ class CollectionValuationChart extends ConsumerWidget {
                           getTooltipItems: (spots) {
                             return spots.map((spot) {
                               final idx = spot.x.toInt();
-                              final label = idx >= 0 && idx < labels.length ? labels[idx] : '';
+                              final label = idx >= 0 && idx < labels.length
+                                  ? labels[idx]
+                                  : '';
                               return LineTooltipItem(
                                 '$label\n${Formatters.money(spot.y, currency: currency)}',
                                 TextStyle(
@@ -204,7 +242,20 @@ class CollectionValuationChart extends ConsumerWidget {
   }
 
   String _monthLabel(DateTime date) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${months[date.month - 1]} ${date.year.toString().substring(2)}';
   }
 }

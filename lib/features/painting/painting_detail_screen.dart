@@ -835,7 +835,9 @@ class _InfoGrid extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(AppSpacing.sm),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
                     ),
                     child: Column(
@@ -844,14 +846,19 @@ class _InfoGrid extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            Icon(row.$1, size: 14, color: Theme.of(context).colorScheme.primary),
+                            Icon(
+                              row.$1,
+                              size: 14,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
                             const SizedBox(width: AppSpacing.xs),
                             Flexible(
                               child: Text(
                                 row.$2,
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                  color: Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.6),
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -861,7 +868,10 @@ class _InfoGrid extends StatelessWidget {
                         const SizedBox(height: AppSpacing.xxs),
                         Text(
                           row.$3,
-                          style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -877,12 +887,16 @@ class _InfoGrid extends StatelessWidget {
                 child: OutlinedButton.icon(
                   onPressed: () {
                     // ignore: deprecated_member_use
-                    launchUrl(Uri.parse(
-                        'https://www.openstreetmap.org/?mlat=${painting.lat}&mlon=${painting.lng}#map=15/${painting.lat}/${painting.lng}'));
+                    launchUrl(
+                      Uri.parse(
+                        'https://www.openstreetmap.org/?mlat=${painting.lat}&mlon=${painting.lng}#map=15/${painting.lat}/${painting.lng}',
+                      ),
+                    );
                   },
                   icon: const Icon(Icons.map_outlined, size: 18),
                   label: Text(
-                      '${painting.lat!.toStringAsFixed(4)}, ${painting.lng!.toStringAsFixed(4)} — Open in map'),
+                    '${painting.lat!.toStringAsFixed(4)}, ${painting.lng!.toStringAsFixed(4)} — Open in map',
+                  ),
                 ),
               ),
             ],
@@ -2285,7 +2299,10 @@ class _ProvenanceTimeline extends StatelessWidget {
                           if (provenance[i]['owner'] != null)
                             Text(
                               provenance[i]['owner'].toString(),
-                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           if (provenance[i]['note'] != null)
                             Text(

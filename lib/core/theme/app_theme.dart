@@ -270,10 +270,11 @@ abstract final class AppTheme {
             : AppColors.violet100.withValues(alpha: 0.9),
         disabledColor: surfaceVariant.withValues(alpha: 0.5),
         side: BorderSide(
-            color: isDark
-                ? AppColors.violet400.withValues(alpha: 0.15)
-                : AppColors.violet200.withValues(alpha: 0.4),
-            width: 0.5),
+          color: isDark
+              ? AppColors.violet400.withValues(alpha: 0.15)
+              : AppColors.violet200.withValues(alpha: 0.4),
+          width: 0.5,
+        ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
         ),
@@ -357,7 +358,9 @@ abstract final class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style:
             ElevatedButton.styleFrom(
-              backgroundColor: isDark ? AppColors.violet500 : AppColors.violet600,
+              backgroundColor: isDark
+                  ? AppColors.violet500
+                  : AppColors.violet600,
               foregroundColor: onPrimary,
               shadowColor: isDark
                   ? AppColors.violet500.withValues(alpha: 0.35)

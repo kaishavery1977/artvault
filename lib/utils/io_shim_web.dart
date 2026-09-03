@@ -15,8 +15,16 @@ class File extends FileSystemEntity {
   Future<int> length() async => 0;
   List<int> readAsBytesSync() => [];
   Future<Uint8List> readAsBytes() async => Uint8List(0);
-  Future<File> writeAsBytes(List<int> bytes, {FileMode mode = FileMode.write, bool flush = false}) async => this;
-  Future<File> writeAsString(String contents, {FileMode mode = FileMode.write, bool flush = false}) async => this;
+  Future<File> writeAsBytes(
+    List<int> bytes, {
+    FileMode mode = FileMode.write,
+    bool flush = false,
+  }) async => this;
+  Future<File> writeAsString(
+    String contents, {
+    FileMode mode = FileMode.write,
+    bool flush = false,
+  }) async => this;
   String readAsStringSync() => '';
   Future<String> readAsString() async => '';
   Future<File> copy(String newPath) async => this;
@@ -38,7 +46,10 @@ class Directory {
   bool existsSync() => false;
   Future<bool> exists() async => false;
   Future<Directory> create({bool recursive = false}) async => this;
-  Stream<FileSystemEntity> list({bool recursive = false, bool followLinks = true}) async* {}
+  Stream<FileSystemEntity> list({
+    bool recursive = false,
+    bool followLinks = true,
+  }) async* {}
   Future<void> delete({bool recursive = false}) async {}
 }
 
@@ -83,8 +94,12 @@ class SocketException implements Exception {
 
 /// Stub [Process].
 class Process {
-  static Future<ProcessResult> run(String executable, List<String> arguments,
-      {String? workingDirectory, Map<String, String>? environment}) async {
+  static Future<ProcessResult> run(
+    String executable,
+    List<String> arguments, {
+    String? workingDirectory,
+    Map<String, String>? environment,
+  }) async {
     return ProcessResult(0, 0, '', '');
   }
 }

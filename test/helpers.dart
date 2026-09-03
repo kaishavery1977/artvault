@@ -74,7 +74,9 @@ Future<void> pumpToOnboarding(WidgetTester tester) async {
   await tester.pump(); // splash first frame
   await tester.pump(const Duration(milliseconds: 2300)); // intro
   await tester.pump(const Duration(milliseconds: 700)); // exit hold + drain
-  await tester.pump(const Duration(milliseconds: 900)); // hand-off + mount timers
+  await tester.pump(
+    const Duration(milliseconds: 900),
+  ); // hand-off + mount timers
   await tester.pump(const Duration(milliseconds: 500)); // extra drain
   await tester.pump(const Duration(milliseconds: 500)); // extra drain
 }

@@ -137,7 +137,10 @@ class SyncService {
   Duration _backoffDelay(int attempt) {
     const base = 5; // seconds
     const maxSeconds = 600; // 10 minutes
-    final delaySeconds = (base * math.pow(5, attempt - 1)).toInt().clamp(0, maxSeconds);
+    final delaySeconds = (base * math.pow(5, attempt - 1)).toInt().clamp(
+      0,
+      maxSeconds,
+    );
     return Duration(seconds: delaySeconds);
   }
 }

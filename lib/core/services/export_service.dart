@@ -118,10 +118,7 @@ class ExportService {
               decoration: pw.BoxDecoration(
                 color: PdfColors.grey200,
                 borderRadius: pw.BorderRadius.circular(6),
-                image: pw.DecorationImage(
-                  image: image,
-                  fit: pw.BoxFit.cover,
-                ),
+                image: pw.DecorationImage(image: image, fit: pw.BoxFit.cover),
               ),
             )
           else

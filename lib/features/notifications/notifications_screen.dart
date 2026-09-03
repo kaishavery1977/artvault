@@ -63,9 +63,12 @@ class NotificationsScreen extends ConsumerWidget {
                 : 'Older';
             groups.putIfAbsent(key, () => []).add(n);
           }
-          final orderedKeys = ['Today', 'Yesterday', 'This week', 'Older']
-              .where(groups.containsKey)
-              .toList();
+          final orderedKeys = [
+            'Today',
+            'Yesterday',
+            'This week',
+            'Older',
+          ].where(groups.containsKey).toList();
           return ListView.builder(
             padding: AppSpacing.screenPadding,
             itemCount: orderedKeys.length,
@@ -76,7 +79,10 @@ class NotificationsScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.xs),
+                    padding: const EdgeInsets.only(
+                      top: AppSpacing.md,
+                      bottom: AppSpacing.xs,
+                    ),
                     child: Text(
                       key,
                       style: TextStyle(
@@ -100,9 +106,13 @@ class NotificationsScreen extends ConsumerWidget {
                             color: scheme.error.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: Icon(Icons.delete_outline, color: scheme.error),
+                          child: Icon(
+                            Icons.delete_outline,
+                            color: scheme.error,
+                          ),
                         ),
-                        onDismissed: (_) => NotificationRepository.instance.remove(n.id),
+                        onDismissed: (_) =>
+                            NotificationRepository.instance.remove(n.id),
                         child: _NotificationTile(notification: n),
                       ),
                     ),

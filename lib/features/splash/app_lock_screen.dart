@@ -17,7 +17,6 @@ import '../../core/providers/providers.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../auth/face_scan_screen.dart';
 
-
 /// Cold-start lock gate shown when App Lock is enabled.
 ///
 /// Offers distinct unlock methods — fingerprint (strong biometrics), Face
@@ -377,10 +376,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen>
                     const SizedBox(height: AppSpacing.xl),
                     Text(
                           'ArtVault',
-                          style: AppTheme.display(
-                            context,
-                            size: 30,
-                          ).copyWith(
+                          style: AppTheme.display(context, size: 30).copyWith(
                             color: fg,
                             fontWeight: FontWeight.w700,
                             letterSpacing: -0.5,
@@ -572,9 +568,7 @@ class _BiometricButtonState extends State<_BiometricButton> {
               shape: BoxShape.circle,
               color: _pressed
                   ? scheme.primary.withValues(alpha: isDark ? 0.2 : 0.1)
-                  : scheme.surface.withValues(
-                      alpha: isDark ? 0.5 : 0.65,
-                    ),
+                  : scheme.surface.withValues(alpha: isDark ? 0.5 : 0.65),
               border: Border.all(
                 color: scheme.onSurface.withValues(alpha: 0.08),
                 width: 0.8,
@@ -656,8 +650,7 @@ class _PinPadState extends State<_PinPad> with SingleTickerProviderStateMixin {
   void didUpdateWidget(covariant _PinPad oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Pulse the newest dot when a digit is added.
-    if (widget.entered > _previousEntered &&
-        widget.entered <= widget.length) {
+    if (widget.entered > _previousEntered && widget.entered <= widget.length) {
       _pulseController.forward(from: 0);
     }
     _previousEntered = widget.entered;
@@ -795,7 +788,9 @@ class _KeyState extends State<_Key> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6),
       child: GestureDetector(
-        onTapDown: widget.enabled ? (_) => setState(() => _pressed = true) : null,
+        onTapDown: widget.enabled
+            ? (_) => setState(() => _pressed = true)
+            : null,
         onTapUp: widget.enabled
             ? (_) {
                 setState(() => _pressed = false);

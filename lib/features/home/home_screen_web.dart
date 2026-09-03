@@ -43,9 +43,7 @@ class HomeScreenWeb extends ConsumerWidget {
           child: _StatsRow(paintings: paintings, ref: ref),
         ),
         // Quick actions
-        SliverToBoxAdapter(
-          child: _QuickActionsWeb(canEdit: canEdit),
-        ),
+        SliverToBoxAdapter(child: _QuickActionsWeb(canEdit: canEdit)),
         // Recent uploads header
         if (paintings.isNotEmpty)
           SliverToBoxAdapter(
@@ -74,9 +72,8 @@ class HomeScreenWeb extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 32),
             sliver: SliverGrid(
               delegate: SliverChildBuilderDelegate(
-                (context, i) => _HoverPaintingCard(
-                  painting: recent.take(8).toList()[i],
-                ),
+                (context, i) =>
+                    _HoverPaintingCard(painting: recent.take(8).toList()[i]),
                 childCount: recent.take(8).length,
               ),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -190,14 +187,18 @@ class _WebHero extends ConsumerWidget {
                       icon: Icons.attach_money,
                       label: 'Value',
                       value: Formatters.money(
-                        paintings.fold<double>(0.0, (s, p) => s + (p.price ?? 0)),
+                        paintings.fold<double>(
+                          0.0,
+                          (s, p) => s + (p.price ?? 0),
+                        ),
                       ),
                       color: AppColors.amber500,
                     ),
                     _StatPill(
                       icon: Icons.description,
                       label: 'Documents',
-                      value: '${ref.watch(documentsProvider).valueOrNull?.length ?? 0}',
+                      value:
+                          '${ref.watch(documentsProvider).valueOrNull?.length ?? 0}',
                       color: AppColors.emerald500,
                     ),
                   ],
@@ -207,29 +208,36 @@ class _WebHero extends ConsumerWidget {
           ),
           // Right: decorative palette icon
           Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [scheme.primary, scheme.secondary],
-              ),
-              borderRadius: BorderRadius.circular(32),
-              boxShadow: [
-                BoxShadow(
-                  color: scheme.primary.withValues(alpha: 0.4),
-                  blurRadius: 32,
-                  offset: const Offset(0, 12),
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [scheme.primary, scheme.secondary],
+                  ),
+                  borderRadius: BorderRadius.circular(32),
+                  boxShadow: [
+                    BoxShadow(
+                      color: scheme.primary.withValues(alpha: 0.4),
+                      blurRadius: 32,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            child: const Icon(Icons.palette_rounded, size: 56, color: Colors.white),
-          )
+                child: const Icon(
+                  Icons.palette_rounded,
+                  size: 56,
+                  color: Colors.white,
+                ),
+              )
               .animate()
               .scaleXY(begin: 0.8, duration: 800.ms, curve: Curves.easeOutBack)
               .then()
-              .shimmer(duration: 2000.ms, color: Colors.white.withValues(alpha: 0.2)),
+              .shimmer(
+                duration: 2000.ms,
+                color: Colors.white.withValues(alpha: 0.2),
+              ),
         ],
       ),
     ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.03);
@@ -241,7 +249,6 @@ class _WebHero extends ConsumerWidget {
     if (hour < 17) return 'afternoon';
     return 'evening';
   }
-
 }
 
 class _StatPill extends StatefulWidget {
@@ -308,7 +315,9 @@ class _StatPillState extends State<_StatPill> {
                     widget.label,
                     style: TextStyle(
                       fontSize: 11,
-                      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ),
                 ],
@@ -343,10 +352,30 @@ class _QuickActionsWeb extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final actions = <_WebAction>[
       if (canEdit)
-        _WebAction(Icons.add_photo_alternate, 'Upload', () => context.push('/painting/new'), AppColors.emerald500),
-      _WebAction(Icons.grid_view, 'Gallery', () => context.go('/gallery'), AppColors.cyan500),
-      _WebAction(Icons.person, 'Artists', () => context.go('/artists'), AppColors.rose500),
-      _WebAction(Icons.insights, 'Reports', () => context.push('/reports'), AppColors.amber500),
+        _WebAction(
+          Icons.add_photo_alternate,
+          'Upload',
+          () => context.push('/painting/new'),
+          AppColors.emerald500,
+        ),
+      _WebAction(
+        Icons.grid_view,
+        'Gallery',
+        () => context.go('/gallery'),
+        AppColors.cyan500,
+      ),
+      _WebAction(
+        Icons.person,
+        'Artists',
+        () => context.go('/artists'),
+        AppColors.rose500,
+      ),
+      _WebAction(
+        Icons.insights,
+        'Reports',
+        () => context.push('/reports'),
+        AppColors.amber500,
+      ),
     ];
 
     return Padding(
@@ -459,7 +488,8 @@ class _HoverPaintingCardState extends State<_HoverPaintingCard> {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),        child: GestureDetector(
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
         onTap: () => context.push('/painting/${widget.painting.id}'),
         child: AnimatedScale(
           scale: _hovered ? 1.02 : 1.0,
@@ -504,14 +534,21 @@ class _AiInsightsWeb extends StatelessWidget {
     final mediumCounts = <String, int>{};
     final artistCounts = <String, int>{};
     for (final p in paintings) {
-      if (p.medium.isNotEmpty) mediumCounts[p.medium] = (mediumCounts[p.medium] ?? 0) + 1;
-      if (p.artistName.isNotEmpty) artistCounts[p.artistName] = (artistCounts[p.artistName] ?? 0) + 1;
+      if (p.medium.isNotEmpty)
+        mediumCounts[p.medium] = (mediumCounts[p.medium] ?? 0) + 1;
+      if (p.artistName.isNotEmpty)
+        artistCounts[p.artistName] = (artistCounts[p.artistName] ?? 0) + 1;
     }
 
     String? topKey(Map<String, int> c) {
       String? best;
       var bestCount = 0;
-      c.forEach((k, v) { if (v > bestCount) { best = k; bestCount = v; } });
+      c.forEach((k, v) {
+        if (v > bestCount) {
+          best = k;
+          bestCount = v;
+        }
+      });
       return best;
     }
 
@@ -527,9 +564,9 @@ class _AiInsightsWeb extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'AI Insights',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
             ],
           ),
@@ -559,7 +596,11 @@ class _InsightRowWeb extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _InsightRowWeb({required this.icon, required this.label, required this.value});
+  const _InsightRowWeb({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -567,12 +608,29 @@ class _InsightRowWeb extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+          Icon(
+            icon,
+            size: 16,
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(label, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
           ),
-          Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          ),
         ],
       ),
     );

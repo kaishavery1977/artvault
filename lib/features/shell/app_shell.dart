@@ -184,28 +184,31 @@ class _AppShellState extends ConsumerState<AppShell>
                 height: navBarHeight,
                 selectedIndex: shell.currentIndex,
                 onDestinationSelected: _go,
-                indicatorColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.18),
+                indicatorColor: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.18),
                 animationDuration: const Duration(milliseconds: 400),
                 labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
                 destinations: [
                   for (final d in _shellDestinations)
                     NavigationDestination(
-                      icon: Icon(d.icon, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      icon: Icon(
+                        d.icon,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                       selectedIcon: Icon(d.selected, color: d.color),
                       label: d.label,
                     ),
                 ],
               ),
             ),
-      floatingActionButton: canEdit && !isOwnFabTab && !ref.watch(gallerySelectModeProvider)
+      floatingActionButton:
+          canEdit && !isOwnFabTab && !ref.watch(gallerySelectModeProvider)
           ? AnimatedBuilder(
               animation: _fabPulse,
               builder: (context, child) {
                 final scale = 1.0 + _fabPulse.value * 0.04;
-                return Transform.scale(
-                  scale: scale,
-                  child: child,
-                );
+                return Transform.scale(scale: scale, child: child);
               },
               child: FloatingActionButton.extended(
                 heroTag: 'quick_add',

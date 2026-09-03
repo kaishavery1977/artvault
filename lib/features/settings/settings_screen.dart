@@ -361,7 +361,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     };
   }
 
-
   static void _showCurrencySheet(BuildContext context, WidgetRef ref) {
     showModalBottomSheet<String>(
       context: context,
@@ -389,7 +388,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ref.invalidate(currencyProvider);
         } catch (e) {
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not change currency: $e')));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Could not change currency: $e')),
+            );
           }
         }
       }
@@ -786,7 +787,11 @@ class _ThemeSelector extends ConsumerWidget {
     );
   }
 
-  static void _showThemeSheet(BuildContext context, WidgetRef ref, String current) {
+  static void _showThemeSheet(
+    BuildContext context,
+    WidgetRef ref,
+    String current,
+  ) {
     showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
@@ -808,12 +813,15 @@ class _ThemeSelector extends ConsumerWidget {
       if (selected == null || !context.mounted) return;
       HapticFeedback.selectionClick();
       SettingsRepository.instance.setThemeMode(
-        selected == 'auto' ? ThemeMode.system : ThemeMode.values.firstWhere((m) => m.name == selected),
+        selected == 'auto'
+            ? ThemeMode.system
+            : ThemeMode.values.firstWhere((m) => m.name == selected),
       );
       if (selected == 'auto') {
         SettingsRepository.instance.setThemeModeKey('auto');
       }
-      ref.read(themeModeProvider.notifier).state = SettingsRepository.instance.themeMode;
+      ref.read(themeModeProvider.notifier).state =
+          SettingsRepository.instance.themeMode;
     });
   }
 }

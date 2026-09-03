@@ -68,8 +68,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
     if (_selectedUids.isEmpty) return;
     final messenger = ScaffoldMessenger.of(context);
     final users = ref.read(usersProvider).valueOrNull ?? [];
-    final selected =
-        users.where((u) => _selectedUids.contains(u.uid)).toList();
+    final selected = users.where((u) => _selectedUids.contains(u.uid)).toList();
     final me = ref.read(authProvider).user;
 
     // Pick target role
@@ -138,14 +137,15 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
     if (_selectedUids.isEmpty) return;
     final messenger = ScaffoldMessenger.of(context);
     final users = ref.read(usersProvider).valueOrNull ?? [];
-    final selected =
-        users.where((u) => _selectedUids.contains(u.uid)).toList();
+    final selected = users.where((u) => _selectedUids.contains(u.uid)).toList();
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         icon: const Icon(Icons.block, size: 32),
-        title: Text('Revoke ${selected.length} user${selected.length == 1 ? '' : 's'}?'),
+        title: Text(
+          'Revoke ${selected.length} user${selected.length == 1 ? '' : 's'}?',
+        ),
         content: Text(
           'Remove ${selected.length} account${selected.length == 1 ? '' : 's'} '
           'from this vault?\n\n'
@@ -271,8 +271,9 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
     RevokedAccount account,
   ) async {
     final messenger = ScaffoldMessenger.of(context);
-    final name =
-        account.displayName.isEmpty ? account.uid : account.displayName;
+    final name = account.displayName.isEmpty
+        ? account.uid
+        : account.displayName;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -494,15 +495,21 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
             IconButton(
               tooltip: 'Change role',
               icon: const Icon(Icons.admin_panel_settings, size: 22),
-              onPressed:
-                  _selectedUids.isEmpty ? null : () => _bulkChangeRole(context, ref),
+              onPressed: _selectedUids.isEmpty
+                  ? null
+                  : () => _bulkChangeRole(context, ref),
             ),
             // Bulk revoke
             IconButton(
               tooltip: 'Revoke selected',
-              icon: Icon(Icons.person_remove_outlined, size: 22, color: scheme.error),
-              onPressed:
-                  _selectedUids.isEmpty ? null : () => _bulkRevoke(context, ref),
+              icon: Icon(
+                Icons.person_remove_outlined,
+                size: 22,
+                color: scheme.error,
+              ),
+              onPressed: _selectedUids.isEmpty
+                  ? null
+                  : () => _bulkRevoke(context, ref),
             ),
           ] else ...[
             Padding(
@@ -571,10 +578,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                         padding: AppSpacing.cardPadding,
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.cloud_off_outlined,
-                              color: scheme.error,
-                            ),
+                            Icon(Icons.cloud_off_outlined, color: scheme.error),
                             const SizedBox(width: AppSpacing.sm),
                             Expanded(
                               child: Text(
@@ -583,7 +587,9 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                                 style: TextStyle(
                                   fontSize: 12.5,
                                   height: 1.45,
-                                  color: scheme.onSurface.withValues(alpha: 0.7),
+                                  color: scheme.onSurface.withValues(
+                                    alpha: 0.7,
+                                  ),
                                 ),
                               ),
                             ),
@@ -620,7 +626,8 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                     // Search bar
                     _UserSearchBar(
                       onChanged: (query) {
-                        ref.read(_userSearchQueryProvider.notifier).state = query;
+                        ref.read(_userSearchQueryProvider.notifier).state =
+                            query;
                       },
                     ),
                     const SizedBox(height: AppSpacing.sm),
@@ -642,7 +649,9 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                           ),
                           icon: Icon(
-                            _selectMode ? Icons.check_circle : Icons.check_circle_outline,
+                            _selectMode
+                                ? Icons.check_circle
+                                : Icons.check_circle_outline,
                             size: 16,
                           ),
                           label: Text(
@@ -667,7 +676,8 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                         onShowDetails: () =>
                             _showUserDetails(context, ref, users[i]),
                       ),
-                      if (i < users.length - 1) const SizedBox(height: AppSpacing.sm),
+                      if (i < users.length - 1)
+                        const SizedBox(height: AppSpacing.sm),
                     ],
                     const SizedBox(height: AppSpacing.lg),
                     _RevokedCard(
@@ -704,7 +714,10 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: () => _bulkChangeRole(context, ref),
-                            icon: const Icon(Icons.admin_panel_settings, size: 18),
+                            icon: const Icon(
+                              Icons.admin_panel_settings,
+                              size: 18,
+                            ),
                             label: const Text('Change role'),
                           ),
                         ),
@@ -715,7 +728,10 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                               backgroundColor: scheme.error,
                             ),
                             onPressed: () => _bulkRevoke(context, ref),
-                            icon: const Icon(Icons.person_remove_outlined, size: 18),
+                            icon: const Icon(
+                              Icons.person_remove_outlined,
+                              size: 18,
+                            ),
                             label: const Text('Revoke'),
                           ),
                         ),
@@ -944,13 +960,15 @@ class _UserSearchBar extends StatelessWidget {
       decoration: InputDecoration(
         hintText: 'Search users by name or email…',
         prefixIcon: const Icon(Icons.search, size: 20),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
-        fillColor: Theme.of(context)
-            .colorScheme
-            .surfaceContainerHighest
-            .withValues(alpha: 0.3),
+        fillColor: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
       ),
     );
   }
@@ -992,9 +1010,7 @@ class _UserRow extends StatelessWidget {
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? scheme.primary
-                      : Colors.transparent,
+                  color: isSelected ? scheme.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(4),
                   border: Border.all(
                     color: isSelected
@@ -1107,8 +1123,15 @@ class _UserRow extends StatelessWidget {
                     child: ListTile(
                       dense: true,
                       contentPadding: EdgeInsets.zero,
-                      leading: Icon(Icons.person_remove_outlined, size: 20, color: Color(0xFFEF4444)),
-                      title: Text('Revoke account', style: TextStyle(color: Color(0xFFEF4444))),
+                      leading: Icon(
+                        Icons.person_remove_outlined,
+                        size: 20,
+                        color: Color(0xFFEF4444),
+                      ),
+                      title: Text(
+                        'Revoke account',
+                        style: TextStyle(color: Color(0xFFEF4444)),
+                      ),
                     ),
                   ),
               ],
@@ -1582,10 +1605,7 @@ class _StorageStat extends StatelessWidget {
         ),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-          ),
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
         ),
       ],
     );
@@ -1613,7 +1633,9 @@ class _DetailRow extends StatelessWidget {
               label,
               style: TextStyle(
                 fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ),

@@ -40,7 +40,8 @@ class Painting {
   final String coverImageUrl; // remote (Firebase Storage) URL
   final List<String> images; // all local paths
   final List<String> imageUrls; // all remote urls
-  final List<String> driveFileIds; // Google Drive file IDs (parallel to imageUrls)
+  final List<String>
+  driveFileIds; // Google Drive file IDs (parallel to imageUrls)
 
   // AI
   final String aiHash; // perceptual hash for duplicate detection
@@ -314,7 +315,11 @@ class Painting {
   }
 
   static List<Map<String, dynamic>> _listMap(dynamic v) {
-    if (v is List) return v.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    if (v is List)
+      return v
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
     return const [];
   }
 

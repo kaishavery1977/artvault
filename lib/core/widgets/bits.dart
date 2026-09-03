@@ -368,4 +368,3 @@ class InfoBanner extends StatelessWidget {
         .slideY(begin: 0.04, duration: 380.ms, curve: Curves.easeOutCubic);
   }
 }
-

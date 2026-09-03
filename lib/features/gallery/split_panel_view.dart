@@ -24,10 +24,11 @@ class _SplitPanelViewState extends ConsumerState<SplitPanelView> {
   @override
   Widget build(BuildContext context) {
     final paintingsAsync = ref.watch(paintingsProvider);
-    final paintings = (paintingsAsync.valueOrNull ?? const <Painting>[])
-        .where((p) => !p.isDeleted)
-        .toList()
-      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    final paintings =
+        (paintingsAsync.valueOrNull ?? const <Painting>[])
+            .where((p) => !p.isDeleted)
+            .toList()
+          ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
 
     final selected = _selectedId != null
         ? paintings.where((p) => p.id == _selectedId).firstOrNull
@@ -61,7 +62,10 @@ class _SplitPanelViewState extends ConsumerState<SplitPanelView> {
             onHorizontalDragStart: (_) => setState(() => _isDragging = true),
             onHorizontalDragUpdate: (details) {
               final totalWidth = MediaQuery.of(context).size.width;
-              final newRatio = (details.localPosition.dx / totalWidth).clamp(0.2, 0.6);
+              final newRatio = (details.localPosition.dx / totalWidth).clamp(
+                0.2,
+                0.6,
+              );
               setState(() => _splitRatio = newRatio);
             },
             onHorizontalDragEnd: (_) => setState(() => _isDragging = false),
@@ -70,7 +74,9 @@ class _SplitPanelViewState extends ConsumerState<SplitPanelView> {
               width: _isDragging ? 4 : 1,
               color: _isDragging
                   ? AppColors.accent.withValues(alpha: 0.4)
-                  : (isDark ? Colors.white : Colors.black).withValues(alpha: 0.08),
+                  : (isDark ? Colors.white : Colors.black).withValues(
+                      alpha: 0.08,
+                    ),
             ),
           ),
         ),
@@ -82,11 +88,17 @@ class _SplitPanelViewState extends ConsumerState<SplitPanelView> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.touch_app_rounded, size: 48, color: scheme.onSurfaceVariant.withValues(alpha: 0.3)),
+                      Icon(
+                        Icons.touch_app_rounded,
+                        size: 48,
+                        color: scheme.onSurfaceVariant.withValues(alpha: 0.3),
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'Select a painting to view details',
-                        style: TextStyle(color: scheme.onSurfaceVariant.withValues(alpha: 0.5)),
+                        style: TextStyle(
+                          color: scheme.onSurfaceVariant.withValues(alpha: 0.5),
+                        ),
                       ),
                     ],
                   ),
@@ -117,7 +129,9 @@ class _PaintingList extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(
           right: BorderSide(
-            color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.06)
+                : Colors.black.withValues(alpha: 0.06),
           ),
         ),
       ),
@@ -125,7 +139,9 @@ class _PaintingList extends StatelessWidget {
           ? Center(
               child: Text(
                 'No paintings',
-                style: TextStyle(color: scheme.onSurfaceVariant.withValues(alpha: 0.5)),
+                style: TextStyle(
+                  color: scheme.onSurfaceVariant.withValues(alpha: 0.5),
+                ),
               ),
             )
           : ListView.builder(
@@ -184,11 +200,14 @@ class _PaintingListTileState extends State<_PaintingListTile> {
             color: widget.isSelected
                 ? AppColors.accent.withValues(alpha: 0.1)
                 : _hovered
-                    ? (isDark ? Colors.white : Colors.black).withValues(alpha: 0.03)
-                    : Colors.transparent,
+                ? (isDark ? Colors.white : Colors.black).withValues(alpha: 0.03)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
             border: widget.isSelected
-                ? Border.all(color: AppColors.accent.withValues(alpha: 0.2), width: 0.8)
+                ? Border.all(
+                    color: AppColors.accent.withValues(alpha: 0.2),
+                    width: 0.8,
+                  )
                 : null,
           ),
           child: Row(
@@ -206,9 +225,17 @@ class _PaintingListTileState extends State<_PaintingListTile> {
                     ? Image.network(
                         p.coverImagePath,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Icon(Icons.palette_rounded, size: 18, color: scheme.onSurfaceVariant.withValues(alpha: 0.5)),
+                        errorBuilder: (_, _, _) => Icon(
+                          Icons.palette_rounded,
+                          size: 18,
+                          color: scheme.onSurfaceVariant.withValues(alpha: 0.5),
+                        ),
                       )
-                    : Icon(Icons.palette_rounded, size: 18, color: scheme.onSurfaceVariant.withValues(alpha: 0.5)),
+                    : Icon(
+                        Icons.palette_rounded,
+                        size: 18,
+                        color: scheme.onSurfaceVariant.withValues(alpha: 0.5),
+                      ),
               ),
               const SizedBox(width: 12),
               // Info
@@ -223,7 +250,9 @@ class _PaintingListTileState extends State<_PaintingListTile> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 13,
-                        fontWeight: widget.isSelected ? FontWeight.w700 : FontWeight.w600,
+                        fontWeight: widget.isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w600,
                         color: widget.isSelected ? AppColors.accent : null,
                       ),
                     ),

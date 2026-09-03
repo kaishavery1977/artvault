@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-
 /// Breadcrumb navigation bar for web — shows current location.
 class WebBreadcrumb extends StatelessWidget {
   const WebBreadcrumb({super.key});

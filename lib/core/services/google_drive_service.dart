@@ -155,7 +155,10 @@ class GoogleDriveService {
         return await _createFile(fileName, folderId, bytes, contentType);
       }
     } catch (e) {
-      AppLogger.warning('GoogleDriveService: upload failed for $drivePath', error: e);
+      AppLogger.warning(
+        'GoogleDriveService: upload failed for $drivePath',
+        error: e,
+      );
       return null;
     }
   }
@@ -169,7 +172,9 @@ class GoogleDriveService {
       final url = Uri.parse('$_baseUrl/files/$fileId?alt=media');
       final resp = await http.get(url, headers: _authHeaders());
       if (resp.statusCode == 200) return resp.bodyBytes;
-      AppLogger.warning('GoogleDriveService: download failed ${resp.statusCode}');
+      AppLogger.warning(
+        'GoogleDriveService: download failed ${resp.statusCode}',
+      );
       return null;
     } catch (e) {
       AppLogger.warning('GoogleDriveService: download error', error: e);
@@ -229,8 +234,8 @@ class GoogleDriveService {
   // ------------------------------------------------------------- Helpers --
 
   Map<String, String> _authHeaders() => {
-        'Authorization': 'Bearer $_accessToken',
-      };
+    'Authorization': 'Bearer $_accessToken',
+  };
 
   String _fileNameFromPath(String path) {
     final parts = path.split('/');
@@ -264,11 +269,15 @@ class GoogleDriveService {
 
   /// Finds a folder by name under [parentFolderId]. Returns null if not found.
   Future<String?> _findFolderByName(String name, String? parentFolderId) async {
-    final query = StringBuffer("mimeType='application/vnd.google-apps.folder' and name='$name' and trashed=false");
+    final query = StringBuffer(
+      "mimeType='application/vnd.google-apps.folder' and name='$name' and trashed=false",
+    );
     if (parentFolderId != null) {
       query.write(" and '$parentFolderId' in parents");
     }
-    final url = Uri.parse('$_baseUrl/files?q=${Uri.encodeComponent(query.toString())}&fields=files(id)&pageSize=1');
+    final url = Uri.parse(
+      '$_baseUrl/files?q=${Uri.encodeComponent(query.toString())}&fields=files(id)&pageSize=1',
+    );
     final resp = await http.get(url, headers: _authHeaders());
     if (resp.statusCode != 200) return null;
     final data = jsonDecode(resp.body) as Map<String, dynamic>;
@@ -291,7 +300,9 @@ class GoogleDriveService {
       body: jsonEncode(metadata),
     );
     if (resp.statusCode != 200 && resp.statusCode != 201) {
-      throw Exception('Failed to create folder: ${resp.statusCode} ${resp.body}');
+      throw Exception(
+        'Failed to create folder: ${resp.statusCode} ${resp.body}',
+      );
     }
     final data = jsonDecode(resp.body) as Map<String, dynamic>;
     return data['id'] as String;
@@ -299,8 +310,11 @@ class GoogleDriveService {
 
   /// Finds a file by name in a folder. Returns the file ID or null.
   Future<String?> _findFileByName(String name, String folderId) async {
-    final query = "name='$name' and '$folderId' in parents and trashed=false and mimeType!='application/vnd.google-apps.folder'";
-    final url = Uri.parse('$_baseUrl/files?q=${Uri.encodeComponent(query)}&fields=files(id)&pageSize=1');
+    final query =
+        "name='$name' and '$folderId' in parents and trashed=false and mimeType!='application/vnd.google-apps.folder'";
+    final url = Uri.parse(
+      '$_baseUrl/files?q=${Uri.encodeComponent(query)}&fields=files(id)&pageSize=1',
+    );
     final resp = await http.get(url, headers: _authHeaders());
     if (resp.statusCode != 200) return null;
     final data = jsonDecode(resp.body) as Map<String, dynamic>;
@@ -310,18 +324,21 @@ class GoogleDriveService {
   }
 
   /// Creates a file in a folder. Returns the file ID.
-  Future<String> _createFile(String name, String folderId, Uint8List bytes, String contentType) async {
+  Future<String> _createFile(
+    String name,
+    String folderId,
+    Uint8List bytes,
+    String contentType,
+  ) async {
     // Multipart upload.
     final request = http.MultipartRequest(
       'POST',
       Uri.parse('$_uploadUrl?uploadType=multipart&fields=id'),
     );
     request.headers['Authorization'] = 'Bearer $_accessToken';
-    request.files.add(http.MultipartFile.fromBytes(
-      'file',
-      bytes,
-      filename: name,
-    ));
+    request.files.add(
+      http.MultipartFile.fromBytes('file', bytes, filename: name),
+    );
     request.fields['metadata'] = jsonEncode({
       'name': name,
       'parents': [folderId],
@@ -338,17 +355,19 @@ class GoogleDriveService {
   }
 
   /// Updates an existing file's content. Returns the file ID.
-  Future<String> _updateFileContent(String fileId, Uint8List bytes, String contentType) async {
+  Future<String> _updateFileContent(
+    String fileId,
+    Uint8List bytes,
+    String contentType,
+  ) async {
     final request = http.MultipartRequest(
       'PATCH',
       Uri.parse('$_uploadUrl/files/$fileId?uploadType=multipart&fields=id'),
     );
     request.headers['Authorization'] = 'Bearer $_accessToken';
-    request.files.add(http.MultipartFile.fromBytes(
-      'file',
-      bytes,
-      filename: 'file',
-    ));
+    request.files.add(
+      http.MultipartFile.fromBytes('file', bytes, filename: 'file'),
+    );
     request.fields['metadata'] = '{}';
 
     final streamedResponse = await request.send();
@@ -365,7 +384,9 @@ class GoogleDriveService {
   Future<void> _deleteFolderRecursive(String folderId) async {
     // List all children.
     final query = "'$folderId' in parents and trashed=false";
-    final url = Uri.parse('$_baseUrl/files?q=${Uri.encodeComponent(query)}&fields=files(id,mimeType)&pageSize=1000');
+    final url = Uri.parse(
+      '$_baseUrl/files?q=${Uri.encodeComponent(query)}&fields=files(id,mimeType)&pageSize=1000',
+    );
     final resp = await http.get(url, headers: _authHeaders());
     if (resp.statusCode != 200) return;
 

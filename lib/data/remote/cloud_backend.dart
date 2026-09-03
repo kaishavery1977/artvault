@@ -318,7 +318,12 @@ class CloudBackend {
   }
 
   /// Removes a single field by setting it to null.
-  Future<void> deleteField(String collection, String id, String field, {String pk = 'id'}) async {
+  Future<void> deleteField(
+    String collection,
+    String id,
+    String field, {
+    String pk = 'id',
+  }) async {
     if (!_ready) return;
     await _db.from(collection).update({field: null}).eq(pk, id);
   }
@@ -344,7 +349,11 @@ class CloudBackend {
   }
 
   /// Fetches a single row by [pk], or null when it doesn't exist.
-  Future<Map<String, dynamic>?> fetchDoc(String collection, String id, {String pk = 'id'}) async {
+  Future<Map<String, dynamic>?> fetchDoc(
+    String collection,
+    String id, {
+    String pk = 'id',
+  }) async {
     if (!_ready) return null;
     try {
       final data = await _db.from(collection).select().eq(pk, id).single();
@@ -355,7 +364,10 @@ class CloudBackend {
   }
 
   /// Live stream of every row in [collection].
-  Stream<List<Map<String, dynamic>>> watchCollection(String collection, {String pk = 'id'}) {
+  Stream<List<Map<String, dynamic>>> watchCollection(
+    String collection, {
+    String pk = 'id',
+  }) {
     if (!_ready) return const Stream.empty();
     return _db
         .from(collection)
@@ -364,10 +376,15 @@ class CloudBackend {
   }
 
   /// Live list of every registered user's profile.
-  Stream<List<Map<String, dynamic>>> watchUsers() => watchCollection('users', pk: 'uid');
+  Stream<List<Map<String, dynamic>>> watchUsers() =>
+      watchCollection('users', pk: 'uid');
 
   /// Live stream of a single row.
-  Stream<Map<String, dynamic>?> watchDoc(String collection, String id, {String pk = 'id'}) {
+  Stream<Map<String, dynamic>?> watchDoc(
+    String collection,
+    String id, {
+    String pk = 'id',
+  }) {
     if (!_ready) return const Stream.empty();
     return _db
         .from(collection)
@@ -418,7 +435,10 @@ class CloudBackend {
           return driveRef;
         }
       } catch (e) {
-        AppLogger.warning('uploadBytes: Google Drive failed, falling back', error: e);
+        AppLogger.warning(
+          'uploadBytes: Google Drive failed, falling back',
+          error: e,
+        );
       }
     }
 
@@ -426,13 +446,17 @@ class CloudBackend {
     if (_ready) {
       await _refreshSupabaseSession();
       if (bytes.length > maxUploadBytes) {
-        AppLogger.warning('uploadBytes: file exceeds Supabase 50 MB limit — skipping Supabase');
+        AppLogger.warning(
+          'uploadBytes: file exceeds Supabase 50 MB limit — skipping Supabase',
+        );
       } else {
         for (var attempt = 1; attempt <= uploadMaxRetries; attempt++) {
           try {
             return await _trackUpload(() async {
               final bucket = _bucketForPath(path);
-              AppLogger.info('uploadBytes: Supabase attempt $attempt/$uploadMaxRetries — $bucket/${_stripBucket(path)} (${bytes.length} bytes)');
+              AppLogger.info(
+                'uploadBytes: Supabase attempt $attempt/$uploadMaxRetries — $bucket/${_stripBucket(path)} (${bytes.length} bytes)',
+              );
               await _storage
                   .from(bucket)
                   .uploadBinary(
@@ -443,14 +467,18 @@ class CloudBackend {
                       upsert: true,
                     ),
                   );
-              final url = _storage.from(bucket).getPublicUrl(_stripBucket(path));
+              final url = _storage
+                  .from(bucket)
+                  .getPublicUrl(_stripBucket(path));
               AppLogger.info('uploadBytes: Supabase success → $url');
               return url;
             });
           } catch (e) {
             final msg = _friendlyError(e);
             lastUploadError.value = msg;
-            AppLogger.warning('uploadBytes: Supabase attempt $attempt/$uploadMaxRetries FAILED — $msg');
+            AppLogger.warning(
+              'uploadBytes: Supabase attempt $attempt/$uploadMaxRetries FAILED — $msg',
+            );
             if (attempt < uploadMaxRetries) {
               final delay = uploadRetryBaseDelay * (1 << (attempt - 1));
               await Future<void>.delayed(delay);
@@ -472,11 +500,16 @@ class CloudBackend {
         return url;
       }
     } catch (fbError) {
-      AppLogger.warning('uploadBytes: Firebase fallback also failed', error: fbError);
+      AppLogger.warning(
+        'uploadBytes: Firebase fallback also failed',
+        error: fbError,
+      );
     }
-    throw Exception(lastUploadError.value.isNotEmpty
-        ? lastUploadError.value
-        : 'All storage backends failed');
+    throw Exception(
+      lastUploadError.value.isNotEmpty
+          ? lastUploadError.value
+          : 'All storage backends failed',
+    );
   }
 
   /// Uploads bytes to Firebase Storage directly (for public-facing images

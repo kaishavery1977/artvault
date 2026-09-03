@@ -197,9 +197,7 @@ class _AdminCodeGateScreenState extends ConsumerState<AdminCodeGateScreen> {
         style: TextStyle(
           fontSize: 12,
           height: 1.4,
-          color: Theme.of(
-            context,
-          ).colorScheme.onSurface.withValues(alpha: 0.6),
+          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
         ),
       ),
       const SizedBox(height: AppSpacing.lg),
@@ -221,13 +219,15 @@ class _AdminCodeGateScreenState extends ConsumerState<AdminCodeGateScreen> {
     if (kIsWeb) {
       return AuthLayoutWeb(
         title: 'Almost there, $name!',
-        subtitle: 'Enter the admin code to unlock admin access, or skip to continue as curator',
+        subtitle:
+            'Enter the admin code to unlock admin access, or skip to continue as curator',
         children: formChildren,
       );
     }
     return AuthLayout(
       title: 'Almost there, $name!',
-      subtitle: 'Enter the admin code to unlock admin access, or skip to continue as curator',
+      subtitle:
+          'Enter the admin code to unlock admin access, or skip to continue as curator',
       children: formChildren,
     );
   }

@@ -164,9 +164,10 @@ class PaintingGridCard extends ConsumerWidget {
               onLongPress: selectMode
                   ? null
                   : (onLongPress ??
-                      (canEdit
-                          ? () => context.push('/painting/edit/${painting.id}')
-                          : null)),
+                        (canEdit
+                            ? () =>
+                                  context.push('/painting/edit/${painting.id}')
+                            : null)),
             ),
           ),
         ],
@@ -228,8 +229,8 @@ class _SyncBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final synced = painting.synced && !painting.needsSync;
-    final hasCloud = painting.imageUrls.isNotEmpty ||
-        painting.coverImageUrl.isNotEmpty;
+    final hasCloud =
+        painting.imageUrls.isNotEmpty || painting.coverImageUrl.isNotEmpty;
 
     // Decide which icon + tooltip to show.
     final IconData icon;

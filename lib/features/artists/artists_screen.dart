@@ -47,57 +47,57 @@ class ArtistsScreen extends ConsumerWidget {
                 await Future<void>.delayed(const Duration(milliseconds: 300));
               },
               child: CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      context.adaptiveSpace(AppSpacing.md),
-                      AppSpacing.lg + MediaQuery.paddingOf(context).top * 0.4,
-                      context.adaptiveSpace(AppSpacing.md),
-                      AppSpacing.md,
-                    ),
-                    child: Text(
-                      'Artists',
-                      style: AppTheme.display(
-                        context,
-                        size: context.adaptiveFont(28),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        context.adaptiveSpace(AppSpacing.md),
+                        AppSpacing.lg + MediaQuery.paddingOf(context).top * 0.4,
+                        context.adaptiveSpace(AppSpacing.md),
+                        AppSpacing.md,
                       ),
-                    ),
-                  ),
-                ),
-                SliverPadding(
-                  padding: AppSpacing.screenPadding,
-                  sliver: SliverGrid(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, i) => revealListItem(
-                        _ArtistCard(
-                          artist: artists[i],
-                          paintingCount: countFor(artists[i].id),
+                      child: Text(
+                        'Artists',
+                        style: AppTheme.display(
+                          context,
+                          size: context.adaptiveFont(28),
                         ),
-                        i,
-                        key: ValueKey(artists[i].id),
-                        context: context,
                       ),
-                      childCount: artists.length,
-                    ),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount:
-                          AppBreakpoints.galleryColumns(context) ~/ 2 + 1,
-                      mainAxisSpacing: AppSpacing.sm,
-                      crossAxisSpacing: AppSpacing.sm,
-                      childAspectRatio: 0.95,
                     ),
                   ),
-                ),
-                SliverToBoxAdapter(
-                  child: SizedBox(
-                    height:
-                        AppSpacing.xxl + MediaQuery.paddingOf(context).bottom,
+                  SliverPadding(
+                    padding: AppSpacing.screenPadding,
+                    sliver: SliverGrid(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, i) => revealListItem(
+                          _ArtistCard(
+                            artist: artists[i],
+                            paintingCount: countFor(artists[i].id),
+                          ),
+                          i,
+                          key: ValueKey(artists[i].id),
+                          context: context,
+                        ),
+                        childCount: artists.length,
+                      ),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount:
+                            AppBreakpoints.galleryColumns(context) ~/ 2 + 1,
+                        mainAxisSpacing: AppSpacing.sm,
+                        crossAxisSpacing: AppSpacing.sm,
+                        childAspectRatio: 0.95,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                  SliverToBoxAdapter(
+                    child: SizedBox(
+                      height:
+                          AppSpacing.xxl + MediaQuery.paddingOf(context).bottom,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
     );
   }
 }
@@ -120,7 +120,8 @@ class _ArtistCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final gradient = _cardGradients[artist.name.hashCode.abs() % _cardGradients.length];
+    final gradient =
+        _cardGradients[artist.name.hashCode.abs() % _cardGradients.length];
     final hasPhoto = artist.photoPath.isNotEmpty || artist.photoUrl.isNotEmpty;
 
     return Hero(
@@ -130,11 +131,16 @@ class _ArtistCard extends StatelessWidget {
         child: Ink(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-            gradient: hasPhoto ? null : LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [gradient.$1.withValues(alpha: 0.12), gradient.$2.withValues(alpha: 0.06)],
-            ),
+            gradient: hasPhoto
+                ? null
+                : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      gradient.$1.withValues(alpha: 0.12),
+                      gradient.$2.withValues(alpha: 0.06),
+                    ],
+                  ),
             border: Border.all(
               color: gradient.$1.withValues(alpha: 0.15),
               width: 1,
@@ -177,7 +183,10 @@ class _ArtistCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13.5,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.xxs),
                   if (artist.nationality.isNotEmpty)
@@ -194,7 +203,10 @@ class _ArtistCard extends StatelessWidget {
                   const SizedBox(height: AppSpacing.xs),
                   // Mini stat chip
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: gradient.$1.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),

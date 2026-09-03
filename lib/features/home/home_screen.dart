@@ -88,77 +88,79 @@ class HomeScreen extends ConsumerWidget {
             await Future<void>.delayed(const Duration(milliseconds: 300));
           },
           child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: _Header(userName: auth.user?.displayName ?? 'Guest'),
-            ),
-            SliverPadding(
-              padding: screenPad,
-              sliver: SliverList(
-                delegate: SliverChildListDelegate(
-                  staggerReveal(
-                    [
-                      if (showRestore) ...[
-                        _RestoreBanner(progress: restore),
-                        const SizedBox(height: AppSpacing.lg),
-                      ],
-                      if (showCloudHint) ...[
-                        const _CloudSyncUnavailableHint(),
-                        const SizedBox(height: AppSpacing.lg),
-                      ],
-                      if (showLoading)
-                        const _HomeSkeleton()
-                      else if (paintings.isEmpty)
-                        _WelcomeHero(
-                          canEdit: canEdit,
-                          onUpload: () => context.push('/painting/new'),
-                        )
-                      else ...[
-                        if (missingImages > 0) ...[
-                          _MissingImagesBanner(
-                            count: missingImages,
-                            onTap: () => context.push('/repair-images'),
-                          ),
+            slivers: [
+              SliverToBoxAdapter(
+                child: _Header(userName: auth.user?.displayName ?? 'Guest'),
+              ),
+              SliverPadding(
+                padding: screenPad,
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate(
+                    staggerReveal(
+                      [
+                        if (showRestore) ...[
+                          _RestoreBanner(progress: restore),
                           const SizedBox(height: AppSpacing.lg),
                         ],
-                        const _CollectionHero(),
-                        const SizedBox(height: AppSpacing.lg),
-                        _QuickActions(canEdit: canEdit),
-                        const SizedBox(height: AppSpacing.lg),
-                        if (paintings.isNotEmpty) _AiInsights(paintings: paintings),
-                        SectionHeader(
-                          title: 'Recent uploads',
-                          actionLabel: 'See all',
-                          onAction: () => context.go('/gallery'),
-                        ),
+                        if (showCloudHint) ...[
+                          const _CloudSyncUnavailableHint(),
+                          const SizedBox(height: AppSpacing.lg),
+                        ],
+                        if (showLoading)
+                          const _HomeSkeleton()
+                        else if (paintings.isEmpty)
+                          _WelcomeHero(
+                            canEdit: canEdit,
+                            onUpload: () => context.push('/painting/new'),
+                          )
+                        else ...[
+                          if (missingImages > 0) ...[
+                            _MissingImagesBanner(
+                              count: missingImages,
+                              onTap: () => context.push('/repair-images'),
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
+                          ],
+                          const _CollectionHero(),
+                          const SizedBox(height: AppSpacing.lg),
+                          _QuickActions(canEdit: canEdit),
+                          const SizedBox(height: AppSpacing.lg),
+                          if (paintings.isNotEmpty)
+                            _AiInsights(paintings: paintings),
+                          SectionHeader(
+                            title: 'Recent uploads',
+                            actionLabel: 'See all',
+                            onAction: () => context.go('/gallery'),
+                          ),
+                        ],
                       ],
-                    ],
-                    initialDelay: const Duration(milliseconds: 80),
-                    interval: const Duration(milliseconds: 90),
-                    context: context,
+                      initialDelay: const Duration(milliseconds: 80),
+                      interval: const Duration(milliseconds: 90),
+                      context: context,
+                    ),
                   ),
                 ),
               ),
-            ),
-            if (paintings.isNotEmpty)
-              SliverPadding(
-                padding: AppSpacing.screenPadding,
-                sliver: SliverGrid(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, i) =>
-                        PaintingGridCard(painting: recent.take(8).toList()[i]),
-                    childCount: recent.take(8).length,
-                  ),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: AppBreakpoints.galleryColumns(context),
-                    mainAxisSpacing: AppSpacing.sm,
-                    crossAxisSpacing: AppSpacing.sm,
+              if (paintings.isNotEmpty)
+                SliverPadding(
+                  padding: AppSpacing.screenPadding,
+                  sliver: SliverGrid(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, i) => PaintingGridCard(
+                        painting: recent.take(8).toList()[i],
+                      ),
+                      childCount: recent.take(8).length,
+                    ),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: AppBreakpoints.galleryColumns(context),
+                      mainAxisSpacing: AppSpacing.sm,
+                      crossAxisSpacing: AppSpacing.sm,
+                    ),
                   ),
                 ),
-              ),
-            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
-          ],
-        ),
+              const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
+            ],
+          ),
         ),
       ],
     );
@@ -310,7 +312,9 @@ class _CloudSyncUnavailableHint extends ConsumerWidget {
       SnackBar(
         content: Text(
           streak > 0
-              ? lastError.isNotEmpty ? lastError : 'Still can’t reach the cloud — changes stay on this device.'
+              ? lastError.isNotEmpty
+                    ? lastError
+                    : 'Still can’t reach the cloud — changes stay on this device.'
               : 'Cloud sync is working again.',
         ),
       ),
@@ -340,7 +344,9 @@ class _CloudSyncUnavailableHint extends ConsumerWidget {
                 child: ValueListenableBuilder<String>(
                   valueListenable: CloudBackend.instance.lastUploadError,
                   builder: (_, error, _) => Text(
-                    error.isNotEmpty ? error : 'Cloud sync unavailable \u2014 tap to retry',
+                    error.isNotEmpty
+                        ? error
+                        : 'Cloud sync unavailable \u2014 tap to retry',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 11, color: muted),
@@ -637,7 +643,9 @@ class _CollectionHero extends ConsumerWidget {
 
     final totalBytes = stats.storageBytes.toInt();
     final usedLabel = totalBytes > 0 ? Formatters.bytes(totalBytes) : '0 B';
-    final freeLabel = device != null ? Formatters.bytes(device.freeBytes) : null;
+    final freeLabel = device != null
+        ? Formatters.bytes(device.freeBytes)
+        : null;
     final barFraction = device != null
         ? device.usedFraction
         : (usage != null && usage.total > 0
@@ -715,7 +723,11 @@ class _CollectionHero extends ConsumerWidget {
           // Storage bar
           Row(
             children: [
-              Icon(Icons.storage_outlined, size: 14, color: scheme.onSurface.withValues(alpha: 0.5)),
+              Icon(
+                Icons.storage_outlined,
+                size: 14,
+                color: scheme.onSurface.withValues(alpha: 0.5),
+              ),
               const SizedBox(width: 4),
               Expanded(
                 child: Column(
@@ -816,7 +828,6 @@ class _StatBadge extends StatelessWidget {
   }
 }
 
-
 class _QuickActions extends ConsumerWidget {
   final bool canEdit;
 
@@ -832,10 +843,30 @@ class _QuickActions extends ConsumerWidget {
           () => context.push('/painting/new'),
           AppColors.emerald500,
         ),
-      (Icons.grid_view, 'Gallery', () => context.go('/gallery'), AppColors.cyan500),
-      (Icons.person, 'Artists', () => context.go('/artists'), AppColors.rose500),
-      (Icons.insights, 'Reports', () => context.push('/reports'), AppColors.amber500),
-      (Icons.qr_code_scanner, 'Scan', () => context.push('/scan'), AppColors.indigo500),
+      (
+        Icons.grid_view,
+        'Gallery',
+        () => context.go('/gallery'),
+        AppColors.cyan500,
+      ),
+      (
+        Icons.person,
+        'Artists',
+        () => context.go('/artists'),
+        AppColors.rose500,
+      ),
+      (
+        Icons.insights,
+        'Reports',
+        () => context.push('/reports'),
+        AppColors.amber500,
+      ),
+      (
+        Icons.qr_code_scanner,
+        'Scan',
+        () => context.push('/scan'),
+        AppColors.indigo500,
+      ),
     ];
 
     return Row(
@@ -854,8 +885,6 @@ class _QuickActions extends ConsumerWidget {
       ],
     );
   }
-
-
 }
 
 class _QuickAction extends StatelessWidget {
@@ -887,27 +916,27 @@ class _QuickAction extends StatelessWidget {
               width: 0.6,
             ),
           ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: AppSpacing.sm + 2,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 20, color: color),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: color.withValues(alpha: 0.85),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.sm + 2,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 20, color: color),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: color.withValues(alpha: 0.85),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
         ),
       ),
     );

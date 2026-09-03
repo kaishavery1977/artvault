@@ -42,10 +42,14 @@ class FileStorageService {
     return _root!;
   }
 
-  Directory get imagesDir => kIsWeb ? Directory('') : Directory(p.join(root.path, 'images'));
-  Directory get thumbsDir => kIsWeb ? Directory('') : Directory(p.join(root.path, 'thumbnails'));
-  Directory get documentsDir => kIsWeb ? Directory('') : Directory(p.join(root.path, 'documents'));
-  Directory get exportsDir => kIsWeb ? Directory('') : Directory(p.join(root.path, 'exports'));
+  Directory get imagesDir =>
+      kIsWeb ? Directory('') : Directory(p.join(root.path, 'images'));
+  Directory get thumbsDir =>
+      kIsWeb ? Directory('') : Directory(p.join(root.path, 'thumbnails'));
+  Directory get documentsDir =>
+      kIsWeb ? Directory('') : Directory(p.join(root.path, 'documents'));
+  Directory get exportsDir =>
+      kIsWeb ? Directory('') : Directory(p.join(root.path, 'exports'));
 
   String get imageExtension => 'jpg';
 

@@ -75,8 +75,8 @@ class FaceRecognizer {
   /// The current similarity threshold: tightens after repeated failures.
   double get matchThreshold =>
       _consecutiveFailures >= failuresForStrictThreshold
-          ? strictMatchThreshold
-          : baseMatchThreshold;
+      ? strictMatchThreshold
+      : baseMatchThreshold;
 
   /// Minimum cosine similarity for two embeddings to be treated as the same
   /// person (MobileFaceNet same-person scores are typically 0.65+).
@@ -326,9 +326,8 @@ class FaceRecognizer {
       for (var x = left; x < right; x += step) {
         final src = (y * width + x) * 3;
         if (src + 2 >= rgb.length) continue;
-        final luma = (rgb[src] * 0.299 +
-                rgb[src + 1] * 0.587 +
-                rgb[src + 2] * 0.114) /
+        final luma =
+            (rgb[src] * 0.299 + rgb[src + 1] * 0.587 + rgb[src + 2] * 0.114) /
             255.0;
         brightnessSum += luma;
         pixelCount++;
@@ -352,9 +351,8 @@ class FaceRecognizer {
       for (var x = left; x < right; x += step) {
         final src = (y * width + x) * 3;
         if (src + 2 >= rgb.length) continue;
-        final luma = (rgb[src] * 0.299 +
-                rgb[src + 1] * 0.587 +
-                rgb[src + 2] * 0.114) /
+        final luma =
+            (rgb[src] * 0.299 + rgb[src + 1] * 0.587 + rgb[src + 2] * 0.114) /
             255.0;
         final d = luma - brightness;
         variance += d * d;

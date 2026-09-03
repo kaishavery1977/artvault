@@ -420,7 +420,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                     title: 'Unlock with Face lock',
                     subtitle: _faceLockRemaining > Duration.zero
                         ? 'Locked — try again in '
-                            '${_faceLockRemaining.inSeconds}s'
+                              '${_faceLockRemaining.inSeconds}s'
                         : _faceLock
                         ? 'On — tap to re-scan or remove your face'
                         : _faceAvailable
@@ -503,8 +503,9 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                     _AutoLockRow(
                       currentSeconds: _autoLockTimeout,
                       onChanged: (seconds) async {
-                        await SettingsRepository.instance
-                            .setAutoLockTimeout(seconds);
+                        await SettingsRepository.instance.setAutoLockTimeout(
+                          seconds,
+                        );
                         if (mounted) setState(() => _autoLockTimeout = seconds);
                       },
                     ),
@@ -724,11 +725,13 @@ class _SetPasscodeDialogState extends State<_SetPasscodeDialog> {
             _error
                 ? 'Passcodes did not match. Try again.'
                 : _isConfirmStep
-                    ? 'Re-enter your new passcode'
-                    : 'Choose a ${AppConstants.kPasscodeLength}-digit passcode',
+                ? 'Re-enter your new passcode'
+                : 'Choose a ${AppConstants.kPasscodeLength}-digit passcode',
             style: TextStyle(
               fontSize: 13,
-              color: _error ? scheme.error : scheme.onSurface.withValues(alpha: 0.6),
+              color: _error
+                  ? scheme.error
+                  : scheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 24),
@@ -992,7 +995,9 @@ class _AutoLockRow extends StatelessWidget {
             _label(currentSeconds),
             style: TextStyle(
               fontSize: 12,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
         ),

@@ -73,8 +73,9 @@ class RestoreProgress {
 /// Emits restore progress while the vault re-downloads from the cloud;
 /// null when idle — autoDispose so the banner state doesn't linger after the
 /// screen is gone and memory is freed.
-final restoreProgressProvider =
-    StateProvider.autoDispose<RestoreProgress?>((ref) => null);
+final restoreProgressProvider = StateProvider.autoDispose<RestoreProgress?>(
+  (ref) => null,
+);
 
 class AuthController extends StateNotifier<AuthState> {
   AuthController({this.onRestoreProgress}) : super(const AuthState());

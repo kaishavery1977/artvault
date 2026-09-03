@@ -249,9 +249,9 @@ class _StorageScreenState extends ConsumerState<StorageScreen> {
                   subtitle: FutureBuilder<DateTime>(
                     future: file.lastModified(),
                     builder: (context, snap) => Text(
-                      DateFormat('MMM d, y • HH:mm').format(
-                        snap.data ?? file.lastModifiedSync(),
-                      ),
+                      DateFormat(
+                        'MMM d, y • HH:mm',
+                      ).format(snap.data ?? file.lastModifiedSync()),
                     ),
                   ),
                   onTap: () => Navigator.pop(context, file),

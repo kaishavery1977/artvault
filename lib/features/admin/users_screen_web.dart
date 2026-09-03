@@ -62,7 +62,12 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
                       ),
                     ),
                   ),
-                  child: _buildDetailPanel(context, ref, _selectedUser!, scheme),
+                  child: _buildDetailPanel(
+                    context,
+                    ref,
+                    _selectedUser!,
+                    scheme,
+                  ),
                 ),
               // Revoked accounts panel
               if (_selectedUser == null)
@@ -90,9 +95,11 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
     if (_searchQuery.isNotEmpty) {
       final q = _searchQuery.toLowerCase();
       filtered = filtered
-          .where((u) =>
-              u.displayName.toLowerCase().contains(q) ||
-              u.email.toLowerCase().contains(q))
+          .where(
+            (u) =>
+                u.displayName.toLowerCase().contains(q) ||
+                u.email.toLowerCase().contains(q),
+          )
           .toList();
     }
     if (_roleFilter != null) {
@@ -105,7 +112,9 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
         case 0: // checkbox — skip
           cmp = 0;
         case 1: // name
-          cmp = a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase());
+          cmp = a.displayName.toLowerCase().compareTo(
+            b.displayName.toLowerCase(),
+          );
         case 2: // email
           cmp = a.email.toLowerCase().compareTo(b.email.toLowerCase());
         case 3: // role
@@ -146,14 +155,14 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
           ),
           child: Row(
             children: [
-              Icon(Icons.admin_panel_settings,
-                  size: 22, color: scheme.primary),
+              Icon(Icons.admin_panel_settings, size: 22, color: scheme.primary),
               const SizedBox(width: 10),
-              Text('Users & Roles',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w700)),
+              Text(
+                'Users & Roles',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
               const Spacer(),
               // Search
               SizedBox(
@@ -164,13 +173,17 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
                     hintText: 'Search users...',
                     prefixIcon: const Icon(Icons.search, size: 18),
                     isDense: true,
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8)),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     filled: true,
-                    fillColor:
-                        scheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                    fillColor: scheme.surfaceContainerHighest.withValues(
+                      alpha: 0.3,
+                    ),
                   ),
                 ),
               ),
@@ -185,20 +198,29 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
                     PopupMenuItem(value: r, child: Text(r.label)),
                 ],
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                        color: scheme.outlineVariant.withValues(alpha: 0.3)),
+                      color: scheme.outlineVariant.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.filter_list, size: 16, color: scheme.onSurface),
+                      Icon(
+                        Icons.filter_list,
+                        size: 16,
+                        color: scheme.onSurface,
+                      ),
                       const SizedBox(width: 6),
-                      Text(_roleFilter?.label ?? 'All',
-                          style: const TextStyle(fontSize: 13)),
+                      Text(
+                        _roleFilter?.label ?? 'All',
+                        style: const TextStyle(fontSize: 13),
+                      ),
                     ],
                   ),
                 ),
@@ -238,12 +260,18 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.group_outlined,
-                          size: 48, color: scheme.onSurface.withValues(alpha: 0.3)),
+                      Icon(
+                        Icons.group_outlined,
+                        size: 48,
+                        color: scheme.onSurface.withValues(alpha: 0.3),
+                      ),
                       const SizedBox(height: 12),
-                      Text('No users found',
-                          style: TextStyle(
-                              color: scheme.onSurface.withValues(alpha: 0.5))),
+                      Text(
+                        'No users found',
+                        style: TextStyle(
+                          color: scheme.onSurface.withValues(alpha: 0.5),
+                        ),
+                      ),
                     ],
                   ),
                 )
@@ -251,8 +279,9 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
                   child: SizedBox(
                     width: double.infinity,
                     child: DataTable(
-                      headingRowColor:
-                          WidgetStateProperty.all(scheme.surfaceContainerHighest.withValues(alpha: 0.4)),
+                      headingRowColor: WidgetStateProperty.all(
+                        scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+                      ),
                       showCheckboxColumn: true,
                       sortColumnIndex: _sortColumnIndex,
                       sortAscending: _sortAscending,
@@ -348,8 +377,10 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
                             DataCell(
                               CircleAvatar(
                                 radius: 14,
-                                backgroundColor:
-                                    _roleColor(user.role, scheme).withValues(alpha: 0.15),
+                                backgroundColor: _roleColor(
+                                  user.role,
+                                  scheme,
+                                ).withValues(alpha: 0.15),
                                 child: Icon(
                                   _roleIcon(user.role),
                                   size: 14,
@@ -361,58 +392,99 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(user.displayName,
-                                      style: TextStyle(
-                                        fontWeight: isMe ? FontWeight.w700 : FontWeight.w500,
-                                      )),
+                                  Text(
+                                    user.displayName,
+                                    style: TextStyle(
+                                      fontWeight: isMe
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                    ),
+                                  ),
                                   if (isMe) ...[
                                     const SizedBox(width: 6),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 5, vertical: 1),
+                                        horizontal: 5,
+                                        vertical: 1,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: scheme.primary.withValues(alpha: 0.12),
+                                        color: scheme.primary.withValues(
+                                          alpha: 0.12,
+                                        ),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
-                                      child: Text('You',
-                                          style: TextStyle(
-                                              fontSize: 10, color: scheme.primary)),
+                                      child: Text(
+                                        'You',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: scheme.primary,
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ],
                               ),
                             ),
-                            DataCell(Text(user.email.isEmpty ? '—' : user.email,
+                            DataCell(
+                              Text(
+                                user.email.isEmpty ? '—' : user.email,
                                 style: TextStyle(
-                                    fontSize: 13,
-                                    color: scheme.onSurface.withValues(alpha: 0.7)))),
+                                  fontSize: 13,
+                                  color: scheme.onSurface.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                ),
+                              ),
+                            ),
                             DataCell(_RoleChip(role: user.role)),
                             DataCell(
                               user.plan == AppPlan.pro
                                   ? Container(
                                       padding: const EdgeInsets.symmetric(
-                                          horizontal: 6, vertical: 2),
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: scheme.primary.withValues(alpha: 0.12),
+                                        color: scheme.primary.withValues(
+                                          alpha: 0.12,
+                                        ),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
-                                      child: Text('PRO',
-                                          style: TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w800,
-                                              color: scheme.primary)),
+                                      child: Text(
+                                        'PRO',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w800,
+                                          color: scheme.primary,
+                                        ),
+                                      ),
                                     )
-                                  : Text('Free',
+                                  : Text(
+                                      'Free',
                                       style: TextStyle(
-                                          fontSize: 12,
-                                          color: scheme.onSurface.withValues(alpha: 0.5))),
+                                        fontSize: 12,
+                                        color: scheme.onSurface.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                      ),
+                                    ),
                             ),
-                            DataCell(Text(
-                                DateFormat('MMM d, yyyy').format(user.createdAt),
-                                style: const TextStyle(fontSize: 12))),
-                            DataCell(Text(
-                                DateFormat('MMM d, HH:mm').format(user.lastLogin),
-                                style: const TextStyle(fontSize: 12))),
+                            DataCell(
+                              Text(
+                                DateFormat(
+                                  'MMM d, yyyy',
+                                ).format(user.createdAt),
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ),
+                            DataCell(
+                              Text(
+                                DateFormat(
+                                  'MMM d, HH:mm',
+                                ).format(user.lastLogin),
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ),
                             DataCell(
                               Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -421,8 +493,13 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
                                   if (!isMe)
                                     PopupMenuButton<AppRole>(
                                       tooltip: 'Change role',
-                                      icon: Icon(Icons.swap_horiz,
-                                          size: 16, color: scheme.onSurface.withValues(alpha: 0.5)),
+                                      icon: Icon(
+                                        Icons.swap_horiz,
+                                        size: 16,
+                                        color: scheme.onSurface.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                      ),
                                       onSelected: (role) =>
                                           _changeRole(context, ref, user, role),
                                       itemBuilder: (_) => [
@@ -431,13 +508,19 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
                                             value: r,
                                             child: Row(
                                               children: [
-                                                Icon(_roleIcon(r),
-                                                    size: 14, color: _roleColor(r, scheme)),
+                                                Icon(
+                                                  _roleIcon(r),
+                                                  size: 14,
+                                                  color: _roleColor(r, scheme),
+                                                ),
                                                 const SizedBox(width: 8),
                                                 Text(r.label),
                                                 if (r == user.role) ...[
                                                   const SizedBox(width: 6),
-                                                  const Icon(Icons.check, size: 14),
+                                                  const Icon(
+                                                    Icons.check,
+                                                    size: 14,
+                                                  ),
                                                 ],
                                               ],
                                             ),
@@ -447,36 +530,54 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
                                   // More actions
                                   PopupMenuButton<String>(
                                     tooltip: 'Actions',
-                                    icon: Icon(Icons.more_horiz,
-                                        size: 16, color: scheme.onSurface.withValues(alpha: 0.5)),
+                                    icon: Icon(
+                                      Icons.more_horiz,
+                                      size: 16,
+                                      color: scheme.onSurface.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                    ),
                                     onSelected: (action) {
                                       switch (action) {
                                         case 'details':
                                           setState(() => _selectedUser = user);
                                         case 'revoke':
-                                          if (!isMe) _revoke(context, ref, user);
+                                          if (!isMe)
+                                            _revoke(context, ref, user);
                                       }
                                     },
                                     itemBuilder: (_) => [
                                       const PopupMenuItem(
-                                          value: 'details',
+                                        value: 'details',
+                                        child: ListTile(
+                                          dense: true,
+                                          contentPadding: EdgeInsets.zero,
+                                          leading: Icon(
+                                            Icons.info_outline,
+                                            size: 18,
+                                          ),
+                                          title: Text('View details'),
+                                        ),
+                                      ),
+                                      if (!isMe)
+                                        PopupMenuItem(
+                                          value: 'revoke',
                                           child: ListTile(
                                             dense: true,
                                             contentPadding: EdgeInsets.zero,
-                                            leading: Icon(Icons.info_outline, size: 18),
-                                            title: Text('View details'),
-                                          )),
-                                      if (!isMe)
-                                        PopupMenuItem(
-                                            value: 'revoke',
-                                            child: ListTile(
-                                              dense: true,
-                                              contentPadding: EdgeInsets.zero,
-                                              leading: const Icon(Icons.person_remove_outlined,
-                                                  size: 18, color: Color(0xFFEF4444)),
-                                              title: const Text('Revoke',
-                                                  style: TextStyle(color: Color(0xFFEF4444))),
-                                            )),
+                                            leading: const Icon(
+                                              Icons.person_remove_outlined,
+                                              size: 18,
+                                              color: Color(0xFFEF4444),
+                                            ),
+                                            title: const Text(
+                                              'Revoke',
+                                              style: TextStyle(
+                                                color: Color(0xFFEF4444),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
                                     ],
                                   ),
                                 ],
@@ -494,7 +595,11 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
   }
 
   Widget _buildDetailPanel(
-      BuildContext context, WidgetRef ref, AppUser user, ColorScheme scheme) {
+    BuildContext context,
+    WidgetRef ref,
+    AppUser user,
+    ColorScheme scheme,
+  ) {
     return Column(
       children: [
         // Detail header
@@ -511,22 +616,35 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: _roleColor(user.role, scheme).withValues(alpha: 0.15),
-                child: Icon(_roleIcon(user.role),
-                    size: 24, color: _roleColor(user.role, scheme)),
+                backgroundColor: _roleColor(
+                  user.role,
+                  scheme,
+                ).withValues(alpha: 0.15),
+                child: Icon(
+                  _roleIcon(user.role),
+                  size: 24,
+                  color: _roleColor(user.role, scheme),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(user.displayName,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w700, fontSize: 16)),
-                    Text(user.email.isEmpty ? 'No email' : user.email,
-                        style: TextStyle(
-                            fontSize: 13,
-                            color: scheme.onSurface.withValues(alpha: 0.6))),
+                    Text(
+                      user.displayName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
+                    Text(
+                      user.email.isEmpty ? 'No email' : user.email,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: scheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -546,21 +664,27 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
               children: [
                 _DetailInfoRow(label: 'Role', value: user.role.label),
                 _DetailInfoRow(
-                    label: 'Plan',
-                    value: '${user.plan.label}${user.plan.isPro ? ' ★' : ''}'),
+                  label: 'Plan',
+                  value: '${user.plan.label}${user.plan.isPro ? ' ★' : ''}',
+                ),
                 _DetailInfoRow(
-                    label: 'Joined',
-                    value: DateFormat('MMMM d, yyyy').format(user.createdAt)),
+                  label: 'Joined',
+                  value: DateFormat('MMMM d, yyyy').format(user.createdAt),
+                ),
                 _DetailInfoRow(
-                    label: 'Last login',
-                    value: DateFormat('MMM d, yyyy HH:mm').format(user.lastLogin)),
+                  label: 'Last login',
+                  value: DateFormat('MMM d, yyyy HH:mm').format(user.lastLogin),
+                ),
                 const SizedBox(height: 20),
                 // Plan management
-                Text('Subscription Plan',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: scheme.onSurface,
-                        fontSize: 14)),
+                Text(
+                  'Subscription Plan',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurface,
+                    fontSize: 14,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -569,8 +693,10 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
                         onPressed: user.plan == AppPlan.free
                             ? null
                             : () async {
-                                await AuthRepository.instance
-                                    .updatePlan(user.uid, AppPlan.free);
+                                await AuthRepository.instance.updatePlan(
+                                  user.uid,
+                                  AppPlan.free,
+                                );
                                 ref.invalidate(usersProvider);
                                 setState(() => _selectedUser = null);
                               },
@@ -583,8 +709,10 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
                         onPressed: user.plan == AppPlan.pro
                             ? null
                             : () async {
-                                await AuthRepository.instance
-                                    .updatePlan(user.uid, AppPlan.pro);
+                                await AuthRepository.instance.updatePlan(
+                                  user.uid,
+                                  AppPlan.pro,
+                                );
                                 ref.invalidate(usersProvider);
                                 setState(() => _selectedUser = null);
                               },
@@ -595,11 +723,14 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
                 ),
                 const SizedBox(height: 20),
                 // Actions
-                Text('Actions',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: scheme.onSurface,
-                        fontSize: 14)),
+                Text(
+                  'Actions',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurface,
+                    fontSize: 14,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 if (user.role != AppRole.admin) ...[
                   SizedBox(
@@ -618,7 +749,9 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
                         foregroundColor: scheme.error,
-                        side: BorderSide(color: scheme.error.withValues(alpha: 0.5)),
+                        side: BorderSide(
+                          color: scheme.error.withValues(alpha: 0.5),
+                        ),
                       ),
                       onPressed: () => _revoke(context, ref, user),
                       icon: const Icon(Icons.person_remove_outlined, size: 18),
@@ -635,10 +768,11 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
   }
 
   Widget _buildRevokedPanel(
-      BuildContext context,
-      WidgetRef ref,
-      AsyncValue<List<RevokedAccount>> revokedAsync,
-      ColorScheme scheme) {
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<RevokedAccount>> revokedAsync,
+    ColorScheme scheme,
+  ) {
     return Column(
       children: [
         Container(
@@ -646,41 +780,48 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                  color: scheme.outlineVariant.withValues(alpha: 0.15)),
+                color: scheme.outlineVariant.withValues(alpha: 0.15),
+              ),
             ),
           ),
           child: Row(
             children: [
-              Icon(Icons.person_remove_outlined,
-                  size: 18, color: scheme.error),
+              Icon(Icons.person_remove_outlined, size: 18, color: scheme.error),
               const SizedBox(width: 8),
-              Text('Revoked Accounts',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w700)),
+              Text(
+                'Revoked Accounts',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+              ),
             ],
           ),
         ),
         Expanded(
           child: revokedAsync.when(
-            loading: () =>
-                const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: CardSkeleton(height: 48),
-                ),
+            loading: () => const Padding(
+              padding: EdgeInsets.all(12),
+              child: CardSkeleton(height: 48),
+            ),
             error: (e, _) => Center(
-              child: Text('Error loading',
-                  style: TextStyle(
-                      fontSize: 12, color: scheme.onSurface.withValues(alpha: 0.5))),
+              child: Text(
+                'Error loading',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: scheme.onSurface.withValues(alpha: 0.5),
+                ),
+              ),
             ),
             data: (revoked) {
               if (revoked.isEmpty) {
                 return Center(
-                  child: Text('No revoked accounts',
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: scheme.onSurface.withValues(alpha: 0.5))),
+                  child: Text(
+                    'No revoked accounts',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: scheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                  ),
                 );
               }
               return ListView.builder(
@@ -692,13 +833,18 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
                       dense: true,
-                      title: Text(account.displayName.isEmpty
-                          ? account.uid
-                          : account.displayName),
-                      subtitle: Text(account.email,
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: scheme.onSurface.withValues(alpha: 0.5))),
+                      title: Text(
+                        account.displayName.isEmpty
+                            ? account.uid
+                            : account.displayName,
+                      ),
+                      subtitle: Text(
+                        account.email,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: scheme.onSurface.withValues(alpha: 0.5),
+                        ),
+                      ),
                       trailing: TextButton(
                         onPressed: () => _restore(context, ref, account),
                         child: const Text('Restore'),
@@ -720,16 +866,27 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.cloud_off_outlined,
-              size: 48, color: scheme.error.withValues(alpha: 0.5)),
+          Icon(
+            Icons.cloud_off_outlined,
+            size: 48,
+            color: scheme.error.withValues(alpha: 0.5),
+          ),
           const SizedBox(height: 12),
-          Text('Could not load users',
-              style: TextStyle(
-                  fontWeight: FontWeight.w600, color: scheme.onSurface)),
+          Text(
+            'Could not load users',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: scheme.onSurface,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(e.toString().substring(0, 100.clamp(0, e.toString().length)),
-              style: TextStyle(
-                  fontSize: 12, color: scheme.onSurface.withValues(alpha: 0.5))),
+          Text(
+            e.toString().substring(0, 100.clamp(0, e.toString().length)),
+            style: TextStyle(
+              fontSize: 12,
+              color: scheme.onSurface.withValues(alpha: 0.5),
+            ),
+          ),
           const SizedBox(height: 16),
           FilledButton.tonal(
             onPressed: () => ref.invalidate(usersProvider),
@@ -750,22 +907,35 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
   // ---- Actions (same logic as mobile) ----
 
   Future<void> _changeRole(
-      BuildContext context, WidgetRef ref, AppUser user, AppRole role) async {
+    BuildContext context,
+    WidgetRef ref,
+    AppUser user,
+    AppRole role,
+  ) async {
     if (role == user.role) return;
     final me = ref.read(authProvider).user;
     if (me?.uid == user.uid && role != AppRole.admin) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cannot demote your own account.')));
+        const SnackBar(content: Text('Cannot demote your own account.')),
+      );
       return;
     }
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Change role?'),
-        content: Text('Set ${user.displayName} to ${role.label}?\n\n${role.description}'),
+        content: Text(
+          'Set ${user.displayName} to ${role.label}?\n\n${role.description}',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Change')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Change'),
+          ),
         ],
       ),
     );
@@ -775,30 +945,41 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
       ref.invalidate(usersProvider);
       ref.invalidate(roleAuditProvider);
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('${user.displayName} is now ${role.label}.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${user.displayName} is now ${role.label}.')),
+        );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
 
   Future<void> _revoke(
-      BuildContext context, WidgetRef ref, AppUser user) async {
+    BuildContext context,
+    WidgetRef ref,
+    AppUser user,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         icon: const Icon(Icons.block, size: 32),
         title: const Text('Revoke account?'),
-        content: Text('Remove ${user.displayName} (${user.email}) from this vault?'),
+        content: Text(
+          'Remove ${user.displayName} (${user.email}) from this vault?',
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Revoke'),
           ),
@@ -807,22 +988,31 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
     );
     if (confirmed != true) return;
     try {
-      await AuthRepository.instance.revokeUser(user.uid,
-          email: user.email, displayName: user.displayName);
+      await AuthRepository.instance.revokeUser(
+        user.uid,
+        email: user.email,
+        displayName: user.displayName,
+      );
       ref.invalidate(usersProvider);
       ref.invalidate(revokedProvider);
       setState(() => _selectedUser = null);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
 
   Future<void> _restore(
-      BuildContext context, WidgetRef ref, RevokedAccount account) async {
-    final name = account.displayName.isEmpty ? account.uid : account.displayName;
+    BuildContext context,
+    WidgetRef ref,
+    RevokedAccount account,
+  ) async {
+    final name = account.displayName.isEmpty
+        ? account.uid
+        : account.displayName;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -830,9 +1020,13 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
         content: Text('Restore $name? They will be able to sign in again.'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-              onPressed: () => Navigator.pop(ctx, true), child: const Text('Restore')),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Restore'),
+          ),
         ],
       ),
     );
@@ -843,8 +1037,9 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
       ref.invalidate(usersProvider);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     }
   }
@@ -863,7 +1058,10 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
             for (final r in AppRole.values)
               ListTile(
                 title: Text(r.label),
-                subtitle: Text(r.description, style: const TextStyle(fontSize: 11)),
+                subtitle: Text(
+                  r.description,
+                  style: const TextStyle(fontSize: 11),
+                ),
                 onTap: () => Navigator.pop(ctx, r),
               ),
           ],
@@ -882,8 +1080,9 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
     ref.invalidate(roleAuditProvider);
     setState(() => _selectedUids.clear());
     if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Updated $ok of ${selected.length} users.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Updated $ok of ${selected.length} users.')),
+      );
     }
   }
 
@@ -899,9 +1098,13 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
         content: Text('Remove ${selected.length} account(s) from this vault?'),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Revoke all'),
           ),
@@ -912,8 +1115,11 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
     var ok = 0;
     for (final u in selected) {
       try {
-        await AuthRepository.instance.revokeUser(u.uid,
-            email: u.email, displayName: u.displayName);
+        await AuthRepository.instance.revokeUser(
+          u.uid,
+          email: u.email,
+          displayName: u.displayName,
+        );
         ok++;
       } catch (_) {}
     }
@@ -921,8 +1127,9 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
     ref.invalidate(revokedProvider);
     setState(() => _selectedUids.clear());
     if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Revoked $ok of ${selected.length} users.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Revoked $ok of ${selected.length} users.')),
+      );
     }
   }
 
@@ -979,9 +1186,14 @@ class _RoleChip extends StatelessWidget {
         children: [
           Icon(icon, size: 12, color: color),
           const SizedBox(width: 4),
-          Text(role.label,
-              style: TextStyle(
-                  fontSize: 12, fontWeight: FontWeight.w600, color: color)),
+          Text(
+            role.label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
         ],
       ),
     );
@@ -1011,17 +1223,22 @@ class _SortHeader extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label,
-              style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurface
-                      .withValues(alpha: isActive ? 0.9 : 0.6))),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: isActive ? 0.9 : 0.6),
+            ),
+          ),
           if (isActive)
-            Icon(ascending ? Icons.arrow_upward : Icons.arrow_downward,
-                size: 14, color: Theme.of(context).colorScheme.primary),
+            Icon(
+              ascending ? Icons.arrow_upward : Icons.arrow_downward,
+              size: 14,
+              color: Theme.of(context).colorScheme.primary,
+            ),
         ],
       ),
     );
@@ -1058,9 +1275,14 @@ class _ActionChip extends StatelessWidget {
           children: [
             Icon(icon, size: 14, color: color),
             const SizedBox(width: 4),
-            Text(label,
-                style: TextStyle(
-                    fontSize: 12, fontWeight: FontWeight.w600, color: color)),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
           ],
         ),
       ),
@@ -1082,13 +1304,19 @@ class _DetailInfoRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 100,
-            child: Text(label,
-                style: TextStyle(
-                    fontSize: 12, color: scheme.onSurface.withValues(alpha: 0.5))),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: scheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
           ),
           Expanded(
-            child: Text(value,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+            ),
           ),
         ],
       ),

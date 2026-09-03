@@ -121,7 +121,12 @@ class AuthRepository {
         }
         await cloud.upsert('users', user.uid, data, pk: 'uid');
         if (wantsAdmin) {
-          await cloud.deleteField('users', user.uid, 'bootstrapCode', pk: 'uid');
+          await cloud.deleteField(
+            'users',
+            user.uid,
+            'bootstrapCode',
+            pk: 'uid',
+          );
         }
         await _persistUser(profile);
         return profile;
@@ -233,7 +238,10 @@ class AuthRepository {
       }
       // Profile missing from Hive but UID exists — persist the UID so
       // HMAC key derivation is consistent on next read.
-      await LocalDatabase.instance.setSetting(AppConstants.kSessionUid, savedUid);
+      await LocalDatabase.instance.setSetting(
+        AppConstants.kSessionUid,
+        savedUid,
+      );
       // Try Firebase Auth to rebuild the profile.
       final cloud = CloudBackend.instance;
       if (cloud.isReady) {
@@ -268,7 +276,10 @@ class AuthRepository {
       );
     }
     // Profile exists in Hive — persist UID for HMAC consistency.
-    await LocalDatabase.instance.setSetting(AppConstants.kSessionUid, cached.uid);
+    await LocalDatabase.instance.setSetting(
+      AppConstants.kSessionUid,
+      cached.uid,
+    );
     // Prefer live Firebase user when available.
     final cloud = CloudBackend.instance;
     if (cloud.isReady) {
@@ -296,7 +307,11 @@ class AuthRepository {
 
     // A revoked account must not silently come back as a fresh curator.
     try {
-      final revoked = await CloudBackend.instance.fetchDoc('revoked', uid, pk: 'uid');
+      final revoked = await CloudBackend.instance.fetchDoc(
+        'revoked',
+        uid,
+        pk: 'uid',
+      );
       if (revoked != null) {
         throw AuthException(
           'This account has been revoked by an administrator.',
@@ -332,7 +347,12 @@ class AuthRepository {
       createdAt: DateTime.now(),
       lastLogin: DateTime.now(),
     );
-    await CloudBackend.instance.upsert('users', uid, profile.toFirestoreJson(), pk: 'uid');
+    await CloudBackend.instance.upsert(
+      'users',
+      uid,
+      profile.toFirestoreJson(),
+      pk: 'uid',
+    );
     return profile;
   }
 
@@ -360,7 +380,9 @@ class AuthRepository {
     } catch (_) {
       // Fallback for offline or pre-migration builds: old read-then-write
       final oldRole = await _roleOf(uid);
-      await CloudBackend.instance.upsert('users', uid, {'role': role.wire}, pk: 'uid');
+      await CloudBackend.instance.upsert('users', uid, {
+        'role': role.wire,
+      }, pk: 'uid');
       try {
         await CloudBackend.instance.addDoc('role_audit', {
           'uid': uid,
@@ -379,7 +401,11 @@ class AuthRepository {
         cachedUser.copyWith(role: role).toJson(),
       );
     }
-    logActivity(ActivityType.roleChanged, 'Changed role to ${role.label}', meta: {'targetUid': uid});
+    logActivity(
+      ActivityType.roleChanged,
+      'Changed role to ${role.label}',
+      meta: {'targetUid': uid},
+    );
   }
 
   /// Reads a user's current role from the cloud (best-effort; defaults to
@@ -451,7 +477,11 @@ class AuthRepository {
     // Remember the old role for the audit before deleting the marker.
     String oldRole = 'revoked';
     try {
-      final marker = await CloudBackend.instance.fetchDoc('revoked', uid, pk: 'uid');
+      final marker = await CloudBackend.instance.fetchDoc(
+        'revoked',
+        uid,
+        pk: 'uid',
+      );
       if (marker != null && marker['role'] is String) {
         oldRole = marker['role'] as String;
       }
@@ -529,10 +559,18 @@ class AuthRepository {
 
     try {
       // 1. Delete all vault data from cloud
-      final collections = ['paintings', 'artists', 'documents', 'condition_reports'];
+      final collections = [
+        'paintings',
+        'artists',
+        'documents',
+        'condition_reports',
+      ];
       for (final collection in collections) {
         try {
-          final items = await CloudBackend.instance.fetchAll(collection, owner: me.uid);
+          final items = await CloudBackend.instance.fetchAll(
+            collection,
+            owner: me.uid,
+          );
           for (final item in items) {
             final id = item['id'] as String? ?? '';
             if (id.isNotEmpty) {
@@ -546,7 +584,11 @@ class AuthRepository {
 
       // 2. Delete public gallery if exists
       try {
-        await CloudBackend.instance.remove('public_galleries', me.uid, pk: 'ownerUid');
+        await CloudBackend.instance.remove(
+          'public_galleries',
+          me.uid,
+          pk: 'ownerUid',
+        );
       } catch (_) {}
 
       // 3. Delete backup snapshot if exists
@@ -597,7 +639,9 @@ class AuthRepository {
   /// keep the local-first fallback.
   Future<void> updatePlan(String uid, AppPlan plan) async {
     try {
-      await CloudBackend.instance.upsert('users', uid, {'plan': plan.wire}, pk: 'uid');
+      await CloudBackend.instance.upsert('users', uid, {
+        'plan': plan.wire,
+      }, pk: 'uid');
     } catch (e) {
       final msg = e.toString();
       if (msg.contains('permission-denied') ||
@@ -835,7 +879,9 @@ class AuthRepository {
     // and in restoreSession) as the primary source.  This is set BEFORE
     // cachedUser is accessed, so it's reliable on cold starts.  Fall back
     // to cachedUser.uid only if Hive hasn't been written yet.
-    final hiveUid = (LocalDatabase.instance.getSetting(AppConstants.kSessionUid) ?? '') as String;
+    final hiveUid =
+        (LocalDatabase.instance.getSetting(AppConstants.kSessionUid) ?? '')
+            as String;
     final uid = hiveUid.isNotEmpty ? hiveUid : cachedUser.uid;
     final key = utf8.encode(uid.isNotEmpty ? uid : 'default');
     final mac = crypto.Hmac(crypto.sha256, key);

@@ -217,7 +217,9 @@ class DocumentRepository {
       if (!working.isDeleted) {
         await cloud.upsert(_collection, working.id, working.toJson());
       }
-      if (working.localPath.isNotEmpty && working.remoteUrl.isEmpty && working.driveFileId.isEmpty) {
+      if (working.localPath.isNotEmpty &&
+          working.remoteUrl.isEmpty &&
+          working.driveFileId.isEmpty) {
         final file = File(working.localPath);
         if (await file.exists()) {
           final ref = await cloud.uploadBytes(

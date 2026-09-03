@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-
 /// Infinite scroll wrapper for web lists.
 /// Shows skeleton loading at the bottom when more data is loading.
 /// Detects when user scrolls near the bottom and triggers loadMore.
@@ -50,7 +49,9 @@ class _InfiniteScrollListState extends State<InfiniteScrollList> {
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.offset;
     // Trigger load when 200px from the bottom
-    if (currentScroll >= maxScroll - 200 && widget.hasMore && !widget.isLoading) {
+    if (currentScroll >= maxScroll - 200 &&
+        widget.hasMore &&
+        !widget.isLoading) {
       widget.onLoadMore?.call();
     }
   }
@@ -58,26 +59,31 @@ class _InfiniteScrollListState extends State<InfiniteScrollList> {
   @override
   Widget build(BuildContext context) {
     if (widget.itemCount == 0 && !widget.isLoading) {
-      return widget.emptyWidget ?? Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.inbox_rounded,
-              size: 64,
-              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+      return widget.emptyWidget ??
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.inbox_rounded,
+                  size: 64,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Nothing here yet',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Nothing here yet',
-              style: TextStyle(
-                fontSize: 16,
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-              ),
-            ),
-          ],
-        ),
-      );
+          );
     }
 
     final totalItems = widget.itemCount + (widget.isLoading ? 3 : 0);
@@ -107,13 +113,13 @@ class _SkeletonTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
-      height: 72,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
-      ),
-    )
+          height: 72,
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(12),
+          ),
+        )
         .animate(delay: Duration(milliseconds: index * 100))
         .fadeIn(duration: 300.ms)
         .shimmer(duration: 1200.ms);

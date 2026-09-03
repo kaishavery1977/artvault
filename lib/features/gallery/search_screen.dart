@@ -134,18 +134,27 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final raw = _controller.text.trim().toLowerCase();
     final artistResults = raw.isEmpty
         ? <Artist>[]
-        : artists.where((a) =>
-            !a.isDeleted &&
-            (a.name.toLowerCase().contains(raw) ||
-             a.nationality.toLowerCase().contains(raw) ||
-             a.biography.toLowerCase().contains(raw))).toList();
+        : artists
+              .where(
+                (a) =>
+                    !a.isDeleted &&
+                    (a.name.toLowerCase().contains(raw) ||
+                        a.nationality.toLowerCase().contains(raw) ||
+                        a.biography.toLowerCase().contains(raw)),
+              )
+              .toList();
     final docResults = raw.isEmpty
         ? <ArtDocument>[]
-        : documents.where((d) =>
-            !d.isDeleted &&
-            (d.name.toLowerCase().contains(raw) ||
-             d.type.toLowerCase().contains(raw))).toList();
-    final totalCount = paintResults.length + artistResults.length + docResults.length;
+        : documents
+              .where(
+                (d) =>
+                    !d.isDeleted &&
+                    (d.name.toLowerCase().contains(raw) ||
+                        d.type.toLowerCase().contains(raw)),
+              )
+              .toList();
+    final totalCount =
+        paintResults.length + artistResults.length + docResults.length;
 
     return Scaffold(
       appBar: AppBar(
@@ -244,7 +253,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   if (paintResults.isNotEmpty) ...[
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4, top: 4),
-                      child: Text('Paintings', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.primary)),
+                      child: Text(
+                        'Paintings',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.primary,
+                        ),
+                      ),
                     ),
                     for (final (i, painting) in paintResults.indexed)
                       Padding(
@@ -260,7 +276,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   if (artistResults.isNotEmpty) ...[
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4, top: 8),
-                      child: Text('Artists', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.primary)),
+                      child: Text(
+                        'Artists',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.primary,
+                        ),
+                      ),
                     ),
                     for (final artist in artistResults)
                       Padding(
@@ -268,11 +291,26 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         key: ValueKey('search-artist-${artist.id}'),
                         child: Card(
                           child: ListTile(
-                            leading: CircleAvatar(child: Text(artist.name.isNotEmpty ? artist.name[0].toUpperCase() : '?')),
+                            leading: CircleAvatar(
+                              child: Text(
+                                artist.name.isNotEmpty
+                                    ? artist.name[0].toUpperCase()
+                                    : '?',
+                              ),
+                            ),
                             title: Text(artist.name),
-                            subtitle: Text(artist.nationality.isNotEmpty ? artist.nationality : 'Artist', maxLines: 1, overflow: TextOverflow.ellipsis),
+                            subtitle: Text(
+                              artist.nationality.isNotEmpty
+                                  ? artist.nationality
+                                  : 'Artist',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                             trailing: const Icon(Icons.chevron_right),
-                            onTap: () => Navigator.pushNamed(context, '/artist/${artist.id}'),
+                            onTap: () => Navigator.pushNamed(
+                              context,
+                              '/artist/${artist.id}',
+                            ),
                           ),
                         ),
                       ),
@@ -280,7 +318,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   if (docResults.isNotEmpty) ...[
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4, top: 8),
-                      child: Text('Documents', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.primary)),
+                      child: Text(
+                        'Documents',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: scheme.primary,
+                        ),
+                      ),
                     ),
                     for (final doc in docResults)
                       Padding(
@@ -289,8 +334,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         child: Card(
                           child: ListTile(
                             leading: const Icon(Icons.description),
-                            title: Text(doc.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                            subtitle: Text(doc.type, maxLines: 1, overflow: TextOverflow.ellipsis),
+                            title: Text(
+                              doc.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            subtitle: Text(
+                              doc.type,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                             trailing: const Icon(Icons.chevron_right),
                           ),
                         ),

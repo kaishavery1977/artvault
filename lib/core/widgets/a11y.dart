@@ -153,7 +153,10 @@ class _SkipNavigationState extends State<SkipNavigation> {
               onTap: _skipToContent,
               child: Container(
                 margin: const EdgeInsets.all(8),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: scheme.primary,
                   borderRadius: BorderRadius.circular(8),
@@ -192,11 +195,7 @@ class FocusTrappedDialog extends StatefulWidget {
   final Widget child;
   final VoidCallback? onEscape;
 
-  const FocusTrappedDialog({
-    super.key,
-    required this.child,
-    this.onEscape,
-  });
+  const FocusTrappedDialog({super.key, required this.child, this.onEscape});
 
   @override
   State<FocusTrappedDialog> createState() => _FocusTrappedDialogState();
@@ -226,7 +225,8 @@ class _FocusTrappedDialogState extends State<FocusTrappedDialog> {
       focusNode: _focusNode,
       autofocus: true,
       onKeyEvent: (node, event) {
-        if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.escape) {
           widget.onEscape?.call();
           return KeyEventResult.handled;
         }
@@ -267,10 +267,7 @@ class KeyboardActivatable extends StatelessWidget {
           }
           return KeyEventResult.ignored;
         },
-        child: GestureDetector(
-          onTap: onActivate,
-          child: child,
-        ),
+        child: GestureDetector(onTap: onActivate, child: child),
       ),
     );
   }

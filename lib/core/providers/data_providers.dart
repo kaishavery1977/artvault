@@ -48,19 +48,27 @@ final usersProvider = StreamProvider<List<AppUser>>((ref) async* {
     // Fallback to REST polling so "Could not load users" never shows.
     try {
       await for (final list in cloud.watchUsers()) {
-        yield list.map(AppUser.fromJson).toList()
-          ..sort((a, b) => a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
+        yield list.map(AppUser.fromJson).toList()..sort(
+          (a, b) => a.displayName.toLowerCase().compareTo(
+            b.displayName.toLowerCase(),
+          ),
+        );
       }
     } catch (_) {
       final cached = await cloud.fetchUsers();
-      yield cached.map(AppUser.fromJson).toList()
-        ..sort((a, b) => a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
+      yield cached.map(AppUser.fromJson).toList()..sort(
+        (a, b) =>
+            a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()),
+      );
       // Poll every 10s as fallback when realtime is down
       await for (final _ in Stream.periodic(const Duration(seconds: 10))) {
         try {
           final polled = await cloud.fetchUsers();
-          yield polled.map(AppUser.fromJson).toList()
-            ..sort((a, b) => a.displayName.toLowerCase().compareTo(b.displayName.toLowerCase()));
+          yield polled.map(AppUser.fromJson).toList()..sort(
+            (a, b) => a.displayName.toLowerCase().compareTo(
+              b.displayName.toLowerCase(),
+            ),
+          );
         } catch (_) {}
       }
     }
@@ -164,8 +172,10 @@ final revokedProvider = StreamProvider<List<RevokedAccount>>((ref) async* {
 });
 
 /// Single painting looked up by id.
-final paintingByIdProvider =
-    Provider.autoDispose.family<Painting?, String>((ref, id) {
+final paintingByIdProvider = Provider.autoDispose.family<Painting?, String>((
+  ref,
+  id,
+) {
   final paintings = ref.watch(paintingsProvider).valueOrNull ?? const [];
   for (final painting in paintings) {
     if (painting.id == id && !painting.isDeleted) return painting;
@@ -174,13 +184,11 @@ final paintingByIdProvider =
 });
 
 /// Documents attached to one painting.
-final documentsForPaintingProvider =
-    Provider.autoDispose.family<List<ArtDocument>, String>(
-  (ref, id) {
-    final docs = ref.watch(documentsProvider).valueOrNull ?? const [];
-    return docs.where((d) => d.paintingId == id && !d.isDeleted).toList();
-  },
-);
+final documentsForPaintingProvider = Provider.autoDispose
+    .family<List<ArtDocument>, String>((ref, id) {
+      final docs = ref.watch(documentsProvider).valueOrNull ?? const [];
+      return docs.where((d) => d.paintingId == id && !d.isDeleted).toList();
+    });
 
 /// Condition reports for every painting.
 final conditionReportsProvider = StreamProvider<List<ConditionReport>>((ref) {
@@ -188,15 +196,15 @@ final conditionReportsProvider = StreamProvider<List<ConditionReport>>((ref) {
 });
 
 /// Condition reports for one painting (newest first).
-final conditionReportsForPaintingProvider =
-    Provider.autoDispose.family<List<ConditionReport>, String>((ref, id) {
-  final reports =
-      ref.watch(conditionReportsProvider).valueOrNull ?? const [];
-  final list =
-      reports.where((r) => r.paintingId == id && !r.isDeleted).toList()
-        ..sort((a, b) => b.inspectedAt.compareTo(a.inspectedAt));
-  return list;
-});
+final conditionReportsForPaintingProvider = Provider.autoDispose
+    .family<List<ConditionReport>, String>((ref, id) {
+      final reports =
+          ref.watch(conditionReportsProvider).valueOrNull ?? const [];
+      final list =
+          reports.where((r) => r.paintingId == id && !r.isDeleted).toList()
+            ..sort((a, b) => b.inspectedAt.compareTo(a.inspectedAt));
+      return list;
+    });
 
 /// Live computed stats for the dashboard.
 class VaultStats {
@@ -246,8 +254,9 @@ final cloudSyncHealthProvider = NotifierProvider<CloudSyncHealthNotifier, int>(
 /// session. Reset when the failed-upload streak drops back to 0 (a sync
 /// succeeded), so a recovered cloud brings the hint back only if failures
 /// start accumulating again.
-final cloudSyncHintDismissedProvider =
-    StateProvider.autoDispose<bool>((ref) => false);
+final cloudSyncHintDismissedProvider = StateProvider.autoDispose<bool>(
+  (ref) => false,
+);
 
 final vaultStatsProvider = Provider<VaultStats>((ref) {
   final paintings = ref.watch(paintingsProvider).valueOrNull ?? const [];
@@ -274,7 +283,8 @@ final pendingSyncCountProvider = Provider<int>((ref) {
   final paintings = ref.watch(paintingsProvider).valueOrNull ?? [];
   final artists = ref.watch(artistsProvider).valueOrNull ?? [];
   final documents = ref.watch(documentsProvider).valueOrNull ?? [];
-  final pending = paintings.where((p) => p.needsSync).length +
+  final pending =
+      paintings.where((p) => p.needsSync).length +
       artists.where((a) => a.needsSync).length +
       documents.where((d) => d.needsSync).length;
   return pending;
@@ -419,23 +429,22 @@ class ActivityAuditEntry {
 
 /// Streams the `activity_audit` collection — a live feed of user actions
 /// across the vault. Newest first. Falls back to empty when offline.
-final activityAuditProvider = StreamProvider<List<ActivityAuditEntry>>(
-  (ref) async* {
-    final cloud = CloudBackend.instance;
-    if (!cloud.isReady) {
-      yield const [];
-      return;
-    }
-    yield* cloud
-        .watchCollection('activity_audit')
-        .map(
-          (list) => list
-              .map(ActivityAuditEntry.fromJson)
-              .toList()
-            ..sort((a, b) => b.at.compareTo(a.at)),
-        );
-  },
-);
+final activityAuditProvider = StreamProvider<List<ActivityAuditEntry>>((
+  ref,
+) async* {
+  final cloud = CloudBackend.instance;
+  if (!cloud.isReady) {
+    yield const [];
+    return;
+  }
+  yield* cloud
+      .watchCollection('activity_audit')
+      .map(
+        (list) =>
+            list.map(ActivityAuditEntry.fromJson).toList()
+              ..sort((a, b) => b.at.compareTo(a.at)),
+      );
+});
 
 /// Logs a user activity entry to the Firestore `activity_audit` collection.
 /// Fire-and-forget: best-effort write that never throws.

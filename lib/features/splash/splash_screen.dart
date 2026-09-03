@@ -39,12 +39,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final Animation<double> _exitScale;
   late final Animation<double> _exitOpacity;
 
-  static Duration get _introFull => kIsWeb 
+  static Duration get _introFull => kIsWeb
       ? const Duration(milliseconds: 5500)
       : const Duration(milliseconds: 3000);
   static const Duration _introResume = Duration(milliseconds: 900);
   static const Duration _introReduced = Duration(milliseconds: 150);
-  static Duration get _exitHoldFull => kIsWeb 
+  static Duration get _exitHoldFull => kIsWeb
       ? const Duration(milliseconds: 600)
       : const Duration(milliseconds: 350);
 
@@ -90,11 +90,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
     String target;
     if (state.status == AuthStatus.authenticated) {
-      final appLock = kIsWeb ? false : (
-          SettingsRepository.instance.appLockEnabled ||
-          await AuthRepository.instance.biometricEnabled ||
-          await AuthRepository.instance.faceLockEnabled ||
-          await AuthRepository.instance.passcodeSet);
+      final appLock = kIsWeb
+          ? false
+          : (SettingsRepository.instance.appLockEnabled ||
+                await AuthRepository.instance.biometricEnabled ||
+                await AuthRepository.instance.faceLockEnabled ||
+                await AuthRepository.instance.passcodeSet);
       target = appLock ? '/lock' : (resume ?? '/home');
     } else {
       target = resume ?? '/onboarding';
@@ -278,21 +279,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
           // Stage 4: tagline drifts up.
           Text(
-            'Your Private Gallery',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: muted,
-              letterSpacing: 1.4,
-            ),
-          )
+                'Your Private Gallery',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: muted,
+                  letterSpacing: 1.4,
+                ),
+              )
               .animate(delay: kIsWeb ? 3200.ms : 1400.ms)
               .slideY(begin: 0.25)
               .fadeIn(duration: 600.ms),
           const SizedBox(height: AppSpacing.xxl),
 
           // Stage 5: pulsing dot loader.
-          _PulsingDots(color: fg)
-              .animate(delay: kIsWeb ? 4000.ms : 1700.ms)
-              .fadeIn(duration: 400.ms),
+          _PulsingDots(
+            color: fg,
+          ).animate(delay: kIsWeb ? 4000.ms : 1700.ms).fadeIn(duration: 400.ms),
         ],
       );
     }
@@ -393,9 +394,10 @@ class _StaggeredWordmark extends StatelessWidget {
             builder: (context) {
               final letter = Text(
                 word[i],
-                style: AppTheme.display(context, size: 40).copyWith(
-                  color: color,
-                ),
+                style: AppTheme.display(
+                  context,
+                  size: 40,
+                ).copyWith(color: color),
               ).animate(delay: (i * 60).ms);
               return letter
                   .slideY(begin: 0.6)
@@ -424,7 +426,8 @@ class _SplashFooterState extends State<_SplashFooter>
 
   @override
   void initState() {
-    super.initState();      _glowCtrl = AnimationController(
+    super.initState();
+    _glowCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 4000),
     );
@@ -649,9 +652,21 @@ class _StaticBy extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.favorite_rounded, size: 14, color: AppColors.accent.withValues(alpha: 0.7)),
+        Icon(
+          Icons.favorite_rounded,
+          size: 14,
+          color: AppColors.accent.withValues(alpha: 0.7),
+        ),
         const SizedBox(width: 8),
-        Text('Crafted by Kais Havery', style: TextStyle(fontSize: 16, letterSpacing: 1.8, fontWeight: FontWeight.w700, color: Colors.white.withValues(alpha: 0.65))),
+        Text(
+          'Crafted by Kais Havery',
+          style: TextStyle(
+            fontSize: 16,
+            letterSpacing: 1.8,
+            fontWeight: FontWeight.w700,
+            color: Colors.white.withValues(alpha: 0.65),
+          ),
+        ),
       ],
     );
   }
@@ -662,7 +677,14 @@ class _StaticSub extends StatelessWidget {
   const _StaticSub();
   @override
   Widget build(BuildContext context) {
-    return Text('Made with passion for art collectors', style: TextStyle(fontSize: 13, letterSpacing: 1.2, color: Colors.white.withValues(alpha: 0.40)));
+    return Text(
+      'Made with passion for art collectors',
+      style: TextStyle(
+        fontSize: 13,
+        letterSpacing: 1.2,
+        color: Colors.white.withValues(alpha: 0.40),
+      ),
+    );
   }
 }
 
@@ -690,8 +712,7 @@ class _PulsingDots extends StatelessWidget {
                     )
                     .animate(
                       delay: (i * 100).ms,
-                      onPlay: (controller) =>
-                          controller.repeat(reverse: true),
+                      onPlay: (controller) => controller.repeat(reverse: true),
                     )
                     .scaleXY(
                       begin: 0.5,

@@ -155,8 +155,12 @@ class _FadeInImageState extends State<_FadeInImage> {
               height: widget.height,
               fit: widget.fit,
               filterQuality: FilterQuality.low,
-              cacheWidth: widget.width != null ? (widget.width! * dpr).toInt() : null,
-              cacheHeight: widget.height != null ? (widget.height! * dpr).toInt() : null,
+              cacheWidth: widget.width != null
+                  ? (widget.width! * dpr).toInt()
+                  : null,
+              cacheHeight: widget.height != null
+                  ? (widget.height! * dpr).toInt()
+                  : null,
               gaplessPlayback: true,
               isAntiAlias: true,
               errorBuilder: (_, _, _) => widget.fallback,
@@ -164,6 +168,7 @@ class _FadeInImageState extends State<_FadeInImage> {
     );
   }
 }
+
 class BottomSpacer extends StatelessWidget {
   const BottomSpacer({super.key});
 
@@ -173,4 +178,3 @@ class BottomSpacer extends StatelessWidget {
     return SizedBox(height: bottom + AppSpacing.lg);
   }
 }
-

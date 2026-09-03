@@ -9,6 +9,7 @@ extension CtxX on BuildContext {
   double get h => MediaQuery.sizeOf(this).height;
   EdgeInsets get padding => MediaQuery.paddingOf(this);
   bool get isDark => theme.brightness == Brightness.dark;
-  void push(String r, {Object? extra}) => GoRouter.of(this).push(r, extra: extra);
+  void push(String r, {Object? extra}) =>
+      GoRouter.of(this).push(r, extra: extra);
   void go(String r, {Object? extra}) => GoRouter.of(this).go(r, extra: extra);
 }

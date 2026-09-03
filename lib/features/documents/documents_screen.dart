@@ -55,67 +55,67 @@ class DocumentsScreen extends ConsumerWidget {
                 await Future<void>.delayed(const Duration(milliseconds: 300));
               },
               child: CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      context.adaptiveSpace(AppSpacing.md),
-                      AppSpacing.lg + MediaQuery.paddingOf(context).top * 0.4,
-                      context.adaptiveSpace(AppSpacing.md),
-                      AppSpacing.sm,
-                    ),
-                    child: Text(
-                      'Documents',
-                      style: AppTheme.display(
-                        context,
-                        size: context.adaptiveFont(28),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        context.adaptiveSpace(AppSpacing.md),
+                        AppSpacing.lg + MediaQuery.paddingOf(context).top * 0.4,
+                        context.adaptiveSpace(AppSpacing.md),
+                        AppSpacing.sm,
+                      ),
+                      child: Text(
+                        'Documents',
+                        style: AppTheme.display(
+                          context,
+                          size: context.adaptiveFont(28),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                SliverPadding(
-                  padding: AppSpacing.screenPadding,
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate((context, i) {
-                      final doc = docs[i];
-                      final tile = _DocumentTile(
-                        doc: doc,
-                        paintingTitle: titleFor(doc.paintingId),
-                        canEdit: canEdit,
-                        onOpen: () async {
-                          final file = await DocumentRepository.instance
-                              .openFile(doc);
-                          if (file != null) {
-                            await ShareService.instance.shareFile(
-                              file.path,
-                              text: doc.name,
-                            );
-                          }
-                        },
-                        onTapPainting: () {
-                          if (doc.paintingId.isNotEmpty) {
-                            context.push('/painting/${doc.paintingId}');
-                          }
-                        },
-                      );
-                      return revealListItem(
-                        tile,
-                        i,
-                        key: ValueKey(doc.id),
-                        context: context,
-                      );
-                    }, childCount: docs.length),
+                  SliverPadding(
+                    padding: AppSpacing.screenPadding,
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate((context, i) {
+                        final doc = docs[i];
+                        final tile = _DocumentTile(
+                          doc: doc,
+                          paintingTitle: titleFor(doc.paintingId),
+                          canEdit: canEdit,
+                          onOpen: () async {
+                            final file = await DocumentRepository.instance
+                                .openFile(doc);
+                            if (file != null) {
+                              await ShareService.instance.shareFile(
+                                file.path,
+                                text: doc.name,
+                              );
+                            }
+                          },
+                          onTapPainting: () {
+                            if (doc.paintingId.isNotEmpty) {
+                              context.push('/painting/${doc.paintingId}');
+                            }
+                          },
+                        );
+                        return revealListItem(
+                          tile,
+                          i,
+                          key: ValueKey(doc.id),
+                          context: context,
+                        );
+                      }, childCount: docs.length),
+                    ),
                   ),
-                ),
-                SliverToBoxAdapter(
-                  child: SizedBox(
-                    height:
-                        AppSpacing.xxl + MediaQuery.paddingOf(context).bottom,
+                  SliverToBoxAdapter(
+                    child: SizedBox(
+                      height:
+                          AppSpacing.xxl + MediaQuery.paddingOf(context).bottom,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
       floatingActionButton: canEdit
           ? FloatingActionButton.extended(
               onPressed: () => _addDocument(context, ref, paintings),
@@ -299,7 +299,13 @@ class _DocumentTile extends ConsumerWidget {
         ),
         title: Row(
           children: [
-            Expanded(child: Text(doc.name, maxLines: 1, overflow: TextOverflow.ellipsis)),
+            Expanded(
+              child: Text(
+                doc.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
             if (paintingTitle == 'Unknown artwork' && doc.paintingId.isNotEmpty)
               Tooltip(
                 message: 'Unlinked — painting deleted',
