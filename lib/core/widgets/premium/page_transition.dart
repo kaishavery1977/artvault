@@ -1,94 +1,79 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-/// Custom page transition that creates a 3D depth push effect.
-/// The outgoing page slides back while the incoming page slides forward,
-/// with a perspective tilt that creates a layered depth feel.
-class PremiumPageRoute<T> extends PageRouteBuilder<T> {
-  final Widget page;
+/// Builds a [CustomTransitionPage] with the app's shared 3D depth push
+/// effect: the outgoing page recedes (scale down + fade) while the incoming
+/// page advances (scale up from smaller + fade in), with perspective tilt.
+///
+/// This is the single source of truth for pushed-route transitions — every
+/// top-level route in [GoRouter] (see `app_router.dart`) routes through it so
+/// all screens share one motion language.
+///
+/// Reduced motion is honored end-to-end: when the platform (or the browser,
+/// via `prefers-reduced-motion`) reports animations disabled, the route
+/// swaps instantly with zero duration instead of playing the depth effect.
+Page<void> depthPage(BuildContext context, Widget child) {
+  final reducedMotion = MediaQuery.disableAnimationsOf(context);
+  return CustomTransitionPage<void>(
+    child: child,
+    transitionDuration: reducedMotion
+        ? Duration.zero
+        : kIsWeb
+        ? const Duration(milliseconds: 400)
+        : const Duration(milliseconds: 280),
+    reverseTransitionDuration: reducedMotion
+        ? Duration.zero
+        : kIsWeb
+        ? const Duration(milliseconds: 350)
+        : const Duration(milliseconds: 240),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      // Belt-and-braces: re-check at transition time so a motion-preference
+      // change mid-flight is honored too, not only at route construction.
+      if (MediaQuery.disableAnimationsOf(context)) return child;
 
-  PremiumPageRoute({required this.page})
-    : super(
-        pageBuilder: (context, animation, secondaryAnimation) => page,
-        transitionDuration: const Duration(milliseconds: 450),
-        reverseTransitionDuration: const Duration(milliseconds: 350),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          final curved = CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeOutCubic,
-            reverseCurve: Curves.easeInCubic,
-          );
-          final reverseCurved = CurvedAnimation(
-            parent: secondaryAnimation,
-            curve: Curves.easeOutCubic,
-          );
-
-          return Stack(
-            children: [
-              // Outgoing page slides back with fade
-              AnimatedBuilder(
-                animation: reverseCurved,
-                builder: (context, _) {
-                  final t = reverseCurved.value;
-                  // ignore: deprecated_member_use
-                  final transform = Matrix4.identity()
-                    ..setEntry(3, 2, 0.001)
-                    // ignore: deprecated_member_use
-                    ..translate(0.0, 0.0, -100 * t)
-                    // ignore: deprecated_member_use
-                    ..scale(1.0 - 0.1 * t);
-                  return Transform(
-                    alignment: Alignment.center,
-                    transform: transform,
-                    child: Opacity(
-                      opacity: 1.0 - t,
-                      child: Container(
-                        color: Theme.of(context).scaffoldBackgroundColor,
-                      ),
-                    ),
-                  );
-                },
-              ),
-              // Incoming page slides forward with scale
-              AnimatedBuilder(
-                animation: curved,
-                builder: (context, _) {
-                  final t = curved.value;
-                  // ignore: deprecated_member_use
-                  final transform = Matrix4.identity()
-                    ..setEntry(3, 2, 0.001)
-                    // ignore: deprecated_member_use
-                    ..translate(0.0, 50 * (1 - t), 80 * (1 - t))
-                    // ignore: deprecated_member_use
-                    ..scale(0.92 + 0.08 * t);
-                  return Transform(
-                    alignment: Alignment.center,
-                    transform: transform,
-                    child: Opacity(opacity: t, child: child),
-                  );
-                },
-              ),
-            ],
-          );
-        },
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
       );
-}
+      final reverseCurved = CurvedAnimation(
+        parent: secondaryAnimation,
+        curve: Curves.easeOutCubic,
+      );
 
-/// Slide-from-bottom with depth effect (for modals and sheets).
-class PremiumSlideUpRoute<T> extends PageRouteBuilder<T> {
-  final Widget page;
-
-  PremiumSlideUpRoute({required this.page})
-    : super(
-        pageBuilder: (context, animation, secondaryAnimation) => page,
-        transitionDuration: const Duration(milliseconds: 500),
-        reverseTransitionDuration: const Duration(milliseconds: 350),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          final curved = CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeOutCubic,
-          );
-
-          return AnimatedBuilder(
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Outgoing page recedes into the background.
+          // IgnorePointer so it never blocks taps on the incoming page.
+          IgnorePointer(
+            child: AnimatedBuilder(
+              animation: reverseCurved,
+              builder: (context, _) {
+                final t = reverseCurved.value;
+                // ignore: deprecated_member_use
+                final transform = Matrix4.identity()
+                  ..setEntry(3, 2, 0.001)
+                  // ignore: deprecated_member_use
+                  ..translate(0.0, 0.0, -80 * t)
+                  // ignore: deprecated_member_use
+                  ..scale(1.0 - 0.08 * t);
+                return Transform(
+                  alignment: Alignment.center,
+                  transform: transform,
+                  child: Opacity(
+                    opacity: 1.0 - t * 0.6,
+                    child: Container(
+                      color: Theme.of(context).scaffoldBackgroundColor,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          // Incoming page advances from the foreground.
+          AnimatedBuilder(
             animation: curved,
             builder: (context, _) {
               final t = curved.value;
@@ -96,54 +81,18 @@ class PremiumSlideUpRoute<T> extends PageRouteBuilder<T> {
               final transform = Matrix4.identity()
                 ..setEntry(3, 2, 0.001)
                 // ignore: deprecated_member_use
-                ..translate(0.0, 200 * (1 - t), 50 * (1 - t))
+                ..translate(0.0, 40 * (1 - t), 60 * (1 - t))
                 // ignore: deprecated_member_use
-                ..scale(0.9 + 0.1 * t);
+                ..scale(0.93 + 0.07 * t);
               return Transform(
-                alignment: Alignment.bottomCenter,
+                alignment: Alignment.center,
                 transform: transform,
                 child: Opacity(opacity: t, child: child),
               );
             },
-          );
-        },
+          ),
+        ],
       );
-}
-
-/// Fade + scale for dialogs
-class PremiumDialogRoute<T> extends PageRouteBuilder<T> {
-  final Widget page;
-
-  PremiumDialogRoute({required this.page})
-    : super(
-        pageBuilder: (context, animation, secondaryAnimation) => page,
-        transitionDuration: const Duration(milliseconds: 350),
-        reverseTransitionDuration: const Duration(milliseconds: 250),
-        opaque: false,
-        barrierDismissible: true,
-        barrierColor: Colors.black54,
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          final curved = CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeOutBack,
-          );
-
-          return AnimatedBuilder(
-            animation: curved,
-            builder: (context, _) {
-              final t = curved.value;
-              // ignore: deprecated_member_use
-              final transform = Matrix4.identity()
-                ..setEntry(3, 2, 0.001)
-                // ignore: deprecated_member_use
-                ..scale(t);
-              return Transform(
-                alignment: Alignment.center,
-                transform: transform,
-                child: Opacity(opacity: t.clamp(0.0, 1.0), child: child),
-              );
-            },
-          );
-        },
-      );
+    },
+  );
 }
