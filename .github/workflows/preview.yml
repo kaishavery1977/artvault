@@ -1,0 +1,58 @@
+name: Deploy to Firebase Hosting (PR preview)
+
+# Builds the app on every pull request and deploys it to an ephemeral
+# Firebase Hosting preview channel, commenting the URL on the PR.
+# Preview channels expire automatically (default 7 days) and cost nothing
+# extra on the Blaze plan.
+
+on:
+  pull_request:
+
+# One preview channel per PR; a new push to the PR replaces the running build.
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write # action-hosting-deploy comments the preview URL
+
+jobs:
+  build_and_preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run analyzer
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Build web
+        run: flutter build web --release
+
+      # Deploys to a per-PR preview channel of the project's default Hosting
+      # site (target from the checked-in .firebaserc: artvault-d69d0) and
+      # comments the URL on the PR.
+      #
+      # GitHub repo requirements (same as the production deploy workflow):
+      #   - Secret FIREBASE_SERVICE_ACCOUNT_ARTVAULT: JSON of a Google service
+      #     account with Firebase Hosting Admin (roles/firebasehosting.admin,
+      #     or firebase.admin).
+      - name: Deploy preview channel
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ARTVAULT }}
+          expires: 7d
