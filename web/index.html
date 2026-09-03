@@ -25,24 +25,12 @@
   <meta name="twitter:description" content="Your private art collection manager. Track, catalogue, and manage your artwork with AI-powered insights.">
   <meta name="twitter:image" content="https://artvault-d69d0.web.app/icons/Icon-512.png">
 
-  <!-- Security Headers (meta-based — for full enforcement, configure your web server) -->
-  <meta http-equiv="X-Frame-Options" content="DENY">
-  <meta http-equiv="X-Content-Type-Options" content="nosniff">
-  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
-  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
-
-  <!-- Content Security Policy: restrict sources to prevent XSS -->
-  <meta http-equiv="Content-Security-Policy" content="
-    default-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://*.web.app;
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com https://accounts.google.com;
-    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-    font-src 'self' https://fonts.gstatic.com data:;
-    img-src 'self' data: blob: https://*.firebaseio.com https://*.firebasestorage.app https://*.supabase.co https://*.supabase.in;
-    connect-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseio.com https://*.firebaseapp.com https://*.supabase.co https://*.supabase.in https://accounts.google.com wss://*.firebaseio.com;
-    frame-src https://accounts.google.com;
-  ">
-  <!-- Note: frame-ancestors and X-Frame-Options cannot be set via meta tags.
-       Configure these as HTTP headers on your web server (e.g. nginx/Apache/cloudflare). -->
+  <!--
+    Content Security Policy is served as an HTTP header by firebase.json
+    hosting headers (meta CSP cannot enforce frame-ancestors and is ignored
+    by CSP scanners). The policy drops 'unsafe-inline' from script-src —
+    the inline scripts below were moved to web/app.js to make that possible.
+  -->
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -73,72 +61,10 @@
     html { scroll-behavior: smooth; }
   </style>
 
-  <script>
-    // Session timeout: auto-logout after 30 minutes of inactivity
-    (function() {
-      var TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
-      var timer;
-      function resetTimer() {
-        clearTimeout(timer);
-        timer = setTimeout(function() {
-          // Clear Firebase auth persistence
-          try {
-            localStorage.removeItem('firebase:authUser:AIzaSyAlEmaqwhaF9X49NX56Z5CtgznjYsa3r-Q:[DEFAULT]');
-            sessionStorage.clear();
-          } catch(e) {}
-          // Reload to trigger auth state check
-          window.location.reload();
-        }, TIMEOUT_MS);
-      }
-      // Reset on any user activity
-      ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(function(evt) {
-        document.addEventListener(evt, resetTimer, { passive: true });
-      });
-      resetTimer();
-    })();
-  </script>
-
-  <script>
-    // Input sanitization helper — strips HTML tags from user input
-    window.artvaultSanitize = function(str) {
-      if (!str) return str;
-      var div = document.createElement('div');
-      div.appendChild(document.createTextNode(str));
-      return div.innerHTML;
-    };
-  </script>
-
-  <script>
-    // Register service worker for offline support + push notifications
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/sw.js').then(function(reg) {
-          console.log('[ArtVault] Service worker registered, scope:', reg.scope);
-        }).catch(function(err) {
-          console.warn('[ArtVault] SW registration failed:', err);
-        });
-      });
-    }
-  </script>
-
-  <script>
-    // Override Flutter's default viewport meta that blocks pinch-to-zoom.
-    // Flutter injects maximum-scale=1.0, user-scalable=no which is a WCAG
-    // accessibility violation. We reset it after Flutter's bootstrap runs.
-    window.addEventListener('flutter-first-frame', function() {
-      var vp = document.querySelector('meta[name="viewport"]');
-      if (vp) {
-        vp.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
-      }
-    });
-    // Also try immediately in case flutter-first-frame is delayed
-    setTimeout(function() {
-      var vp = document.querySelector('meta[name="viewport"]');
-      if (vp && vp.getAttribute('content') && vp.getAttribute('content').indexOf('user-scalable=no') !== -1) {
-        vp.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
-      }
-    }, 3000);
-  </script>
+  <!-- Browser bootstrap helpers (session timeout, SW registration, splash,
+       a11y viewport fix, sanitizer). External file keeps script-src free of
+       'unsafe-inline'; see firebase.json Content-Security-Policy header. -->
+  <script src="app.js"></script>
 </head>
 <body>
   <!-- Instant HTML splash while Flutter downloads (perceived fast) -->
@@ -152,15 +78,6 @@
     <div style="margin-top:12px;font-size:11px;letter-spacing:1.2px;color:rgba(255,255,255,0.35);">Loading your gallery…</div>
     <style>@keyframes av-pulse { from { transform:scale(0.97);} to { transform:scale(1.03);} }</style>
   </div>
-  <script>
-    // Hide HTML splash once Flutter renders first frame
-    window.addEventListener('flutter-first-frame', function() {
-      var el = document.getElementById('av-html-splash');
-      if (el) { el.style.opacity = '0'; setTimeout(function(){ el.remove(); }, 500); }
-    });
-    // Fallback: hide after 8s even if event missed
-    setTimeout(function(){ var el=document.getElementById('av-html-splash'); if(el) el.style.display='none'; }, 8000);
-  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
