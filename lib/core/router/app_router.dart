@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../providers/providers.dart';
+import '../widgets/premium/page_transition.dart';
 import '../../features/shell/app_shell.dart';
 import '../../features/splash/splash_screen.dart';
 import '../../features/splash/app_lock_screen.dart';
@@ -57,83 +58,10 @@ const List<String> _adminRoutes = ['/users', '/activity-log'];
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
-/// Shared route transition — 3D depth push effect.
-/// The outgoing page recedes (scale down + fade) while the incoming page
-/// advances (scale up from smaller + fade in), with perspective tilt.
-Page<void> _page(Widget child) {
-  return CustomTransitionPage<void>(
-    child: child,
-    transitionDuration: kIsWeb
-        ? const Duration(milliseconds: 400)
-        : const Duration(milliseconds: 280),
-    reverseTransitionDuration: kIsWeb
-        ? const Duration(milliseconds: 350)
-        : const Duration(milliseconds: 240),
-    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      final curved = CurvedAnimation(
-        parent: animation,
-        curve: Curves.easeOutCubic,
-        reverseCurve: Curves.easeInCubic,
-      );
-      final reverseCurved = CurvedAnimation(
-        parent: secondaryAnimation,
-        curve: Curves.easeOutCubic,
-      );
-
-      return Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // Outgoing page recedes into the background.
-          // IgnorePointer so it never blocks taps on the incoming page.
-          IgnorePointer(
-            child: AnimatedBuilder(
-              animation: reverseCurved,
-              builder: (context, _) {
-                final t = reverseCurved.value;
-                // ignore: deprecated_member_use
-                final transform = Matrix4.identity()
-                  ..setEntry(3, 2, 0.001)
-                  // ignore: deprecated_member_use
-                  ..translate(0.0, 0.0, -80 * t)
-                  // ignore: deprecated_member_use
-                  ..scale(1.0 - 0.08 * t);
-                return Transform(
-                  alignment: Alignment.center,
-                  transform: transform,
-                  child: Opacity(
-                    opacity: 1.0 - t * 0.6,
-                    child: Container(
-                      color: Theme.of(context).scaffoldBackgroundColor,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          // Incoming page advances from the foreground
-          AnimatedBuilder(
-            animation: curved,
-            builder: (context, _) {
-              final t = curved.value;
-              // ignore: deprecated_member_use
-              final transform = Matrix4.identity()
-                ..setEntry(3, 2, 0.001)
-                // ignore: deprecated_member_use
-                ..translate(0.0, 40 * (1 - t), 60 * (1 - t))
-                // ignore: deprecated_member_use
-                ..scale(0.93 + 0.07 * t);
-              return Transform(
-                alignment: Alignment.center,
-                transform: transform,
-                child: Opacity(opacity: t, child: child),
-              );
-            },
-          ),
-        ],
-      );
-    },
-  );
-}
+/// Shared route transition for every pushed screen — a 3D depth push
+/// effect that honors reduced motion (see [depthPage]).
+Page<void> _page(BuildContext context, Widget child) =>
+    depthPage(context, child);
 
 /// Pure RBAC redirect decision — the exact guard the router applies on
 /// every navigation. Extracted so tests can exercise the permission model
@@ -203,23 +131,24 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: '/splash',
-        pageBuilder: (_, _) => _page(const SplashScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const SplashScreen()),
       ),
       GoRoute(
         path: '/lock',
-        pageBuilder: (_, _) => _page(const AppLockScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const AppLockScreen()),
       ),
       GoRoute(
         path: '/onboarding',
-        pageBuilder: (_, _) => _page(const OnboardingScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const OnboardingScreen()),
       ),
       GoRoute(
         path: '/login',
-        pageBuilder: (_, _) => _page(const LoginScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const LoginScreen()),
       ),
       GoRoute(
         path: '/face-scan',
-        pageBuilder: (_, state) => _page(
+        pageBuilder: (ctx, state) => _page(
+          ctx,
           state.extra is FaceScanScreen
               ? state.extra! as FaceScanScreen
               : const FaceScanScreen(mode: FaceScanMode.verify),
@@ -227,15 +156,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/register',
-        pageBuilder: (_, _) => _page(const RegisterScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const RegisterScreen()),
       ),
       GoRoute(
         path: '/forgot',
-        pageBuilder: (_, _) => _page(const ForgotPasswordScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const ForgotPasswordScreen()),
       ),
       GoRoute(
         path: '/admin-gate',
-        pageBuilder: (_, _) => _page(const AdminCodeGateScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const AdminCodeGateScreen()),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
@@ -282,29 +211,35 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/painting/new',
-        pageBuilder: (_, _) => _page(const PaintingFormScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const PaintingFormScreen()),
       ),
       GoRoute(
         path: '/painting/edit/:id',
-        pageBuilder: (_, state) =>
-            _page(PaintingFormScreen(paintingId: state.pathParameters['id'])),
+        pageBuilder: (ctx, state) => _page(
+          ctx,
+          PaintingFormScreen(paintingId: state.pathParameters['id']),
+        ),
       ),
       GoRoute(
         path: '/painting/:id',
-        pageBuilder: (_, state) => _page(
+        pageBuilder: (ctx, state) => _page(
+          ctx,
           PaintingDetailScreen(paintingId: state.pathParameters['id']!),
         ),
       ),
       GoRoute(
         path: '/painting/:id/print',
-        pageBuilder: (_, state) =>
-            _page(PrintReportView(paintingId: state.pathParameters['id']!)),
+        pageBuilder: (ctx, state) => _page(
+          ctx,
+          PrintReportView(paintingId: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         path: '/lightbox',
-        pageBuilder: (_, state) {
+        pageBuilder: (ctx, state) {
           final args = state.extra as LightboxArgs;
           return _page(
+            ctx,
             PaintingLightboxScreen(
               paintings: args.paintings,
               initialIndex: args.initialIndex,
@@ -314,85 +249,92 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/trash',
-        pageBuilder: (_, _) => _page(const TrashScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const TrashScreen()),
       ),
       GoRoute(
         path: '/artist/new',
-        pageBuilder: (_, _) => _page(const ArtistFormScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const ArtistFormScreen()),
       ),
       GoRoute(
         path: '/artist/edit/:id',
-        pageBuilder: (_, state) =>
-            _page(ArtistFormScreen(artistId: state.pathParameters['id'])),
+        pageBuilder: (ctx, state) =>
+            _page(ctx, ArtistFormScreen(artistId: state.pathParameters['id'])),
       ),
       GoRoute(
         path: '/artist/:id',
-        pageBuilder: (_, state) =>
-            _page(ArtistDetailScreen(artistId: state.pathParameters['id']!)),
+        pageBuilder: (ctx, state) => _page(
+          ctx,
+          ArtistDetailScreen(artistId: state.pathParameters['id']!),
+        ),
       ),
       GoRoute(
         path: '/reports',
-        pageBuilder: (_, _) => _page(const ReportsScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const ReportsScreen()),
       ),
       GoRoute(
         path: '/search',
-        pageBuilder: (_, _) => _page(const SearchScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const SearchScreen()),
       ),
       GoRoute(
         path: '/notifications',
-        pageBuilder: (_, _) => _page(const NotificationsScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const NotificationsScreen()),
       ),
       GoRoute(
         path: '/scan',
-        pageBuilder: (_, _) => _page(const QrScanScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const QrScanScreen()),
       ),
       GoRoute(
         path: '/profile',
-        pageBuilder: (_, _) => _page(const ProfileScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const ProfileScreen()),
       ),
       GoRoute(
         path: '/security',
-        pageBuilder: (_, _) => _page(const SecurityScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const SecurityScreen()),
       ),
       GoRoute(
         path: '/storage',
-        pageBuilder: (_, _) => _page(const StorageScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const StorageScreen()),
       ),
       GoRoute(
         path: '/about',
-        pageBuilder: (_, _) => _page(const AboutScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const AboutScreen()),
       ),
       GoRoute(
         path: '/changelog',
-        pageBuilder: (_, _) => _page(const ChangelogScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const ChangelogScreen()),
       ),
       GoRoute(
         path: '/users',
-        pageBuilder: (_, _) =>
-            _page(kIsWeb ? const AdminUsersScreenWeb() : const UsersScreen()),
+        pageBuilder: (ctx, _) => _page(
+          ctx,
+          kIsWeb ? const AdminUsersScreenWeb() : const UsersScreen(),
+        ),
       ),
       GoRoute(
         path: '/activity-log',
-        pageBuilder: (_, _) => _page(
+        pageBuilder: (ctx, _) => _page(
+          ctx,
           kIsWeb ? const ActivityLogScreenWeb() : const ActivityLogScreen(),
         ),
       ),
       GoRoute(
         path: '/backup',
-        pageBuilder: (_, _) => _page(const BackupScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const BackupScreen()),
       ),
       GoRoute(
         path: '/admin-dashboard',
-        pageBuilder: (_, _) =>
-            _page(kIsWeb ? const AdminDashboardWeb() : const SettingsScreen()),
+        pageBuilder: (ctx, _) => _page(
+          ctx,
+          kIsWeb ? const AdminDashboardWeb() : const SettingsScreen(),
+        ),
       ),
       GoRoute(
         path: '/repair-images',
-        pageBuilder: (_, _) => _page(const RepairImagesScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const RepairImagesScreen()),
       ),
       GoRoute(
         path: '/upgrade',
-        pageBuilder: (_, _) => _page(const UpgradeScreen()),
+        pageBuilder: (ctx, _) => _page(ctx, const UpgradeScreen()),
       ),
     ],
   );
