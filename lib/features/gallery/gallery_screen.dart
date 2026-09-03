@@ -453,7 +453,10 @@ class _GalleryHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final topPad = AppSpacing.lg + MediaQuery.paddingOf(context).top * 0.4;
+    // Web shell's top bar already names this page; keep just breathing room.
+    final topPad = kIsWeb
+        ? AppSpacing.xs
+        : AppSpacing.lg + MediaQuery.paddingOf(context).top * 0.4;
     final hPad = context.adaptiveSpace(AppSpacing.md);
 
     return Padding(
@@ -461,18 +464,21 @@ class _GalleryHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Clean title row: just title + 2 action icons
+              // Clean title row: just title (mobile) + 2 action icons.
               Row(
                 children: [
-                  Expanded(
-                    child: Text(
-                      'Gallery',
-                      style: AppTheme.display(
-                        context,
-                        size: context.adaptiveFont(28),
+                  if (kIsWeb)
+                    const Spacer()
+                  else
+                    Expanded(
+                      child: Text(
+                        'Gallery',
+                        style: AppTheme.display(
+                          context,
+                          size: context.adaptiveFont(28),
+                        ),
                       ),
                     ),
-                  ),
                   IconButton(
                     tooltip: 'Favorites',
                     onPressed: () {
