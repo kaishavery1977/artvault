@@ -32,7 +32,10 @@ class GalleryScreen extends ConsumerStatefulWidget {
 }
 
 class _GalleryScreenState extends ConsumerState<GalleryScreen> {
-  GalleryView _view = kIsWeb ? GalleryView.table : GalleryView.grid;
+  // Grid is the premium browse default everywhere (table/split remain one
+  // tap away in the view switcher). The previous web default of the dense
+  // table clashed with the redesigned visual-first shell.
+  GalleryView _view = GalleryView.grid;
   GallerySort _sort = GallerySort.newest;
   String? _category;
   bool _favoritesOnly = false;
