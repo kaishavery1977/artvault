@@ -1,10 +1,23 @@
 /// Form validators shared across the app.
 abstract final class Validators {
+  /// RFC 5321 overall mailbox limit.
+  static const int maxEmailLength = 254;
+
+  /// Hard cap so oversized payloads never reach the hasher/auth backend
+  /// (bcrypt/scrypt-style DoS guard — see Long Password DoS).
+  static const int maxPasswordLength = 128;
+
+  /// Linear-time pattern (single character classes, no nested quantifiers),
+  /// so it is not ReDoS-prone; combined with [maxEmailLength] the worst case
+  /// is bounded.
   static final RegExp _email = RegExp(r'^[\w.+-]+@[\w-]+\.[\w.-]+$');
 
   static String? email(String? value) {
     final v = value?.trim() ?? '';
     if (v.isEmpty) return 'Email is required';
+    if (v.length > maxEmailLength) {
+      return 'Email must be at most $maxEmailLength characters';
+    }
     if (!_email.hasMatch(v)) return 'Enter a valid email address';
     return null;
   }
@@ -13,6 +26,9 @@ abstract final class Validators {
     final v = value ?? '';
     if (v.isEmpty) return 'Password is required';
     if (v.length < 8) return 'Password must be at least 8 characters';
+    if (v.length > maxPasswordLength) {
+      return 'Password must be at most $maxPasswordLength characters';
+    }
     return null;
   }
 

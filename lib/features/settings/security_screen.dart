@@ -8,6 +8,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/services/biometric_service.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/widgets/surfaces.dart';
+import '../../core/utils/validators.dart';
 import '../auth/face_scan_screen.dart';
 import '../../core/providers/providers.dart';
 import '../../data/repositories/auth_repository.dart';
@@ -1175,23 +1176,31 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
             controller: _current,
             autofocus: true,
             obscureText: true,
+            maxLength: Validators.maxPasswordLength,
             decoration: InputDecoration(
               labelText: 'Current password',
               errorText: _error,
+              counterText: '',
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
           TextField(
             controller: _next,
             obscureText: true,
-            decoration: const InputDecoration(labelText: 'New password'),
+            maxLength: Validators.maxPasswordLength,
+            decoration: const InputDecoration(
+              labelText: 'New password',
+              counterText: '',
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           TextField(
             controller: _confirm,
             obscureText: true,
+            maxLength: Validators.maxPasswordLength,
             decoration: const InputDecoration(
               labelText: 'Confirm new password',
+              counterText: '',
             ),
           ),
         ],

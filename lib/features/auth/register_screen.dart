@@ -114,6 +114,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 label: 'Email',
                 icon: Icons.mail_outline,
                 keyboardType: TextInputType.emailAddress,
+                maxLength: Validators.maxEmailLength,
                 validator: Validators.email,
               ),
               const SizedBox(height: AppSpacing.md),
@@ -122,6 +123,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 label: 'Password',
                 icon: Icons.lock_outline,
                 obscureText: _obscure,
+                maxLength: Validators.maxPasswordLength,
                 validator: Validators.password,
                 textInputAction: TextInputAction.next,
                 suffixIcon: IconButton(
@@ -139,6 +141,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 label: 'Confirm password',
                 icon: Icons.lock_outline,
                 obscureText: _confirmObscure,
+                maxLength: Validators.maxPasswordLength,
                 validator: (v) => Validators.passwordConfirm(v, _password.text),
                 textInputAction: TextInputAction.done,
                 suffixIcon: IconButton(

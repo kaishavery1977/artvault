@@ -16,6 +16,10 @@ class AppTextField extends StatelessWidget {
   final bool enabled;
   final bool readOnly;
   final int maxLines;
+
+  /// Hard input cap (enforced, truncates pasted text) — see the Long-Password
+  /// DoS guard in [Validators]. Counters are suppressed for a clean look.
+  final int? maxLength;
   final TextInputAction? textInputAction;
   final ValueChanged<String>? onChanged;
   final VoidCallback? onTap;
@@ -42,6 +46,7 @@ class AppTextField extends StatelessWidget {
     this.enabled = true,
     this.readOnly = false,
     this.maxLines = 1,
+    this.maxLength,
     this.textInputAction,
     this.onChanged,
     this.onTap,
@@ -63,6 +68,7 @@ class AppTextField extends StatelessWidget {
       enabled: enabled,
       readOnly: readOnly,
       maxLines: maxLines,
+      maxLength: maxLength,
       textInputAction: textInputAction,
       onChanged: onChanged,
       onTap: onTap,
@@ -70,6 +76,8 @@ class AppTextField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
+        // No counter even when [maxLength] caps the input.
+        counterText: '',
         // prefixText and prefixIcon can't both be set (icon wins and the
         // text is dropped) — callers pick one.
         prefixIcon: _buildPrefixIcon(context),

@@ -86,7 +86,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           child: Column(
             children: staggerReveal(
               [
-                AppTextField(controller: _email, label: 'Email', icon: Icons.mail_outline, keyboardType: TextInputType.emailAddress, validator: Validators.email),
+                AppTextField(controller: _email, label: 'Email', icon: Icons.mail_outline, keyboardType: TextInputType.emailAddress, maxLength: Validators.maxEmailLength, validator: Validators.email),
                 const SizedBox(height: AppSpacing.lg),
                 AppButton(label: 'Send reset link', loading: auth.busy, onPressed: _submit),
               ],
