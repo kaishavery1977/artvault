@@ -19,6 +19,7 @@ import 'package:artvault/features/auth/login_screen.dart';
 import 'package:artvault/features/auth/register_screen.dart';
 import 'package:artvault/features/auth/forgot_password_screen.dart';
 import 'package:artvault/features/settings/security_screen.dart';
+import 'package:artvault/core/utils/validators.dart';
 import 'package:artvault/core/widgets/premium/premium_button.dart';
 import 'package:artvault/core/widgets/app_button.dart';
 import 'package:artvault/core/theme/adaptive_layout.dart';
@@ -576,6 +577,26 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(await AuthRepository.instance.faceLockEnabled, isFalse);
+    });
+  });
+
+  group('Input length caps (Long-Password DoS guard)', () {
+    test('Validators.password rejects payloads over 128 chars', () {
+      expect(
+        Validators.password('x' * (Validators.maxPasswordLength + 1)),
+        'Password must be at most ${Validators.maxPasswordLength} characters',
+      );
+      // Exactly at the cap is still valid (only a min-length floor applies).
+      expect(Validators.password('x' * Validators.maxPasswordLength), isNull);
+    });
+
+    test('Validators.email rejects payloads over 254 chars', () {
+      final tooLong = '${'a' * (Validators.maxEmailLength - 5)}@example.com';
+      expect(
+        Validators.email(tooLong),
+        'Email must be at most ${Validators.maxEmailLength} characters',
+      );
+      expect(Validators.email('user@example.com'), isNull);
     });
   });
 }

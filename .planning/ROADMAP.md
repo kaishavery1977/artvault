@@ -39,16 +39,17 @@
 5.6 ✅ Cleanup (4.2 GB removed)
 5.7 ✅ All merged to main
 
-## Phase 6: Production Readiness (current)
-6.1 ⬜ Auth flows completion (social provider scopes, account recovery UX)
-6.2 ⬜ Deploy to device — feel-check on real hardware
-6.3 ⬜ Performance monitoring (Lighthouse CI, bundle size tracking)
-6.4 ⬜ Accessibility audit (screen reader, keyboard navigation)
-6.5 ⬜ Error handling (comprehensive failure states)
+## Phase 6: Production Readiness (mostly complete)
+6.1 🟡 Auth flows — account deletion added for GDPR compliance; remaining: social provider scopes, account recovery UX
+6.2 ⬜ Deploy to device — feel-check animations and flow on real hardware
+6.3 ✅ Performance monitoring — Lighthouse CI on push + PR (perf/a11y/best-practices/SEO thresholds; WCAG AA color contrast blocks CI)
+6.4 ✅ Accessibility audit — skip navigation, semantic labels, focus management; zoomable viewport (meta-viewport fix)
+6.5 ✅ Error handling — pending sync count + sync-status error visibility added
+6.6 ✅ CI/CD — Firebase Hosting auto-deploy on push to main (analyzer + tests + release web build gates); Open Graph / Twitter card meta in web/index.html
 
-## Phase 7: Polish & Launch (future)
-7.1 ⬜ Localization (translate remaining screens)
-7.2 ⬜ Dark mode polish (verify all web widgets)
-7.3 ⬜ PWA improvements (offline experience, install prompt)
+## Phase 7: Polish & Launch (current)
+7.1 ✅ Localization cleanup — trimmed 13 unused locales to English-only; language picker replaced with "English (more languages coming soon)"
+7.2 ⬜ Dark mode polish — verify all web widgets respect theme (no dedicated fixes landed yet)
+7.3 🟡 PWA improvements — install banner added for web; remaining: native beforeinstallprompt interop, richer offline experience
 7.4 ⬜ App Store / Play Store listing
 7.5 ⬜ Marketing site
