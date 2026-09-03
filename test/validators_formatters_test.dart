@@ -23,7 +23,10 @@ void main() {
 
     test('password enforces min and max lengths', () {
       expect(Validators.password(''), 'Password is required');
-      expect(Validators.password('1234567'), 'Password must be at least 8 characters');
+      expect(
+        Validators.password('1234567'),
+        'Password must be at least 8 characters',
+      );
       expect(Validators.password('12345678'), isNull);
       expect(
         Validators.password('x' * 129),
@@ -32,8 +35,14 @@ void main() {
     });
 
     test('passwordConfirm compares against the reference password', () {
-      expect(Validators.passwordConfirm('', 'secret1'), 'Confirm your password');
-      expect(Validators.passwordConfirm(null, 'secret1'), 'Confirm your password');
+      expect(
+        Validators.passwordConfirm('', 'secret1'),
+        'Confirm your password',
+      );
+      expect(
+        Validators.passwordConfirm(null, 'secret1'),
+        'Confirm your password',
+      );
       expect(
         Validators.passwordConfirm('secret2', 'secret1'),
         'Passwords do not match',
@@ -45,26 +54,26 @@ void main() {
       expect(Validators.required(null), 'This field is required');
       expect(Validators.required('  '), 'This field is required');
       expect(Validators.required('ok'), isNull);
-      expect(
-        Validators.required('', message: 'Custom'),
-        'Custom',
-      );
+      expect(Validators.required('', message: 'Custom'), 'Custom');
       expect(Validators.name(''), 'Name is required');
       expect(Validators.name('A'), 'Name is too short');
       expect(Validators.name('Ada'), isNull);
     });
 
-    test('positiveNumber accepts empty/positive and rejects negative or junk', () {
-      expect(Validators.positiveNumber(''), isNull);
-      expect(Validators.positiveNumber('0'), isNull);
-      expect(Validators.positiveNumber('12.5'), isNull);
-      expect(Validators.positiveNumber('-3'), 'Enter a positive number');
-      expect(Validators.positiveNumber('abc'), 'Enter a positive number');
-      expect(
-        Validators.positiveNumber('-1', message: 'No negatives'),
-        'No negatives',
-      );
-    });
+    test(
+      'positiveNumber accepts empty/positive and rejects negative or junk',
+      () {
+        expect(Validators.positiveNumber(''), isNull);
+        expect(Validators.positiveNumber('0'), isNull);
+        expect(Validators.positiveNumber('12.5'), isNull);
+        expect(Validators.positiveNumber('-3'), 'Enter a positive number');
+        expect(Validators.positiveNumber('abc'), 'Enter a positive number');
+        expect(
+          Validators.positiveNumber('-1', message: 'No negatives'),
+          'No negatives',
+        );
+      },
+    );
 
     test('url accepts absolute URLs and rejects scheme-less text', () {
       expect(Validators.url(''), isNull);
@@ -88,7 +97,10 @@ void main() {
       expect(usd, startsWith(r'$'));
       expect(usd.contains('1,200,000'), isTrue);
       expect(Formatters.money(500, currency: 'INR'), startsWith('₹'));
-      expect(Formatters.money(700, currency: 'inr'), startsWith('₹')); // case-insensitive
+      expect(
+        Formatters.money(700, currency: 'inr'),
+        startsWith('₹'),
+      ); // case-insensitive
       expect(Formatters.money(100, currency: 'AED'), contains('AED'));
       expect(Formatters.money(100, currency: 'CHF'), contains('CHF'));
       expect(Formatters.money(100, currency: 'XYZ'), contains('XYZ'));
@@ -101,7 +113,10 @@ void main() {
       expect(Formatters.currencySymbol('JPY'), '¥');
       expect(Formatters.currencySymbol('KRW'), '₩');
       expect(Formatters.currencySymbol('AED'), 'AED ');
-      expect(Formatters.currencySymbol('USD'), Formatters.currencySymbol('usd'));
+      expect(
+        Formatters.currencySymbol('USD'),
+        Formatters.currencySymbol('usd'),
+      );
       expect(Formatters.currencySymbol('NOK'), 'NOK ');
     });
 
