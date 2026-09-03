@@ -14,6 +14,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:artvault/core/providers/providers.dart';
 import 'package:artvault/core/theme/adaptive_layout.dart';
+import 'package:artvault/core/theme/app_theme.dart';
 import 'package:artvault/data/models/app_user.dart';
 import 'package:artvault/data/models/painting.dart';
 import 'package:artvault/features/home/home_screen_web.dart';
@@ -42,7 +43,12 @@ AppUser _user() => AppUser(
 
 /// Pumps HomeScreenWeb inside the standard fake-provider harness at a given
 /// logical surface size. All routes the screen navigates to are stubbed.
-Widget _homeApp({required Size surface, required List<Painting> paintings}) {
+/// Pass a [theme] to exercise the real AppTheme dark/light token paths.
+Widget _homeApp({
+  required Size surface,
+  required List<Painting> paintings,
+  ThemeData? theme,
+}) {
   final overrides = <Override>[
     ...appOverrides(introShown: true),
     authProvider.overrideWith(
@@ -65,6 +71,7 @@ Widget _homeApp({required Size surface, required List<Painting> paintings}) {
     child: AdaptiveLayout(
       profile: testProfile,
       child: MaterialApp.router(
+        theme: theme,
         routerConfig: GoRouter(
           initialLocation: '/home',
           routes: [
@@ -88,10 +95,13 @@ void main() {
     WidgetTester tester, {
     required Size surface,
     required List<Painting> paintings,
+    ThemeData? theme,
   }) async {
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.binding.setSurfaceSize(surface);
-    await tester.pumpWidget(_homeApp(surface: surface, paintings: paintings));
+    await tester.pumpWidget(
+      _homeApp(surface: surface, paintings: paintings, theme: theme),
+    );
     await tester.pump(); // deliver the stream value
     // Let entrances, count-ups and the shimmer sweep finish.
     await tester.pump(const Duration(milliseconds: 250));
@@ -177,5 +187,44 @@ void main() {
     expect(find.text('Add artwork'), findsOneWidget);
     expect(find.text('Browse gallery'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('dark theme: renders hero and sections on the dark palette', (
+    tester,
+  ) async {
+    await pumpHome(
+      tester,
+      surface: const Size(1400, 1000),
+      paintings: [for (var i = 0; i < 4; i++) _paint('p$i')],
+      theme: AppTheme.dark,
+    );
+
+    expect(find.text('Add artwork'), findsOneWidget);
+    expect(find.text('Recent uploads'), findsOneWidget);
+    // The real dark palette is active.
+    final ctx = tester.element(find.text('Browse gallery'));
+    expect(Theme.of(ctx).brightness, Brightness.dark);
+    expect(tester.takeException(), isNull);
+    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pump(const Duration(milliseconds: 800));
+  });
+
+  testWidgets('light theme: renders hero and sections on the light palette', (
+    tester,
+  ) async {
+    await pumpHome(
+      tester,
+      surface: const Size(1400, 1000),
+      paintings: [for (var i = 0; i < 4; i++) _paint('p$i')],
+      theme: AppTheme.light,
+    );
+
+    expect(find.text('Add artwork'), findsOneWidget);
+    expect(find.text('Recent uploads'), findsOneWidget);
+    final ctx = tester.element(find.text('Browse gallery'));
+    expect(Theme.of(ctx).brightness, Brightness.light);
+    expect(tester.takeException(), isNull);
+    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pump(const Duration(milliseconds: 800));
   });
 }
