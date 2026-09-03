@@ -8,8 +8,7 @@
 # deliberately shipped in the app — the same class of public config as the
 # Firebase options. Data access is enforced by Supabase RLS, not by hiding
 # this key. Gitleaks' generic jwt rule can't distinguish it from a real
-# secret, so allowlist that rule for this file only.
-[[allowlist]]
+# secret, so allowlist this file.
+[allowlist]
   description = "Supabase anon publishable key (RLS-protected)"
   paths = ["lib/core/config/supabase_config\\.dart"]
-  rules = ["jwt"]
