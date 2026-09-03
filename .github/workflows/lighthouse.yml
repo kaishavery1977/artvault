@@ -30,12 +30,8 @@ jobs:
       - name: Build Flutter Web
         run: flutter build web --release
 
-      - name: Start local server
-        run: |
-          cd build/web
-          npx serve -l 3000 &
-          sleep 5
-
+      # LHCI starts its own static server for the release build
+      # (lighthouserc.js startServerCommand) — do NOT pre-start one on :3000.
       - name: Run Lighthouse CI
         run: lhci autorun
         env:

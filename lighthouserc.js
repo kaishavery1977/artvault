@@ -6,8 +6,12 @@ module.exports = {
         'http://localhost:3000/login',
         'http://localhost:3000/gallery',
       ],
-      startServerCommand: 'flutter run -d chrome --web-port=3000 --web-hostname=localhost',
-      startServerReadyPattern: 'Flutter run key commands.',
+      // Audit the production artifact (release build), not the dev server.
+      // `serve -s` rewrites unknown paths to index.html so the SPA routes
+      // (/login, /gallery) resolve; LHCI starts and stops this server itself.
+      // Run locally with: flutter build web --release && lhci autorun
+      startServerCommand: 'npx --yes serve -s build/web -l 3000',
+      startServerReadyPattern: 'Accepting connections',
       startServerTimeout: 120,
       numberOfRuns: 1,
       chromeFlags: ['--headless', '--no-sandbox', '--disable-gpu'],
