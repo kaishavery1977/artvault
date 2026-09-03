@@ -15,6 +15,7 @@ import '../../core/utils/formatters.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/surfaces.dart';
+import '../../core/widgets/web/content_column.dart';
 import '../../core/providers/providers.dart';
 import '../../features/pro/pro_celebration.dart';
 import '../../features/pro/upgrade_prompt.dart';
@@ -104,11 +105,16 @@ class DocumentsScreen extends ConsumerWidget {
                             }
                           },
                         );
-                        return revealListItem(
-                          tile,
-                          i,
-                          key: ValueKey(doc.id),
-                          context: context,
+                        // Wide desktop rows are centered in a comfortable
+                        // reading column (web only).
+                        return WebContentColumn(
+                          maxWidth: 1000,
+                          child: revealListItem(
+                            tile,
+                            i,
+                            key: ValueKey(doc.id),
+                            context: context,
+                          ),
                         );
                       }, childCount: docs.length),
                     ),

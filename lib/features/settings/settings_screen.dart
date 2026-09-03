@@ -13,6 +13,7 @@ import '../../core/services/google_drive_service.dart';
 import '../../core/widgets/bits.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/widgets/surfaces.dart';
+import '../../core/widgets/web/content_column.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/app_user.dart';
 import '../../data/models/art_document.dart';
@@ -284,32 +285,44 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           AppSpacing.xxl,
         ),
         children: [
-          if (!kIsWeb) ...[
-            Text(
-              'Settings',
-              style: AppTheme.display(context, size: context.adaptiveFont(28)),
-            ),
-            const SizedBox(height: AppSpacing.md),
-          ],
-          ...sections,
-          if (_debugVisible) ...[
-            const SizedBox(height: AppSpacing.lg),
-            _DeviceProfileDebugCard(
-              onDismiss: () => setState(() => _debugVisible = false),
-            ),
-          ],
-          Center(
-            child: GestureDetector(
-              onTap: _onVersionTap,
-              child: Text(
-                'ArtVault v${AppConstants.appVersion} (${AppConstants.appBuild})',
-                style: TextStyle(
-                  fontSize: context.adaptiveFont(12),
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.35),
+          WebContentColumn(
+            maxWidth: 920,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (!kIsWeb) ...[
+                  Text(
+                    'Settings',
+                    style: AppTheme.display(
+                      context,
+                      size: context.adaptiveFont(28),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                ],
+                ...sections,
+                if (_debugVisible) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  _DeviceProfileDebugCard(
+                    onDismiss: () => setState(() => _debugVisible = false),
+                  ),
+                ],
+                Center(
+                  child: GestureDetector(
+                    onTap: _onVersionTap,
+                    child: Text(
+                      'ArtVault v${AppConstants.appVersion} '
+                      '(${AppConstants.appBuild})',
+                      style: TextStyle(
+                        fontSize: context.adaptiveFont(12),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.35),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ],
