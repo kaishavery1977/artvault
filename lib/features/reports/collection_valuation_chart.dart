@@ -163,11 +163,13 @@ class CollectionValuationChart extends ConsumerWidget {
                             reservedSize: 24,
                             getTitlesWidget: (value, meta) {
                               final idx = value.toInt();
-                              if (idx < 0 || idx >= labels.length)
+                              if (idx < 0 || idx >= labels.length) {
                                 return const SizedBox.shrink();
+                              }
                               // Show every other label
-                              if (idx % 2 != 0 && labels.length > 6)
+                              if (idx % 2 != 0 && labels.length > 6) {
                                 return const SizedBox.shrink();
+                              }
                               return Text(
                                 labels[idx],
                                 style: TextStyle(

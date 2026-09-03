@@ -144,13 +144,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         ),
       ],
     ];
-    if (kIsWeb)
+    if (kIsWeb) {
       return AuthLayoutWeb(
         title: title,
         subtitle: subtitle,
         footer: footer,
         children: children,
       );
+    }
     return AuthLayout(
       title: title,
       subtitle: subtitle,

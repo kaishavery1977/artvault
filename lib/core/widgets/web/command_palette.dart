@@ -136,8 +136,9 @@ class _CommandPaletteState extends State<CommandPalette> {
                     ),
                     style: TextStyle(fontSize: 15, color: scheme.onSurface),
                     onSubmitted: (_) {
-                      if (filtered.isNotEmpty)
+                      if (filtered.isNotEmpty) {
                         _execute(filtered[_selectedIndex]);
+                      }
                     },
                   ),
                 ),

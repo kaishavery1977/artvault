@@ -534,10 +534,12 @@ class _AiInsightsWeb extends StatelessWidget {
     final mediumCounts = <String, int>{};
     final artistCounts = <String, int>{};
     for (final p in paintings) {
-      if (p.medium.isNotEmpty)
+      if (p.medium.isNotEmpty) {
         mediumCounts[p.medium] = (mediumCounts[p.medium] ?? 0) + 1;
-      if (p.artistName.isNotEmpty)
+      }
+      if (p.artistName.isNotEmpty) {
         artistCounts[p.artistName] = (artistCounts[p.artistName] ?? 0) + 1;
+      }
     }
 
     String? topKey(Map<String, int> c) {

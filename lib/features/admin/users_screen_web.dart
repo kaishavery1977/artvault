@@ -542,8 +542,9 @@ class _AdminUsersScreenWebState extends ConsumerState<AdminUsersScreenWeb> {
                                         case 'details':
                                           setState(() => _selectedUser = user);
                                         case 'revoke':
-                                          if (!isMe)
+                                          if (!isMe) {
                                             _revoke(context, ref, user);
+                                          }
                                       }
                                     },
                                     itemBuilder: (_) => [

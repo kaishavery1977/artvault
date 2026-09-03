@@ -338,8 +338,9 @@ class _BarCard extends StatelessWidget {
                       showTitles: true,
                       getTitlesWidget: (value, meta) {
                         final idx = value.toInt();
-                        if (idx < 0 || idx >= data.length)
+                        if (idx < 0 || idx >= data.length) {
                           return const SizedBox.shrink();
+                        }
                         return Padding(
                           padding: const EdgeInsets.only(top: 6),
                           child: Text(

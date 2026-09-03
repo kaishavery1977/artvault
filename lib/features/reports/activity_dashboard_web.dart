@@ -105,8 +105,9 @@ class ActivityDashboardWeb extends ConsumerWidget {
                       getTitlesWidget: (value, meta) {
                         final keys = monthlyCounts.keys.toList();
                         final idx = value.toInt();
-                        if (idx < 0 || idx >= keys.length)
+                        if (idx < 0 || idx >= keys.length) {
                           return const SizedBox.shrink();
+                        }
                         if (idx % 2 != 0) return const SizedBox.shrink();
                         return Text(
                           keys[idx],
