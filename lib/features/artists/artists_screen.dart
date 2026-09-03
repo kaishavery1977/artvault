@@ -25,6 +25,7 @@ class ArtistsScreen extends ConsumerWidget {
 
     int countFor(String artistId) =>
         paintings.where((p) => p.artistId == artistId && !p.isDeleted).length;
+    final artworkTotal = paintings.where((p) => !p.isDeleted).length;
 
     return Scaffold(
       floatingActionButton: canEdit
@@ -52,8 +53,50 @@ class ArtistsScreen extends ConsumerWidget {
                   SliverToBoxAdapter(
                     child: kIsWeb
                         // The web shell's top bar already names this page —
-                        // keep only a little breathing room under it.
-                        ? const SizedBox(height: AppSpacing.xs)
+                        // instead of a duplicate title, give a quick count
+                        // readout of the vault's roster.
+                        ? Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              context.adaptiveSpace(AppSpacing.md),
+                              AppSpacing.xs + AppSpacing.xxs,
+                              context.adaptiveSpace(AppSpacing.md),
+                              AppSpacing.xs,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.people_outline_rounded,
+                                  size: 15,
+                                  color: Theme.of(context).colorScheme.onSurface
+                                      .withValues(alpha: 0.5),
+                                ),
+                                const SizedBox(width: 7),
+                                Text(
+                                  '${artists.length} '
+                                  '${artists.length == 1 ? 'artist' : 'artists'}',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.65),
+                                  ),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  '$artworkTotal artworks',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withValues(alpha: 0.5),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
                         : Padding(
                             padding: EdgeInsets.fromLTRB(
                               context.adaptiveSpace(AppSpacing.md),
@@ -72,7 +115,11 @@ class ArtistsScreen extends ConsumerWidget {
                           ),
                   ),
                   SliverPadding(
-                    padding: AppSpacing.screenPadding,
+                    padding: kIsWeb
+                        ? EdgeInsets.symmetric(
+                            horizontal: context.adaptiveSpace(AppSpacing.md),
+                          )
+                        : AppSpacing.screenPadding,
                     sliver: SliverGrid(
                       delegate: SliverChildBuilderDelegate(
                         (context, i) => revealListItem(
