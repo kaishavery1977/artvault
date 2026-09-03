@@ -58,7 +58,7 @@ class GlassCard extends StatelessWidget {
         );
 
     // A brighter top edge mimics light catching the top of the glass.
-    final topEdge = (isDark ? Colors.white : Colors.white).withValues(
+    final topEdge = Colors.white.withValues(
       alpha: isDark ? 0.20 : 0.65,
     );
 
