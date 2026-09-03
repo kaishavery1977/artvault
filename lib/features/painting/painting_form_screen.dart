@@ -178,7 +178,10 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
     super.dispose();
   }
 
-  List<Map<String, dynamic>> _buildPriceHistory(Painting? existing, double? newPrice) {
+  List<Map<String, dynamic>> _buildPriceHistory(
+    Painting? existing,
+    double? newPrice,
+  ) {
     if (existing == null || newPrice == null || newPrice == existing.price) {
       return existing?.priceHistory ?? const [];
     }
@@ -239,8 +242,14 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
             'We can compress it to under 5 MB with high quality so you can add it now. Proceed?',
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Compress & add')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Compress & add'),
+            ),
           ],
         ),
       );
@@ -250,13 +259,21 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
       final newLen = await file.length();
       if (newLen > maxBytes && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Still ${(newLen / 1024 / 1024).toStringAsFixed(1)} MB after compression — try a smaller image.')),
+          SnackBar(
+            content: Text(
+              'Still ${(newLen / 1024 / 1024).toStringAsFixed(1)} MB after compression — try a smaller image.',
+            ),
+          ),
         );
         return;
       }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Compressed to ${(newLen / 1024 / 1024).toStringAsFixed(1)} MB — quality kept high.')),
+          SnackBar(
+            content: Text(
+              'Compressed to ${(newLen / 1024 / 1024).toStringAsFixed(1)} MB — quality kept high.',
+            ),
+          ),
         );
       }
     }
@@ -287,7 +304,11 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
 
   Future<File> _compressUnder5MB(File file) async {
     for (final q in [85, 80, 75]) {
-      final out = await ImageUtils.compress(file, maxDimension: 2400, quality: q);
+      final out = await ImageUtils.compress(
+        file,
+        maxDimension: 2400,
+        quality: q,
+      );
       if (await out.length() < 5 * 1024 * 1024) return out;
       file = out;
       if (await file.length() < 5 * 1024 * 1024) return file;
@@ -385,9 +406,7 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
       if (!hasTitle && !hasImages && !existingKept) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Add a title or at least one image'),
-            ),
+            const SnackBar(content: Text('Add a title or at least one image')),
           );
         }
         return;
@@ -399,7 +418,9 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Please select or create an artist for this painting'),
+            content: Text(
+              'Please select or create an artist for this painting',
+            ),
           ),
         );
       }
@@ -823,7 +844,8 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
                           value: _currency,
                           items: AppConstants.currencies,
                           labelFor: (v) => v,
-                          onChanged: (v) => setState(() => _currency = v ?? 'USD'),
+                          onChanged: (v) =>
+                              setState(() => _currency = v ?? 'USD'),
                         ),
                       ),
                     ],
@@ -835,7 +857,8 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
                     items: AppConstants.availabilityOptions,
                     labelFor: (v) => v,
                     icon: Icons.sell_outlined,
-                    onChanged: (v) => setState(() => _availability = v ?? 'Available'),
+                    onChanged: (v) =>
+                        setState(() => _availability = v ?? 'Available'),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   AppTextField(
@@ -853,7 +876,10 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
                           label: 'Latitude',
                           icon: Icons.map_outlined,
                           hint: 'e.g. 48.86',
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                            signed: true,
+                          ),
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
@@ -863,7 +889,10 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
                           label: 'Longitude',
                           icon: Icons.map_outlined,
                           hint: 'e.g. 2.33',
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                            signed: true,
+                          ),
                         ),
                       ),
                     ],
@@ -875,7 +904,11 @@ class _PaintingFormScreenState extends ConsumerState<PaintingFormScreen> {
                         onPressed: () {
                           final lat = _lat.text.trim();
                           final lng = _lng.text.trim();
-                          launchUrl(Uri.parse('https://www.openstreetmap.org/?mlat=$lat&mlon=$lng#map=15/$lat/$lng'));
+                          launchUrl(
+                            Uri.parse(
+                              'https://www.openstreetmap.org/?mlat=$lat&mlon=$lng#map=15/$lat/$lng',
+                            ),
+                          );
                         },
                         icon: const Icon(Icons.open_in_new, size: 16),
                         label: const Text('Open in map'),
@@ -974,7 +1007,11 @@ class _ImagePickerGrid extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           'Only JPEG, PNG, WEBP, HEIC (max 5 MB each) — larger images will be compressed with high quality.',
-          style: TextStyle(fontSize: 11.5, color: Color(0xFF6B7280), height: 1.3),
+          style: TextStyle(
+            fontSize: 11.5,
+            color: Color(0xFF6B7280),
+            height: 1.3,
+          ),
         ),
         const SizedBox(height: AppSpacing.sm),
         GridView.count(
@@ -1016,7 +1053,9 @@ class _ImagePickerGrid extends StatelessWidget {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                    child: kIsWeb ? const Icon(Icons.image, size: 48) : nativeImage(file),
+                    child: kIsWeb
+                        ? const Icon(Icons.image, size: 48)
+                        : nativeImage(file),
                   ),
                   Positioned(
                     top: 2,
@@ -1179,8 +1218,9 @@ class _AiTagBanner extends StatelessWidget {
                     ),
                   ),
                 ),
-            ],              ),
-          ],
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1300,7 +1340,10 @@ class _FormSectionState extends State<_FormSection>
                   heightFactor: _heightFactor.value,
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.md, 0, AppSpacing.md, AppSpacing.md,
+                      AppSpacing.md,
+                      0,
+                      AppSpacing.md,
+                      AppSpacing.md,
                     ),
                     child: widget.child,
                   ),
@@ -1341,22 +1384,23 @@ class _ArtistField extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final artists = ref.watch(artistsProvider).valueOrNull ?? const [];
     final paintings = ref.watch(paintingsProvider).valueOrNull ?? const [];
-    final activeArtists =
-        artists.where((a) => !a.isDeleted).toList()
-          ..sort((a, b) => a.name.compareTo(b.name));
+    final activeArtists = artists.where((a) => !a.isDeleted).toList()
+      ..sort((a, b) => a.name.compareTo(b.name));
 
     final recentNames = _recentArtistNames(paintings);
     // Map recent names to actual Artist objects when available
     final recentArtists = recentNames
-        .map((name) => activeArtists.firstWhere(
-              (a) => a.name.toLowerCase() == name.toLowerCase(),
-              orElse: () => Artist(
-                id: '',
-                name: name,
-                createdAt: DateTime.now(),
-                updatedAt: DateTime.now(),
-              ),
-            ))
+        .map(
+          (name) => activeArtists.firstWhere(
+            (a) => a.name.toLowerCase() == name.toLowerCase(),
+            orElse: () => Artist(
+              id: '',
+              name: name,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+          ),
+        )
         .toList();
 
     final scheme = Theme.of(context).colorScheme;
@@ -1397,7 +1441,10 @@ class _ArtistField extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  label: Text(artist.name, style: const TextStyle(fontSize: 12)),
+                  label: Text(
+                    artist.name,
+                    style: const TextStyle(fontSize: 12),
+                  ),
                   visualDensity: VisualDensity.compact,
                   onPressed: () {
                     controller.text = artist.name;
@@ -1424,8 +1471,7 @@ class _ArtistField extends ConsumerWidget {
           onSelected: (artist) {
             controller.text = artist.name;
           },
-          fieldViewBuilder:
-              (context, textController, focusNode, onSubmitted) {
+          fieldViewBuilder: (context, textController, focusNode, onSubmitted) {
             // Sync external controller changes (e.g. from edit mode)
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (textController.text != controller.text) {
@@ -1510,7 +1556,10 @@ class _ArtistField extends ConsumerWidget {
           child: TextButton.icon(
             onPressed: onManageArtists,
             icon: const Icon(Icons.person_add, size: 16),
-            label: const Text('Create new artist', style: TextStyle(fontSize: 12)),
+            label: const Text(
+              'Create new artist',
+              style: TextStyle(fontSize: 12),
+            ),
           ),
         ),
       ],
@@ -1604,4 +1653,3 @@ class _DocumentsPicker extends StatelessWidget {
     );
   }
 }
-

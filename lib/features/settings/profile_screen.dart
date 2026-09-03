@@ -221,13 +221,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Danger zone', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  const Text(
+                    'Danger zone',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(height: AppSpacing.sm),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.delete_forever, color: Colors.red),
-                    title: const Text('Delete account', style: TextStyle(color: Colors.red)),
-                    subtitle: const Text('Permanently delete your account and all data'),
+                    leading: const Icon(
+                      Icons.delete_forever,
+                      color: Colors.red,
+                    ),
+                    title: const Text(
+                      'Delete account',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                    subtitle: const Text(
+                      'Permanently delete your account and all data',
+                    ),
                     onTap: () => _confirmDeleteAccount(context),
                   ),
                 ],
@@ -267,16 +278,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     // Show loading
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Deleting account...')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Deleting account...')));
     }
 
     try {
       await AuthRepository.instance.deleteAccount();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Account deleted. You will be signed out.')),
+          const SnackBar(
+            content: Text('Account deleted. You will be signed out.'),
+          ),
         );
       }
       // Navigate to login

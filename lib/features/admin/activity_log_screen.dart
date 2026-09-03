@@ -203,11 +203,7 @@ class _ActivityEntry extends StatelessWidget {
               color: entry.type.color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              entry.type.icon,
-              size: 18,
-              color: entry.type.color,
-            ),
+            child: Icon(entry.type.icon, size: 18, color: entry.type.color),
           ),
           const SizedBox(width: AppSpacing.sm),
           // Details
@@ -220,7 +216,9 @@ class _ActivityEntry extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        entry.userName.isNotEmpty ? entry.userName : 'Unknown user',
+                        entry.userName.isNotEmpty
+                            ? entry.userName
+                            : 'Unknown user',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -229,10 +227,7 @@ class _ActivityEntry extends StatelessWidget {
                         ),
                       ),
                     ),
-                    TagChip(
-                      label: entry.type.label,
-                      color: entry.type.color,
-                    ),
+                    TagChip(label: entry.type.label, color: entry.type.color),
                   ],
                 ),
                 if (entry.description.isNotEmpty) ...[
@@ -323,7 +318,9 @@ class _FilterChip extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: selected ? effectiveColor : scheme.onSurface.withValues(alpha: 0.7),
+                  color: selected
+                      ? effectiveColor
+                      : scheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
             ],

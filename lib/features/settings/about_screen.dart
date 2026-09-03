@@ -56,7 +56,8 @@ class AboutScreen extends ConsumerWidget {
     final documents = ref.watch(documentsProvider).valueOrNull?.length ?? 0;
     final storedImages = active.fold<int>(0, (sum, p) => sum + p.images.length);
     final vaultBytes = ref.watch(storageUsageProvider).valueOrNull?.total ?? 0;
-    final plan = ref.watch(authProvider.select((a) => a.user))?.plan ?? AppPlan.free;
+    final plan =
+        ref.watch(authProvider.select((a) => a.user))?.plan ?? AppPlan.free;
 
     final children = staggerReveal(
       [
@@ -451,7 +452,10 @@ class AboutScreen extends ConsumerWidget {
                   _TechBadge(label: 'Flutter', icon: Icons.phone_android),
                   _TechBadge(label: 'Dart', icon: Icons.code),
                   _TechBadge(label: 'Supabase', icon: Icons.storage),
-                  _TechBadge(label: 'Firebase', icon: Icons.local_fire_department),
+                  _TechBadge(
+                    label: 'Firebase',
+                    icon: Icons.local_fire_department,
+                  ),
                   _TechBadge(label: 'Hive', icon: Icons.cabin),
                   _TechBadge(label: 'Riverpod', icon: Icons.water_drop),
                 ],
@@ -461,7 +465,10 @@ class AboutScreen extends ConsumerWidget {
               // --- Build info ---
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
                   color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
@@ -469,7 +476,11 @@ class AboutScreen extends ConsumerWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.build_circle_outlined, size: 13, color: scheme.onSurface.withValues(alpha: 0.5)),
+                    Icon(
+                      Icons.build_circle_outlined,
+                      size: 13,
+                      color: scheme.onSurface.withValues(alpha: 0.5),
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       'v$appVersion · Build $appBuild · $engineLabel',
@@ -848,7 +859,11 @@ class _FooterIconButton extends StatelessWidget {
   final IconData icon;
   final String tooltip;
   final VoidCallback onTap;
-  const _FooterIconButton({required this.icon, required this.tooltip, required this.onTap});
+  const _FooterIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -55,12 +55,14 @@ class AuthLayoutWeb extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.palette, size: 42, color: scheme.primary)
-                              .animate()
-                              .scale(
-                                begin: const Offset(0.7, 0.7),
-                                curve: Curves.easeOutBack,
-                              ),
+                          Icon(
+                            Icons.palette,
+                            size: 42,
+                            color: scheme.primary,
+                          ).animate().scale(
+                            begin: const Offset(0.7, 0.7),
+                            curve: Curves.easeOutBack,
+                          ),
                           const SizedBox(height: AppSpacing.md),
                           Center(
                             child: GradientShimmerText(
@@ -78,9 +80,7 @@ class AuthLayoutWeb extends StatelessWidget {
                           Text(
                             subtitle,
                             textAlign: TextAlign.center,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
+                            style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(
                                   color: scheme.onSurface.withValues(
                                     alpha: 0.65,
@@ -200,29 +200,29 @@ class _BrandVisualState extends State<_BrandVisual>
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.secondary, AppColors.accent],
-                  ),
-                  borderRadius: BorderRadius.circular(32),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.accent.withValues(alpha: 0.5),
-                      blurRadius: 48,
-                      offset: const Offset(0, 16),
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [AppColors.secondary, AppColors.accent],
+                      ),
+                      borderRadius: BorderRadius.circular(32),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.accent.withValues(alpha: 0.5),
+                          blurRadius: 48,
+                          offset: const Offset(0, 16),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.palette_rounded,
-                  size: 60,
-                  color: Colors.white,
-                ),
-              )
+                    child: const Icon(
+                      Icons.palette_rounded,
+                      size: 60,
+                      color: Colors.white,
+                    ),
+                  )
                   .animate()
                   .scaleXY(
                     begin: 0.6,
@@ -236,14 +236,14 @@ class _BrandVisualState extends State<_BrandVisual>
                   ),
               const SizedBox(height: 32),
               Text(
-                'Your Private Gallery',
-                style: TextStyle(
-                  fontSize: 18,
-                  letterSpacing: 2.0,
-                  fontWeight: FontWeight.w300,
-                  color: Colors.white.withValues(alpha: 0.7),
-                ),
-              )
+                    'Your Private Gallery',
+                    style: TextStyle(
+                      fontSize: 18,
+                      letterSpacing: 2.0,
+                      fontWeight: FontWeight.w300,
+                      color: Colors.white.withValues(alpha: 0.7),
+                    ),
+                  )
                   .animate(delay: 600.ms)
                   .fadeIn(duration: 800.ms)
                   .slideY(begin: 0.3),
@@ -336,10 +336,9 @@ class _GlassFormCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: Theme.of(context)
-                .textTheme
-                .titleLarge
-                ?.copyWith(fontWeight: FontWeight.w700),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: AppSpacing.lg),
           child,

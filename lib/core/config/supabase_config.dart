@@ -13,8 +13,8 @@ class SupabaseConfig {
   static String get anonKey => SecretConfig.supabaseAnonKey.isNotEmpty
       ? SecretConfig.supabaseAnonKey
       : (kReleaseMode
-          ? ''
-          : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10d2lubGJndnV4ZXphZGJzcnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2Mzg1NTcsImV4cCI6MjEwMzIxNDU1N30.11natp24PGajh04G4fIa9aQ8uYpgnBsbFnE-21iFCVs');
+            ? ''
+            : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10d2lubGJndnV4ZXphZGJzcnJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2Mzg1NTcsImV4cCI6MjEwMzIxNDU1N30.11natp24PGajh04G4fIa9aQ8uYpgnBsbFnE-21iFCVs');
 
   /// Storage bucket names
   static const String bucketProfile = 'av-profile';

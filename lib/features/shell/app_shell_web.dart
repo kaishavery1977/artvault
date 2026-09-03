@@ -30,11 +30,36 @@ class _AppShellWebState extends ConsumerState<AppShellWeb>
   final FocusNode _mainContentFocusNode = FocusNode();
 
   static const _destinations = [
-    _NavDest(Icons.space_dashboard_outlined, Icons.space_dashboard, 'Home', Color(0xFF8B5CF6)),
-    _NavDest(Icons.grid_view_outlined, Icons.grid_view_rounded, 'Gallery', Color(0xFF22D3EE)),
-    _NavDest(Icons.person_outline, Icons.person_rounded, 'Artists', Color(0xFFFB7185)),
-    _NavDest(Icons.description_outlined, Icons.description_rounded, 'Documents', Color(0xFFFBBF24)),
-    _NavDest(Icons.settings_outlined, Icons.settings_rounded, 'Settings', Color(0xFF6EE7B7)),
+    _NavDest(
+      Icons.space_dashboard_outlined,
+      Icons.space_dashboard,
+      'Home',
+      Color(0xFF8B5CF6),
+    ),
+    _NavDest(
+      Icons.grid_view_outlined,
+      Icons.grid_view_rounded,
+      'Gallery',
+      Color(0xFF22D3EE),
+    ),
+    _NavDest(
+      Icons.person_outline,
+      Icons.person_rounded,
+      'Artists',
+      Color(0xFFFB7185),
+    ),
+    _NavDest(
+      Icons.description_outlined,
+      Icons.description_rounded,
+      'Documents',
+      Color(0xFFFBBF24),
+    ),
+    _NavDest(
+      Icons.settings_outlined,
+      Icons.settings_rounded,
+      'Settings',
+      Color(0xFF6EE7B7),
+    ),
   ];
 
   @override
@@ -54,7 +79,8 @@ class _AppShellWebState extends ConsumerState<AppShellWeb>
   @override
   void didUpdateWidget(covariant AppShellWeb old) {
     super.didUpdateWidget(old);
-    if (old.navigationShell.currentIndex != widget.navigationShell.currentIndex) {
+    if (old.navigationShell.currentIndex !=
+        widget.navigationShell.currentIndex) {
       _pageIn.forward(from: 0);
     }
   }
@@ -86,13 +112,12 @@ class _AppShellWebState extends ConsumerState<AppShellWeb>
     final canEdit = ref.watch(authProvider.select((a) => a.canEdit));
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final content = _WebPageTransition(
-      animation: _pageIn,
-      child: shell,
-    );
+    final content = _WebPageTransition(animation: _pageIn, child: shell);
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF05070F) : const Color(0xFFF6F7FB),
+      backgroundColor: isDark
+          ? const Color(0xFF05070F)
+          : const Color(0xFFF6F7FB),
       body: Stack(
         children: [
           // Skip navigation link for keyboard users (visually hidden until focused)
@@ -112,7 +137,9 @@ class _AppShellWebState extends ConsumerState<AppShellWeb>
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            AppColors.violet500.withValues(alpha: isDark ? 0.18 : 0.10),
+                            AppColors.violet500.withValues(
+                              alpha: isDark ? 0.18 : 0.10,
+                            ),
                             AppColors.violet500.withValues(alpha: 0),
                           ],
                         ),
@@ -129,7 +156,9 @@ class _AppShellWebState extends ConsumerState<AppShellWeb>
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
                           colors: [
-                            AppColors.cyan400.withValues(alpha: isDark ? 0.14 : 0.08),
+                            AppColors.cyan400.withValues(
+                              alpha: isDark ? 0.14 : 0.08,
+                            ),
                             AppColors.cyan400.withValues(alpha: 0),
                           ],
                         ),
@@ -147,13 +176,13 @@ class _AppShellWebState extends ConsumerState<AppShellWeb>
                 explicitChildNodes: true,
                 label: 'Main navigation',
                 child: _WebSidebar(
-                index: shell.currentIndex,
-                onSelect: _go,
-                destinations: _destinations,
-                hoveredIndex: _hoveredIndex,
-                onHover: (i) => setState(() => _hoveredIndex = i),
-                onHoverExit: () => setState(() => _hoveredIndex = -1),
-              ),
+                  index: shell.currentIndex,
+                  onSelect: _go,
+                  destinations: _destinations,
+                  hoveredIndex: _hoveredIndex,
+                  onHover: (i) => setState(() => _hoveredIndex = i),
+                  onHoverExit: () => setState(() => _hoveredIndex = -1),
+                ),
               ),
               // Main content with glass + depth
               Expanded(
@@ -173,24 +202,42 @@ class _AppShellWebState extends ConsumerState<AppShellWeb>
                       child: Focus(
                         focusNode: _mainContentFocusNode,
                         child: Container(
-                        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withValues(alpha: 0.03) : Colors.white.withValues(alpha: 0.72),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06)),
-                          boxShadow: [
-                            BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08), blurRadius: 32, offset: const Offset(0, 16)),
-                            BoxShadow(color: AppColors.violet500.withValues(alpha: isDark ? 0.08 : 0.04), blurRadius: 48, offset: const Offset(0, 8)),
-                          ],
-                        ),
-                        clipBehavior: Clip.none,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: Semantics(
-                            label: 'Main content area',
-                            child: content,
+                          margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.03)
+                                : Colors.white.withValues(alpha: 0.72),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.06)
+                                  : Colors.black.withValues(alpha: 0.06),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(
+                                  alpha: isDark ? 0.35 : 0.08,
+                                ),
+                                blurRadius: 32,
+                                offset: const Offset(0, 16),
+                              ),
+                              BoxShadow(
+                                color: AppColors.violet500.withValues(
+                                  alpha: isDark ? 0.08 : 0.04,
+                                ),
+                                blurRadius: 48,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
                           ),
-                        ),
+                          clipBehavior: Clip.none,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: Semantics(
+                              label: 'Main content area',
+                              child: content,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -268,12 +315,22 @@ class _WebSidebarState extends State<_WebSidebar>
     return Container(
       width: 260,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F111A).withValues(alpha: 0.92) : Colors.white.withValues(alpha: 0.82),
+        color: isDark
+            ? const Color(0xFF0F111A).withValues(alpha: 0.92)
+            : Colors.white.withValues(alpha: 0.82),
         border: Border(
-          right: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06)),
+          right: BorderSide(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.06)
+                : Colors.black.withValues(alpha: 0.06),
+          ),
         ),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 28, offset: const Offset(8, 0)),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.18),
+            blurRadius: 28,
+            offset: const Offset(8, 0),
+          ),
         ],
       ),
       child: Column(
@@ -289,21 +346,53 @@ class _WebSidebarState extends State<_WebSidebar>
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.secondary, AppColors.accent]),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [AppColors.secondary, AppColors.accent],
+                    ),
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
-                      BoxShadow(color: AppColors.accent.withValues(alpha: 0.35), blurRadius: 18, offset: const Offset(0, 6)),
-                      BoxShadow(color: AppColors.violet500.withValues(alpha: 0.25), blurRadius: 24, offset: const Offset(0, 10)),
+                      BoxShadow(
+                        color: AppColors.accent.withValues(alpha: 0.35),
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
+                      ),
+                      BoxShadow(
+                        color: AppColors.violet500.withValues(alpha: 0.25),
+                        blurRadius: 24,
+                        offset: const Offset(0, 10),
+                      ),
                     ],
                   ),
-                  child: const Icon(Icons.palette_rounded, size: 24, color: Colors.white),
+                  child: const Icon(
+                    Icons.palette_rounded,
+                    size: 24,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('ArtVault', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, letterSpacing: -0.5)),
-                    Text('Private Gallery • 3D', style: TextStyle(fontSize: 11, letterSpacing: 1.2, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45))),
+                    Text(
+                      'ArtVault',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    Text(
+                      'Private Gallery • 3D',
+                      style: TextStyle(
+                        fontSize: 11,
+                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.45),
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -312,7 +401,20 @@ class _WebSidebarState extends State<_WebSidebar>
           const SizedBox(height: 20),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(height: 1, decoration: BoxDecoration(gradient: LinearGradient(colors: [Colors.white.withValues(alpha: 0), isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.06), Colors.white.withValues(alpha: 0)]))),
+            child: Container(
+              height: 1,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withValues(alpha: 0),
+                    isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.06),
+                    Colors.white.withValues(alpha: 0),
+                  ],
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 16),
           // Navigation + admin — scrollable so no overflow on short screens
@@ -372,51 +474,110 @@ class _SidebarItem extends StatelessWidget {
       selected: isSelected,
       button: true,
       child: MouseRegion(
-      onEnter: (_) => onHover(),
-      onExit: (_) => onHoverExit(),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? activeColor.withValues(alpha: 0.14) : isHovered ? (isDark ? Colors.white : Colors.black).withValues(alpha: 0.04) : Colors.transparent,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: isSelected ? activeColor.withValues(alpha: 0.18) : Colors.transparent, width: 1),
-            boxShadow: isSelected ? [BoxShadow(color: activeColor.withValues(alpha: 0.22), blurRadius: 16, offset: const Offset(0, 6)), BoxShadow(color: activeColor.withValues(alpha: 0.12), blurRadius: 28, offset: const Offset(0, 12))] : null,
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: isSelected ? activeColor.withValues(alpha: 0.16) : (isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.04)),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: isSelected ? activeColor.withValues(alpha: 0.22) : Colors.transparent),
-                ),
-                child: Icon(isSelected ? dest.selected : dest.icon, size: 18, color: isSelected ? activeColor : inactiveColor),
+        onEnter: (_) => onHover(),
+        onExit: (_) => onHoverExit(),
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? activeColor.withValues(alpha: 0.14)
+                  : isHovered
+                  ? (isDark ? Colors.white : Colors.black).withValues(
+                      alpha: 0.04,
+                    )
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isSelected
+                    ? activeColor.withValues(alpha: 0.18)
+                    : Colors.transparent,
+                width: 1,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(dest.label, style: TextStyle(fontSize: 14, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600, color: isSelected ? activeColor : Theme.of(context).colorScheme.onSurface)),
-                    const SizedBox(height: 2),
-                    Container(width: isSelected ? 24 : 0, height: 2, decoration: BoxDecoration(color: activeColor, borderRadius: BorderRadius.circular(2))),
-                  ],
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: activeColor.withValues(alpha: 0.22),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                      BoxShadow(
+                        color: activeColor.withValues(alpha: 0.12),
+                        blurRadius: 28,
+                        offset: const Offset(0, 12),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? activeColor.withValues(alpha: 0.16)
+                        : (isDark
+                              ? Colors.white.withValues(alpha: 0.06)
+                              : Colors.black.withValues(alpha: 0.04)),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isSelected
+                          ? activeColor.withValues(alpha: 0.22)
+                          : Colors.transparent,
+                    ),
+                  ),
+                  child: Icon(
+                    isSelected ? dest.selected : dest.icon,
+                    size: 18,
+                    color: isSelected ? activeColor : inactiveColor,
+                  ),
                 ),
-              ),
-              if (isSelected) Icon(Icons.chevron_right_rounded, size: 16, color: activeColor.withValues(alpha: 0.7)),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        dest.label,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w600,
+                          color: isSelected
+                              ? activeColor
+                              : Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Container(
+                        width: isSelected ? 24 : 0,
+                        height: 2,
+                        decoration: BoxDecoration(
+                          color: activeColor,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (isSelected)
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 16,
+                    color: activeColor.withValues(alpha: 0.7),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
     );
   }
 }
@@ -429,43 +590,44 @@ class _SidebarAvatar extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Semantics(
-      label: 'User profile for ${user?.displayName ?? 'Guest'}. Tap to open settings.',
+      label:
+          'User profile for ${user?.displayName ?? 'Guest'}. Tap to open settings.',
       button: true,
       child: MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () => context.push('/settings'),
-        child: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: [
-                AppColors.violet500.withValues(alpha: 0.3),
-                AppColors.cyan400.withValues(alpha: 0.3),
-              ],
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: () => context.push('/settings'),
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.violet500.withValues(alpha: 0.3),
+                  AppColors.cyan400.withValues(alpha: 0.3),
+                ],
+              ),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.black.withValues(alpha: 0.08),
+                width: 1.5,
+              ),
             ),
-            border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.1)
-                  : Colors.black.withValues(alpha: 0.08),
-              width: 1.5,
-            ),
-          ),
-          child: Center(
-            child: Text(
-              (user?.displayName ?? 'G')[0].toUpperCase(),
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.onSurface,
+            child: Center(
+              child: Text(
+                (user?.displayName ?? 'G')[0].toUpperCase(),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
             ),
           ),
         ),
       ),
-    ),
     );
   }
 }
@@ -488,9 +650,7 @@ class _AdminSidebarSection extends ConsumerWidget {
         // Divider
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Divider(
-            color: scheme.outlineVariant.withValues(alpha: 0.15),
-          ),
+          child: Divider(color: scheme.outlineVariant.withValues(alpha: 0.15)),
         ),
         const SizedBox(height: 8),
         // Admin label
@@ -578,7 +738,15 @@ class _AdminLink extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(icon, size: 18, color: isSelected ? color : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+              Icon(
+                icon,
+                size: 18,
+                color: isSelected
+                    ? color
+                    : Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
               const SizedBox(width: 10),
               Text(
                 label,
@@ -614,7 +782,13 @@ class _WebHeader extends StatelessWidget {
     required this.onUpload,
   });
 
-  static const _titles = ['Home', 'Gallery', 'Artists', 'Documents', 'Settings'];
+  static const _titles = [
+    'Home',
+    'Gallery',
+    'Artists',
+    'Documents',
+    'Settings',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -641,9 +815,9 @@ class _WebHeader extends StatelessWidget {
           // Page title
           Text(
             _titles[currentIndex],
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
           ),
           const Spacer(),
           // Sync status
@@ -672,42 +846,52 @@ class _WebHeader extends StatelessWidget {
               button: true,
               label: 'Upload new artwork',
               child: MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                onTap: onUpload,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [scheme.primary, scheme.primary.withValues(alpha: 0.8)],
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: onUpload,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
                     ),
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: scheme.primary.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          scheme.primary,
+                          scheme.primary.withValues(alpha: 0.8),
+                        ],
                       ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.add_rounded, size: 18, color: Colors.white),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Upload',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: scheme.primary.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.add_rounded,
+                          size: 18,
                           color: Colors.white,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Text(
+                          'Upload',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
             ),
           ],
         ],
@@ -777,13 +961,10 @@ class _WebPageTransition extends StatelessWidget {
     return FadeTransition(
       opacity: animation,
       child: SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0, 0.01),
-          end: Offset.zero,
-        ).animate(CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutCubic,
-        )),
+        position: Tween<Offset>(begin: const Offset(0, 0.01), end: Offset.zero)
+            .animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+            ),
         child: child,
       ),
     );
@@ -801,8 +982,9 @@ class _ThemeToggle extends ConsumerWidget {
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: () {
-          ref.read(themeModeProvider.notifier).state =
-              isDark ? ThemeMode.light : ThemeMode.dark;
+          ref.read(themeModeProvider.notifier).state = isDark
+              ? ThemeMode.light
+              : ThemeMode.dark;
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -817,7 +999,9 @@ class _ThemeToggle extends ConsumerWidget {
           child: Icon(
             isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
             size: 18,
-            color: isDark ? Colors.amber : Theme.of(context).colorScheme.onSurfaceVariant,
+            color: isDark
+                ? Colors.amber
+                : Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ),

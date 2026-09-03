@@ -58,9 +58,7 @@ class GlassCard extends StatelessWidget {
         );
 
     // A brighter top edge mimics light catching the top of the glass.
-    final topEdge = Colors.white.withValues(
-      alpha: isDark ? 0.20 : 0.65,
-    );
+    final topEdge = Colors.white.withValues(alpha: isDark ? 0.20 : 0.65);
 
     // A single uniform border: Border with per-side colors + borderRadius is
     // illegal in Flutter and asserts at paint time (a real device crash). The

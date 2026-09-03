@@ -59,53 +59,49 @@ class EmptyState extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Floating animated icon with soft glow
-            _FloatingIcon(
-              icon: icon,
-              color: scheme.primary,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
-              ),
-            ),
-            if (subtitle != null) ...[
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                subtitle!,
-                textAlign: TextAlign.center,
-                maxLines: 3,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: scheme.onSurface.withValues(alpha: 0.65),
-                  height: 1.4,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.xxl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Floating animated icon with soft glow
+                _FloatingIcon(icon: icon, color: scheme.primary),
+                const SizedBox(height: AppSpacing.lg),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                  ),
                 ),
-              ),
-            ],
-            if (actionLabel != null) ...[
-              const SizedBox(height: AppSpacing.lg),
-              FilledButton.icon(
-                onPressed: onAction,
-                icon: const Icon(Icons.add, size: 20),
-                label: Text(actionLabel!),
-              ),
-            ],
-          ],
-        ),
-      ),
-    ).animate().fadeIn(duration: 400.ms).slideY(
-          begin: 0.06,
-          duration: 400.ms,
-          curve: Curves.easeOutCubic,
-        );
+                if (subtitle != null) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    subtitle!,
+                    textAlign: TextAlign.center,
+                    maxLines: 3,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSurface.withValues(alpha: 0.65),
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+                if (actionLabel != null) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  FilledButton.icon(
+                    onPressed: onAction,
+                    icon: const Icon(Icons.add, size: 20),
+                    label: Text(actionLabel!),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        )
+        .animate()
+        .fadeIn(duration: 400.ms)
+        .slideY(begin: 0.06, duration: 400.ms, curve: Curves.easeOutCubic);
   }
 }
 

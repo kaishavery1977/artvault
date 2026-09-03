@@ -96,10 +96,7 @@ void main() {
     await pumpLock(tester);
 
     // PIN pad visible (only unlock path — no biometrics in tests).
-    expect(
-      find.text('Enter passcode to unlock'),
-      findsOneWidget,
-    );
+    expect(find.text('Enter passcode to unlock'), findsOneWidget);
 
     await enterPin(tester, '1234');
     // Verification is async; let the success confirmation play through and

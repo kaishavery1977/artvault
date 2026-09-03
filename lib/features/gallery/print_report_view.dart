@@ -46,7 +46,11 @@ class PrintReportView extends ConsumerWidget {
                         ),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.palette_rounded, size: 22, color: Colors.white),
+                      child: const Icon(
+                        Icons.palette_rounded,
+                        size: 22,
+                        color: Colors.white,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Column(
@@ -62,7 +66,10 @@ class PrintReportView extends ConsumerWidget {
                         ),
                         Text(
                           'Art Collection Report',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[500],
+                          ),
                         ),
                       ],
                     ),
@@ -107,7 +114,11 @@ class PrintReportView extends ConsumerWidget {
                       painting.coverImagePath,
                       fit: BoxFit.contain,
                       errorBuilder: (_, _, _) => Center(
-                        child: Icon(Icons.palette_rounded, size: 64, color: Colors.grey[300]),
+                        child: Icon(
+                          Icons.palette_rounded,
+                          size: 64,
+                          color: Colors.grey[300],
+                        ),
                       ),
                     ),
                   ),
@@ -117,14 +128,34 @@ class PrintReportView extends ConsumerWidget {
                 _ReportSection(
                   title: 'Details',
                   children: [
-                    _ReportRow('Artist', painting.artistName.isNotEmpty ? painting.artistName : '—'),
-                    _ReportRow('Medium', painting.medium.isNotEmpty ? painting.medium : '—'),
-                    _ReportRow('Style', painting.style.isNotEmpty ? painting.style : '—'),
-                    _ReportRow('Category', painting.category.isNotEmpty ? painting.category : '—'),
+                    _ReportRow(
+                      'Artist',
+                      painting.artistName.isNotEmpty
+                          ? painting.artistName
+                          : '—',
+                    ),
+                    _ReportRow(
+                      'Medium',
+                      painting.medium.isNotEmpty ? painting.medium : '—',
+                    ),
+                    _ReportRow(
+                      'Style',
+                      painting.style.isNotEmpty ? painting.style : '—',
+                    ),
+                    _ReportRow(
+                      'Category',
+                      painting.category.isNotEmpty ? painting.category : '—',
+                    ),
                     if (painting.width != null || painting.height != null)
-                      _ReportRow('Dimensions', '${painting.width ?? '—'} × ${painting.height ?? '—'} ${painting.dimensionUnit}'),
+                      _ReportRow(
+                        'Dimensions',
+                        '${painting.width ?? '—'} × ${painting.height ?? '—'} ${painting.dimensionUnit}',
+                      ),
                     if (painting.weight != null)
-                      _ReportRow('Weight', '${painting.weight} ${painting.weightUnit}'),
+                      _ReportRow(
+                        'Weight',
+                        '${painting.weight} ${painting.weightUnit}',
+                      ),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -132,9 +163,20 @@ class PrintReportView extends ConsumerWidget {
                 _ReportSection(
                   title: 'Value',
                   children: [
-                    _ReportRow('Price', painting.price != null ? Formatters.money(painting.price!, currency: currency) : '—'),
+                    _ReportRow(
+                      'Price',
+                      painting.price != null
+                          ? Formatters.money(
+                              painting.price!,
+                              currency: currency,
+                            )
+                          : '—',
+                    ),
                     if (painting.priceHistory.isNotEmpty)
-                      _ReportRow('Price History', '${painting.priceHistory.length} recorded changes'),
+                      _ReportRow(
+                        'Price History',
+                        '${painting.priceHistory.length} recorded changes',
+                      ),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -145,7 +187,11 @@ class PrintReportView extends ConsumerWidget {
                     children: [
                       Text(
                         painting.description,
-                        style: const TextStyle(fontSize: 14, height: 1.6, color: Colors.black87),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          height: 1.6,
+                          color: Colors.black87,
+                        ),
                       ),
                     ],
                   ),
@@ -159,14 +205,29 @@ class PrintReportView extends ConsumerWidget {
                       Wrap(
                         spacing: 8,
                         runSpacing: 4,
-                        children: painting.tags.map((t) => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.accent.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(t, style: TextStyle(fontSize: 12, color: AppColors.accent)),
-                        )).toList(),
+                        children: painting.tags
+                            .map(
+                              (t) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.accent.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  t,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.accent,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
                       ),
                     ],
                   ),
@@ -182,7 +243,10 @@ class PrintReportView extends ConsumerWidget {
                           padding: const EdgeInsets.only(bottom: 4),
                           child: Text(
                             entry.toString(),
-                            style: const TextStyle(fontSize: 13, color: Colors.black87),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.black87,
+                            ),
                           ),
                         ),
                     ],
@@ -249,13 +313,21 @@ class _ReportRow extends StatelessWidget {
             width: 140,
             child: Text(
               label,
-              style: TextStyle(fontSize: 13, color: Colors.grey[500], fontWeight: FontWeight.w500),
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey[500],
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
             ),
           ),
         ],

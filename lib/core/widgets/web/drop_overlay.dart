@@ -35,56 +35,57 @@ class _DropOverlayState extends State<DropOverlay> {
             child: Container(
               color: AppColors.accent.withValues(alpha: 0.15),
               child: Center(
-                child: Container(
-                  padding: const EdgeInsets.all(48),
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: AppColors.accent.withValues(alpha: 0.4),
-                      width: 2,
+                child:
+                    Container(
+                      padding: const EdgeInsets.all(48),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(
+                          color: AppColors.accent.withValues(alpha: 0.4),
+                          width: 2,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: AppColors.accent.withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.cloud_upload_rounded,
+                              size: 40,
+                              color: AppColors.accent,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          const Text(
+                            'Drop to upload',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.accent,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Release to add to your collection',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.accent.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ).animate().scale(
+                      begin: const Offset(0.95, 0.95),
+                      duration: 200.ms,
+                      curve: Curves.easeOutCubic,
                     ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: AppColors.accent.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.cloud_upload_rounded,
-                          size: 40,
-                          color: AppColors.accent,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      const Text(
-                        'Drop to upload',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.accent,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Release to add to your collection',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.accent.withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ).animate().scale(
-                  begin: const Offset(0.95, 0.95),
-                  duration: 200.ms,
-                  curve: Curves.easeOutCubic,
-                ),
               ),
             ).animate().fadeIn(duration: 150.ms),
           ),

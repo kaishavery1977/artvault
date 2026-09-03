@@ -29,15 +29,18 @@ class _WebShortcutsHandlerState extends State<WebShortcutsHandler> {
     return Shortcuts(
       shortcuts: <ShortcutActivator, Intent>{
         // Ctrl+K / Cmd+K: Command palette
-        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyK): const _CommandPaletteIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyK):
+            const _CommandPaletteIntent(),
         // Ctrl+U / Cmd+U: Upload
-        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyU): const _UploadIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyU):
+            const _UploadIntent(),
         // G: Go to Gallery (only when no text field focused)
         LogicalKeySet(LogicalKeyboardKey.keyG): const _GalleryIntent(),
         // H: Go to Home
         LogicalKeySet(LogicalKeyboardKey.keyH): const _HomeIntent(),
         // ?: Show shortcuts
-        LogicalKeySet(LogicalKeyboardKey.slash, LogicalKeyboardKey.shiftLeft): const _ShortcutsHelpIntent(),
+        LogicalKeySet(LogicalKeyboardKey.slash, LogicalKeyboardKey.shiftLeft):
+            const _ShortcutsHelpIntent(),
       },
       child: Actions(
         actions: <Type, Action<Intent>>{
@@ -47,7 +50,11 @@ class _WebShortcutsHandlerState extends State<WebShortcutsHandler> {
           _UploadIntent: CallbackAction<_UploadIntent>(
             onInvoke: (_) {
               context.push('/painting/new');
-              WebToast.show(context, message: 'Opening upload...', icon: Icons.add_photo_alternate);
+              WebToast.show(
+                context,
+                message: 'Opening upload...',
+                icon: Icons.add_photo_alternate,
+              );
               return null;
             },
           ),
@@ -61,10 +68,7 @@ class _WebShortcutsHandlerState extends State<WebShortcutsHandler> {
             onInvoke: (_) => _showShortcutsHelp(context),
           ),
         },
-        child: Focus(
-          autofocus: true,
-          child: widget.child,
-        ),
+        child: Focus(autofocus: true, child: widget.child),
       ),
     );
   }
@@ -123,7 +127,13 @@ class _ShortcutRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 16),
-          Text(action, style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          Text(
+            action,
+            style: TextStyle(
+              fontSize: 14,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
     );
@@ -131,8 +141,22 @@ class _ShortcutRow extends StatelessWidget {
 }
 
 // Intent classes
-class _CommandPaletteIntent extends Intent { const _CommandPaletteIntent(); }
-class _UploadIntent extends Intent { const _UploadIntent(); }
-class _GalleryIntent extends Intent { const _GalleryIntent(); }
-class _HomeIntent extends Intent { const _HomeIntent(); }
-class _ShortcutsHelpIntent extends Intent { const _ShortcutsHelpIntent(); }
+class _CommandPaletteIntent extends Intent {
+  const _CommandPaletteIntent();
+}
+
+class _UploadIntent extends Intent {
+  const _UploadIntent();
+}
+
+class _GalleryIntent extends Intent {
+  const _GalleryIntent();
+}
+
+class _HomeIntent extends Intent {
+  const _HomeIntent();
+}
+
+class _ShortcutsHelpIntent extends Intent {
+  const _ShortcutsHelpIntent();
+}

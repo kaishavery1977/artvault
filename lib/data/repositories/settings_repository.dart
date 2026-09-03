@@ -39,7 +39,8 @@ class SettingsRepository {
     return (hour >= 6 && hour < 19) ? ThemeMode.light : ThemeMode.dark;
   }
 
-  String get themeModeKey => _db.getString(AppConstants.kThemeMode, 'system') ?? 'system';
+  String get themeModeKey =>
+      _db.getString(AppConstants.kThemeMode, 'system') ?? 'system';
 
   Future<void> setThemeMode(ThemeMode mode) =>
       _db.setSetting(AppConstants.kThemeMode, mode.name);

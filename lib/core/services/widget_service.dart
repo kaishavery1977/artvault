@@ -28,10 +28,7 @@ class WidgetService {
       await HomeWidget.saveWidgetData<String>(_keyArtist, p.artistName);
       await HomeWidget.saveWidgetData<String>(_keyImagePath, p.coverImagePath);
 
-      await HomeWidget.updateWidget(
-        name: _androidName,
-        iOSName: _iOSName,
-      );
+      await HomeWidget.updateWidget(name: _androidName, iOSName: _iOSName);
     } catch (e) {
       debugPrint('WidgetService.updateWidget error: $e');
     }

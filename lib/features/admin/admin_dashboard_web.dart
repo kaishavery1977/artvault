@@ -30,50 +30,50 @@ class AdminDashboardWeb extends ConsumerWidget {
       body: PageFadeIn(
         duration: const Duration(milliseconds: 500),
         child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            _DashboardHeader(cloudReady: cloudReady),
-            const SizedBox(height: 24),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              _DashboardHeader(cloudReady: cloudReady),
+              const SizedBox(height: 24),
 
-            // Live stats row
-            _StatsRow(stats: stats, scheme: scheme),
-            const SizedBox(height: 24),
+              // Live stats row
+              _StatsRow(stats: stats, scheme: scheme),
+              const SizedBox(height: 24),
 
-            // Two-column layout: User overview + Recent activity
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Left: User management overview
-                Expanded(
-                  flex: 3,
-                  child: _UserOverviewCard(
-                    usersAsync: usersAsync,
-                    revokedAsync: revokedAsync,
-                    scheme: scheme,
+              // Two-column layout: User overview + Recent activity
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Left: User management overview
+                  Expanded(
+                    flex: 3,
+                    child: _UserOverviewCard(
+                      usersAsync: usersAsync,
+                      revokedAsync: revokedAsync,
+                      scheme: scheme,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 20),
-                // Right: Recent activity feed
-                Expanded(
-                  flex: 2,
-                  child: _RecentActivityCard(
-                    activityAsync: activityAsync,
-                    scheme: scheme,
+                  const SizedBox(width: 20),
+                  // Right: Recent activity feed
+                  Expanded(
+                    flex: 2,
+                    child: _RecentActivityCard(
+                      activityAsync: activityAsync,
+                      scheme: scheme,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
+                ],
+              ),
+              const SizedBox(height: 24),
 
-            // Quick actions
-            _QuickActionsGrid(scheme: scheme),
-          ],
+              // Quick actions
+              _QuickActionsGrid(scheme: scheme),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 }
@@ -105,7 +105,11 @@ class _DashboardHeader extends StatelessWidget {
               ),
             ],
           ),
-          child: const Icon(Icons.admin_panel_settings, size: 24, color: Colors.white),
+          child: const Icon(
+            Icons.admin_panel_settings,
+            size: 24,
+            color: Colors.white,
+          ),
         ),
         const SizedBox(width: 16),
         Column(
@@ -113,9 +117,9 @@ class _DashboardHeader extends StatelessWidget {
           children: [
             Text(
               'Admin Dashboard',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 2),
             Text(
@@ -146,7 +150,9 @@ class _DashboardHeader extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                cloudReady ? Icons.cloud_done_outlined : Icons.cloud_off_outlined,
+                cloudReady
+                    ? Icons.cloud_done_outlined
+                    : Icons.cloud_off_outlined,
                 size: 14,
                 color: cloudReady ? const Color(0xFF22C55E) : scheme.error,
               ),
@@ -213,8 +219,10 @@ class _StatsRow extends StatelessWidget {
         _StatCard(
           label: 'Value',
           value: stats.collectionValue > 0
-              ? NumberFormat.currency(symbol: '\$', decimalDigits: 0)
-                  .format(stats.collectionValue)
+              ? NumberFormat.currency(
+                  symbol: '\$',
+                  decimalDigits: 0,
+                ).format(stats.collectionValue)
               : '\$0',
           icon: Icons.trending_up,
           color: const Color(0xFF22C55E),
@@ -304,8 +312,14 @@ class _StatCardState extends State<_StatCard> {
               ),
               const SizedBox(height: 12),
               AnimatedCountUp(
-                value: double.tryParse(widget.value.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0,
-                format: (v) => widget.value.contains('.') ? v.toStringAsFixed(0) : v.toInt().toString(),
+                value:
+                    double.tryParse(
+                      widget.value.replaceAll(RegExp(r'[^0-9.]'), ''),
+                    ) ??
+                    0,
+                format: (v) => widget.value.contains('.')
+                    ? v.toStringAsFixed(0)
+                    : v.toInt().toString(),
                 duration: const Duration(milliseconds: 1200),
                 style: TextStyle(
                   fontSize: 22,
@@ -371,10 +385,9 @@ class _UserOverviewCard extends ConsumerWidget {
               const SizedBox(width: 8),
               Text(
                 'Users Overview',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
               const Spacer(),
               TextButton.icon(
@@ -389,24 +402,28 @@ class _UserOverviewCard extends ConsumerWidget {
           Row(
             children: [
               _MiniStat(
-                  label: 'Total',
-                  value: '${users.length}',
-                  color: scheme.onSurface),
+                label: 'Total',
+                value: '${users.length}',
+                color: scheme.onSurface,
+              ),
               const SizedBox(width: 16),
               _MiniStat(
-                  label: 'Admins',
-                  value: '$admins',
-                  color: scheme.primary),
+                label: 'Admins',
+                value: '$admins',
+                color: scheme.primary,
+              ),
               const SizedBox(width: 16),
               _MiniStat(
-                  label: 'Curators',
-                  value: '$curators',
-                  color: const Color(0xFFF59E0B)),
+                label: 'Curators',
+                value: '$curators',
+                color: const Color(0xFFF59E0B),
+              ),
               const SizedBox(width: 16),
               _MiniStat(
-                  label: 'Viewers',
-                  value: '$viewers',
-                  color: scheme.onSurface.withValues(alpha: 0.6)),
+                label: 'Viewers',
+                value: '$viewers',
+                color: scheme.onSurface.withValues(alpha: 0.6),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -422,15 +439,9 @@ class _UserOverviewCard extends ConsumerWidget {
           // Pro + Revoked
           Row(
             children: [
-              _Pill(
-                label: 'Pro: $proUsers',
-                color: scheme.primary,
-              ),
+              _Pill(label: 'Pro: $proUsers', color: scheme.primary),
               const SizedBox(width: 8),
-              _Pill(
-                label: 'Revoked: ${revoked.length}',
-                color: scheme.error,
-              ),
+              _Pill(label: 'Revoked: ${revoked.length}', color: scheme.error),
             ],
           ),
           const SizedBox(height: 16),
@@ -458,19 +469,34 @@ class _MiniStat extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
-  const _MiniStat({required this.label, required this.value, required this.color});
+  const _MiniStat({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(value,
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: color)),
-        Text(label,
-            style: TextStyle(
-                fontSize: 11,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45))),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.45),
+          ),
+        ),
       ],
     );
   }
@@ -510,13 +536,18 @@ class _RoleBar extends StatelessWidget {
                 if (viewers > 0)
                   Expanded(
                     flex: viewers,
-                    child: Container(color: scheme.onSurface.withValues(alpha: 0.3)),
+                    child: Container(
+                      color: scheme.onSurface.withValues(alpha: 0.3),
+                    ),
                   ),
                 if (total - admins - curators - viewers > 0)
                   Expanded(
                     flex: total - admins - curators - viewers,
                     child: Container(
-                        color: scheme.surfaceContainerHighest.withValues(alpha: 0.3)),
+                      color: scheme.surfaceContainerHighest.withValues(
+                        alpha: 0.3,
+                      ),
+                    ),
                   ),
               ],
             ),
@@ -540,8 +571,14 @@ class _Pill extends StatelessWidget {
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
       ),
-      child: Text(label,
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
+      ),
     );
   }
 }
@@ -600,7 +637,10 @@ class _UserMiniRow extends StatelessWidget {
 class _RecentActivityCard extends ConsumerWidget {
   final AsyncValue<List<ActivityAuditEntry>> activityAsync;
   final ColorScheme scheme;
-  const _RecentActivityCard({required this.activityAsync, required this.scheme});
+  const _RecentActivityCard({
+    required this.activityAsync,
+    required this.scheme,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -625,10 +665,9 @@ class _RecentActivityCard extends ConsumerWidget {
               const SizedBox(width: 8),
               Text(
                 'Recent Activity',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
               const Spacer(),
               TextButton.icon(
@@ -646,7 +685,8 @@ class _RecentActivityCard extends ConsumerWidget {
                 child: Text(
                   'No activity yet',
                   style: TextStyle(
-                      color: scheme.onSurface.withValues(alpha: 0.4)),
+                    color: scheme.onSurface.withValues(alpha: 0.4),
+                  ),
                 ),
               ),
             )
@@ -689,7 +729,9 @@ class _ActivityMiniRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w600),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 if (entry.description.isNotEmpty)
                   Text(
@@ -707,8 +749,9 @@ class _ActivityMiniRow extends StatelessWidget {
           Text(
             _formatTime(entry.at),
             style: TextStyle(
-                fontSize: 10,
-                color: scheme.onSurface.withValues(alpha: 0.35)),
+              fontSize: 10,
+              color: scheme.onSurface.withValues(alpha: 0.35),
+            ),
           ),
         ],
       ),
@@ -737,10 +780,9 @@ class _QuickActionsGrid extends StatelessWidget {
       children: [
         Text(
           'Quick Actions',
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.w700),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 12),
         Row(
@@ -813,32 +855,34 @@ class _QuickActionCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, size: 20, color: color),
                 ),
-                child: Icon(icon, size: 20, color: color),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                label,
-                style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: scheme.onSurface.withValues(alpha: 0.5),
+                const SizedBox(height: 12),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurface.withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

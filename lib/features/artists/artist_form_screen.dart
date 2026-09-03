@@ -99,7 +99,10 @@ class _ArtistFormScreenState extends ConsumerState<ArtistFormScreen> {
 
     // Prevent duplicate artist names.
     final name = _name.text.trim();
-    if (ArtistRepository.instance.existsByName(name, excludeId: _existing?.id)) {
+    if (ArtistRepository.instance.existsByName(
+      name,
+      excludeId: _existing?.id,
+    )) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

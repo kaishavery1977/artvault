@@ -185,7 +185,9 @@ class _FaceScanScreenState extends State<FaceScanScreen>
   Future<void> _init() async {
     // Select a random liveness challenge so pre-recorded attacks can't
     // predict which action is required.
-    final challengeIdx = math.Random().nextInt(_LivenessChallenge.values.length);
+    final challengeIdx = math.Random().nextInt(
+      _LivenessChallenge.values.length,
+    );
     _challenge = _LivenessChallenge.values[challengeIdx];
     await FaceDebugLog.instance.log('liveness challenge: ${_challenge.name}');
 
@@ -356,7 +358,11 @@ class _FaceScanScreenState extends State<FaceScanScreen>
       // enrollment quality gate; only needed in enroll mode).
       if (widget.mode == FaceScanMode.enroll) {
         final nv21 = _nv21Bytes(image);
-        final rgb = FaceRecognizer.instance.nv21ToRgbHalf(nv21, image.width, image.height);
+        final rgb = FaceRecognizer.instance.nv21ToRgbHalf(
+          nv21,
+          image.width,
+          image.height,
+        );
         _lastRgb = rgb.$1;
         _lastRgbWidth = rgb.$2;
         _lastRgbHeight = rgb.$3;
@@ -721,7 +727,9 @@ class _FaceScanScreenState extends State<FaceScanScreen>
     final yaw = face.headEulerAngleY ?? 0;
     final delta = yaw - _initialYaw;
     // Left turn: yaw goes positive (on most devices). Right: negative.
-    final crossed = left ? delta > _turnThresholdDeg : delta < -_turnThresholdDeg;
+    final crossed = left
+        ? delta > _turnThresholdDeg
+        : delta < -_turnThresholdDeg;
     return crossed;
   }
 
@@ -1178,8 +1186,4 @@ class _FaceBoxPainter extends CustomPainter {
 }
 
 /// Randomly-selected liveness challenge for the verify scan.
-enum _LivenessChallenge {
-  blink,
-  turnLeft,
-  turnRight,
-}
+enum _LivenessChallenge { blink, turnLeft, turnRight }

@@ -226,4 +226,3 @@ class _ConditionReportDialogState extends State<ConditionReportDialog> {
 }
 
 enum _Source { gallery, camera, remove }
-

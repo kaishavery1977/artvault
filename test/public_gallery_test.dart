@@ -80,20 +80,25 @@ void main() {
       expect(html, contains('ROOM &lt;'));
     });
 
-    test('embeds a local image as base64 when there is no remote url', () async {
-      final dir = Directory.systemTemp.createTempSync('artvault_gallery_test');
-      final img = File('${dir.path}/cover.png');
-      img.writeAsBytesSync([0x89, 0x50, 0x4E, 0x47, 1, 2, 3, 4]);
+    test(
+      'embeds a local image as base64 when there is no remote url',
+      () async {
+        final dir = Directory.systemTemp.createTempSync(
+          'artvault_gallery_test',
+        );
+        final img = File('${dir.path}/cover.png');
+        img.writeAsBytesSync([0x89, 0x50, 0x4E, 0x47, 1, 2, 3, 4]);
 
-      final html = await service.buildHtml([
-        _paint('p1', title: 'Local Piece', coverPath: img.path),
-      ]);
+        final html = await service.buildHtml([
+          _paint('p1', title: 'Local Piece', coverPath: img.path),
+        ]);
 
-      expect(html, contains('data:image/png;base64,'));
-      expect(html, isNot(contains('src=""/>')));
+        expect(html, contains('data:image/png;base64,'));
+        expect(html, isNot(contains('src=""/>')));
 
-      dir.deleteSync(recursive: true);
-    });
+        dir.deleteSync(recursive: true);
+      },
+    );
 
     test('empty selection produces a valid page', () async {
       final html = await service.buildHtml(const []);

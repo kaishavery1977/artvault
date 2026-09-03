@@ -42,12 +42,14 @@ class _SkeletonShimmerState extends State<SkeletonShimmer>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? Colors.white.withValues(alpha: 0.06) : Colors.black.withValues(alpha: 0.06);
-    final highlightColor = isDark ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.1);
+    final baseColor = isDark
+        ? Colors.white.withValues(alpha: 0.06)
+        : Colors.black.withValues(alpha: 0.06);
+    final highlightColor = isDark
+        ? Colors.white.withValues(alpha: 0.12)
+        : Colors.black.withValues(alpha: 0.1);
 
-    final shape = widget.isCircle
-        ? BoxShape.circle
-        : BoxShape.rectangle;
+    final shape = widget.isCircle ? BoxShape.circle : BoxShape.rectangle;
 
     return AnimatedBuilder(
       animation: _ctrl,
@@ -57,7 +59,9 @@ class _SkeletonShimmerState extends State<SkeletonShimmer>
           height: widget.isCircle ? widget.width : widget.height,
           decoration: BoxDecoration(
             shape: shape,
-            borderRadius: widget.isCircle ? null : BorderRadius.circular(widget.borderRadius),
+            borderRadius: widget.isCircle
+                ? null
+                : BorderRadius.circular(widget.borderRadius),
             gradient: LinearGradient(
               begin: Alignment(-1.0 + 2.0 * _ctrl.value, 0),
               end: Alignment(-0.5 + 2.0 * _ctrl.value, 0),
@@ -82,18 +86,29 @@ class GallerySkeleton extends StatelessWidget {
         final columns = constraints.maxWidth > 1200
             ? 4
             : constraints.maxWidth > 800
-                ? 3
-                : constraints.maxWidth > 500
-                    ? 2
-                    : 1;
+            ? 3
+            : constraints.maxWidth > 500
+            ? 2
+            : 1;
         final spacing = 16.0;
-        final itemWidth = (constraints.maxWidth - spacing * (columns - 1)) / columns;
+        final itemWidth =
+            (constraints.maxWidth - spacing * (columns - 1)) / columns;
 
         return Wrap(
           spacing: spacing,
           runSpacing: spacing,
           children: List.generate(columns * 3, (i) {
-            final heights = [220.0, 280.0, 180.0, 260.0, 200.0, 240.0, 300.0, 190.0, 250.0];
+            final heights = [
+              220.0,
+              280.0,
+              180.0,
+              260.0,
+              200.0,
+              240.0,
+              300.0,
+              190.0,
+              250.0,
+            ];
             return SizedBox(
               width: itemWidth,
               child: Column(
@@ -133,7 +148,9 @@ class TableSkeleton extends StatelessWidget {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.08),
+                color: Theme.of(
+                  context,
+                ).colorScheme.outlineVariant.withValues(alpha: 0.08),
               ),
             ),
           ),
@@ -144,11 +161,7 @@ class TableSkeleton extends StatelessWidget {
               return Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: SkeletonShimmer(
-                    width: w,
-                    height: 14,
-                    borderRadius: 4,
-                  ),
+                  child: SkeletonShimmer(width: w, height: 14, borderRadius: 4),
                 ),
               );
             }),
@@ -172,7 +185,9 @@ class CardSkeleton extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.12),
+          color: Theme.of(
+            context,
+          ).colorScheme.outlineVariant.withValues(alpha: 0.12),
         ),
       ),
       child: Column(

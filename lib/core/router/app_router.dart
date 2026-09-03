@@ -63,8 +63,12 @@ final rootNavigatorKey = GlobalKey<NavigatorState>();
 Page<void> _page(Widget child) {
   return CustomTransitionPage<void>(
     child: child,
-    transitionDuration: kIsWeb ? const Duration(milliseconds: 400) : const Duration(milliseconds: 280),
-    reverseTransitionDuration: kIsWeb ? const Duration(milliseconds: 350) : const Duration(milliseconds: 240),
+    transitionDuration: kIsWeb
+        ? const Duration(milliseconds: 400)
+        : const Duration(milliseconds: 280),
+    reverseTransitionDuration: kIsWeb
+        ? const Duration(milliseconds: 350)
+        : const Duration(milliseconds: 240),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       final curved = CurvedAnimation(
         parent: animation,
@@ -293,9 +297,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/painting/:id/print',
-        pageBuilder: (_, state) => _page(
-          PrintReportView(paintingId: state.pathParameters['id']!),
-        ),
+        pageBuilder: (_, state) =>
+            _page(PrintReportView(paintingId: state.pathParameters['id']!)),
       ),
       GoRoute(
         path: '/lightbox',
@@ -365,9 +368,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/users',
-        pageBuilder: (_, _) => _page(
-          kIsWeb ? const AdminUsersScreenWeb() : const UsersScreen(),
-        ),
+        pageBuilder: (_, _) =>
+            _page(kIsWeb ? const AdminUsersScreenWeb() : const UsersScreen()),
       ),
       GoRoute(
         path: '/activity-log',
@@ -381,9 +383,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/admin-dashboard',
-        pageBuilder: (_, _) => _page(
-          kIsWeb ? const AdminDashboardWeb() : const SettingsScreen(),
-        ),
+        pageBuilder: (_, _) =>
+            _page(kIsWeb ? const AdminDashboardWeb() : const SettingsScreen()),
       ),
       GoRoute(
         path: '/repair-images',

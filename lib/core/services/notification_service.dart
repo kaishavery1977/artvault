@@ -16,7 +16,10 @@ class NotificationService {
 
   Future<void> init() async {
     if (_initialized) return;
-    if (kIsWeb) { _initialized = true; return; }
+    if (kIsWeb) {
+      _initialized = true;
+      return;
+    }
 
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const ios = DarwinInitializationSettings(
@@ -93,7 +96,8 @@ class NotificationService {
     await show(
       id: paintingId.hashCode & 0x7FFFFFFF,
       title: 'Reminder set',
-      body: '"$paintingTitle" — re-inspect on ${due.day}/${due.month}/${due.year}',
+      body:
+          '"$paintingTitle" — re-inspect on ${due.day}/${due.month}/${due.year}',
     );
   }
 }

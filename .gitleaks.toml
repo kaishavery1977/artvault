@@ -1,0 +1,14 @@
+# Gitleaks configuration for the ArtVault repo.
+# Extends the default ruleset; only deviation is the allowlist below.
+
+[extend]
+  useDefault = true
+
+# The Supabase "anon" key (JWT with role "anon") is a publishable client key
+# deliberately shipped in the app — the same class of public config as the
+# Firebase options. Data access is enforced by Supabase RLS, not by hiding
+# this key. Gitleaks' generic jwt rule can't distinguish it from a real
+# secret, so allowlist this file.
+[allowlist]
+  description = "Supabase anon publishable key (RLS-protected)"
+  paths = ["lib/core/config/supabase_config\\.dart"]

@@ -127,9 +127,7 @@ class ArtVaultApp extends ConsumerWidget {
         return appContent;
       },
       locale: null,
-      supportedLocales: const [
-        Locale('en'),
-      ],
+      supportedLocales: const [Locale('en')],
       // Wire the real localization delegates so MaterialLocalizations is
       // always available (AppBar, NavigationBar, tooltips, …). Without these,
       // any non-English locale resolves to no MaterialLocalizations at all

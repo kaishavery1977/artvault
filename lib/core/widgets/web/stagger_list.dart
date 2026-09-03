@@ -60,9 +60,7 @@ class _StaggerListState extends State<StaggerList> {
             duration: widget.animationDuration,
             curve: Curves.easeOutCubic,
             child: AnimatedSlide(
-              offset: _visible[i]
-                  ? Offset.zero
-                  : Offset(0, widget.slideOffset),
+              offset: _visible[i] ? Offset.zero : Offset(0, widget.slideOffset),
               duration: widget.animationDuration,
               curve: Curves.easeOutCubic,
               child: widget.children[i],

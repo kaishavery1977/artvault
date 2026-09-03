@@ -111,7 +111,9 @@ class PaintingRepository {
     }
     BackupService.instance.scheduleAutoBackup();
     logActivity(
-      get(working.id) != null ? ActivityType.paintingEdit : ActivityType.paintingUpload,
+      get(working.id) != null
+          ? ActivityType.paintingEdit
+          : ActivityType.paintingUpload,
       working.title,
       meta: {'paintingId': working.id},
     );
@@ -219,6 +221,7 @@ class PaintingRepository {
   // -------------------------------------------------------------- Syncing --
 
   static DateTime? _lastSync;
+
   /// Pushes every dirty painting to the cloud, then pulls remote changes.
   /// Debounced to 800ms so rapid mobile+web edits don't thrash, and image
   /// uploads run in parallel for 3x speed.
@@ -228,7 +231,9 @@ class PaintingRepository {
       return 0;
     }
     // Debounce: ignore calls within 800ms of last sync
-    if (_lastSync != null && DateTime.now().difference(_lastSync!) < const Duration(milliseconds: 800)) {
+    if (_lastSync != null &&
+        DateTime.now().difference(_lastSync!) <
+            const Duration(milliseconds: 800)) {
       debugPrint('PaintingRepository.syncNow: debounced');
       return 0;
     }
@@ -299,10 +304,7 @@ class PaintingRepository {
       // backup that only has imageUrls), create pairs directly from URLs
       // so they can be downloaded.
       if (pairs.isEmpty && urls.isNotEmpty) {
-        pairs = [
-          for (var i = 0; i < urls.length; i++)
-            ('', urls[i]),
-        ];
+        pairs = [for (var i = 0; i < urls.length; i++) ('', urls[i])];
       }
 
       final newPaths = <String>[];
@@ -391,17 +393,29 @@ class PaintingRepository {
         toUpload.add(i);
       }
       if (toUpload.isNotEmpty) {
-        final uploaded = await Future.wait(toUpload.map((i) async {
-          final local = working.images[i];
-          final file = File(local);
-          if (!await file.exists()) return null;
-          final name = local.split(Platform.pathSeparator).last;
-          final raw = await file.readAsBytes();
-          final compressed = await ImageUtils.compress(file, maxDimension: 2048, quality: 85);
-          final bytes = compressed.existsSync() ? await compressed.readAsBytes() : raw;
-          final ref = await cloud.uploadBytes('paintings/${working.id}/$name', bytes, contentType: 'image/jpeg');
-          return ref;
-        }));
+        final uploaded = await Future.wait(
+          toUpload.map((i) async {
+            final local = working.images[i];
+            final file = File(local);
+            if (!await file.exists()) return null;
+            final name = local.split(Platform.pathSeparator).last;
+            final raw = await file.readAsBytes();
+            final compressed = await ImageUtils.compress(
+              file,
+              maxDimension: 2048,
+              quality: 85,
+            );
+            final bytes = compressed.existsSync()
+                ? await compressed.readAsBytes()
+                : raw;
+            final ref = await cloud.uploadBytes(
+              'paintings/${working.id}/$name',
+              bytes,
+              contentType: 'image/jpeg',
+            );
+            return ref;
+          }),
+        );
         for (final ref in uploaded) {
           if (ref != null) {
             urls.add(ref);
@@ -416,7 +430,11 @@ class PaintingRepository {
       }
       if (urls.length < working.images.length) {
         // Missing remote mirrors for some images — keep dirty.
-        working = working.copyWith(imageUrls: urls, driveFileIds: driveIds, needsSync: true);
+        working = working.copyWith(
+          imageUrls: urls,
+          driveFileIds: driveIds,
+          needsSync: true,
+        );
       } else {
         working = working
             .copyWith(
@@ -429,14 +447,14 @@ class PaintingRepository {
             .markSynced();
       }
       await cloud.upsert(_collection, working.id, working.toJson());
-      await _db.put(AppConstants.boxPaintings, working.id, working.toJson());    } catch (e) {
+      await _db.put(AppConstants.boxPaintings, working.id, working.toJson());
+    } catch (e) {
       AppLogger.warning(
         'PaintingRepository._syncPainting failed for "${painting.title}"',
         error: e,
       );
     }
   }
-
 
   Future<void> _pullRemote() async {
     final cloud = CloudBackend.instance;

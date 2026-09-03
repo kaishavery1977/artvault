@@ -142,8 +142,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final auth = ref.watch(authProvider);
     final error = auth.error;
 
-    final Widget Function({Key? key, required String title, required String subtitle, required List<Widget> children, Widget? footer}) layoutBuilder =
-        kIsWeb ? AuthLayoutWeb.new : AuthLayout.new;
+    final Widget Function({
+      Key? key,
+      required String title,
+      required String subtitle,
+      required List<Widget> children,
+      Widget? footer,
+    })
+    layoutBuilder = kIsWeb ? AuthLayoutWeb.new : AuthLayout.new;
 
     return layoutBuilder(
       title: 'Welcome back',

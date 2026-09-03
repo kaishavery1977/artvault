@@ -124,23 +124,28 @@ class _CommandPaletteState extends State<CommandPalette> {
                     }),
                     decoration: InputDecoration(
                       hintText: 'Type a command or search...',
-                      prefixIcon: Icon(Icons.search, color: scheme.onSurfaceVariant),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: scheme.onSurfaceVariant,
+                      ),
                       border: InputBorder.none,
                       hintStyle: TextStyle(
                         color: scheme.onSurface.withValues(alpha: 0.4),
                         fontSize: 15,
                       ),
                     ),
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: scheme.onSurface,
-                    ),
+                    style: TextStyle(fontSize: 15, color: scheme.onSurface),
                     onSubmitted: (_) {
-                      if (filtered.isNotEmpty) _execute(filtered[_selectedIndex]);
+                      if (filtered.isNotEmpty) {
+                        _execute(filtered[_selectedIndex]);
+                      }
                     },
                   ),
                 ),
-                Divider(height: 1, color: scheme.outlineVariant.withValues(alpha: 0.3)),
+                Divider(
+                  height: 1,
+                  color: scheme.outlineVariant.withValues(alpha: 0.3),
+                ),
                 // Command list
                 Flexible(
                   child: ListView.builder(
@@ -156,8 +161,14 @@ class _CommandPaletteState extends State<CommandPalette> {
                           onTap: () => _execute(cmd),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 100),
-                            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 1,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? AppColors.accent.withValues(alpha: 0.1)
@@ -169,7 +180,9 @@ class _CommandPaletteState extends State<CommandPalette> {
                                 Icon(
                                   cmd.icon,
                                   size: 18,
-                                  color: isSelected ? AppColors.accent : scheme.onSurfaceVariant,
+                                  color: isSelected
+                                      ? AppColors.accent
+                                      : scheme.onSurfaceVariant,
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
@@ -177,15 +190,21 @@ class _CommandPaletteState extends State<CommandPalette> {
                                     cmd.label,
                                     style: TextStyle(
                                       fontSize: 14,
-                                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                                      color: isSelected ? scheme.onSurface : scheme.onSurfaceVariant,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.w400,
+                                      color: isSelected
+                                          ? scheme.onSurface
+                                          : scheme.onSurfaceVariant,
                                     ),
                                   ),
                                 ),
                                 Icon(
                                   Icons.arrow_forward_ios_rounded,
                                   size: 12,
-                                  color: scheme.onSurface.withValues(alpha: 0.2),
+                                  color: scheme.onSurface.withValues(
+                                    alpha: 0.2,
+                                  ),
                                 ),
                               ],
                             ),
@@ -197,24 +216,49 @@ class _CommandPaletteState extends State<CommandPalette> {
                 ),
                 // Footer hint
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.02),
-                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                    color: (isDark ? Colors.white : Colors.black).withValues(
+                      alpha: 0.02,
+                    ),
+                    borderRadius: const BorderRadius.vertical(
+                      bottom: Radius.circular(16),
+                    ),
                   ),
                   child: Row(
                     children: [
                       _KeyHint(label: '↵', small: true),
                       const SizedBox(width: 4),
-                      Text('select', style: TextStyle(fontSize: 11, color: scheme.onSurface.withValues(alpha: 0.4))),
+                      Text(
+                        'select',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: scheme.onSurface.withValues(alpha: 0.4),
+                        ),
+                      ),
                       const SizedBox(width: 12),
                       _KeyHint(label: '↑↓', small: true),
                       const SizedBox(width: 4),
-                      Text('navigate', style: TextStyle(fontSize: 11, color: scheme.onSurface.withValues(alpha: 0.4))),
+                      Text(
+                        'navigate',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: scheme.onSurface.withValues(alpha: 0.4),
+                        ),
+                      ),
                       const SizedBox(width: 12),
                       _KeyHint(label: 'esc', small: true),
                       const SizedBox(width: 4),
-                      Text('close', style: TextStyle(fontSize: 11, color: scheme.onSurface.withValues(alpha: 0.4))),
+                      Text(
+                        'close',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: scheme.onSurface.withValues(alpha: 0.4),
+                        ),
+                      ),
                     ],
                   ),
                 ),
