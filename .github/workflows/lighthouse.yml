@@ -25,7 +25,9 @@ jobs:
           node-version: '20'
 
       - name: Install Lighthouse CI
-        run: npm install -g @lhci/cli
+        # Pinned — an unversioned install would fetch whatever "latest" is at
+        # run time, silently changing audit behavior between runs.
+        run: npm install -g @lhci/cli@0.15.1
 
       # Pinned static server for the audit. lighthouserc.js invokes the
       # `serve` binary directly (no bare `npx serve`, which downloads the
