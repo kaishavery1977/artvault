@@ -317,13 +317,12 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
                 else if (visible.isEmpty)
                   SliverFillRemaining(
                     hasScrollBody: false,
-                    child: EmptyState(
-                      icon: Icons.photo_library_outlined,
-                      title: 'No artworks here yet',
-                      subtitle:
-                          'Upload a painting to start building your gallery.',
-                      actionLabel: 'Add painting',
-                      onAction: () => context.push('/painting/new'),
+                    child: _EmptyGalleryState(
+                      favoritesOnly: _favoritesOnly,
+                      category: _category,
+                      onClearFavorites: () =>
+                          setState(() => _favoritesOnly = false),
+                      onClearCategory: () => setState(() => _category = null),
                     ),
                   )
                 else
@@ -655,6 +654,52 @@ class _ViewPill extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Empty-gallery state that explains *why* nothing is showing — a bare
+/// vault, a heart filter with no favorites, or a category with no works —
+/// each with the one action that resolves it.
+class _EmptyGalleryState extends StatelessWidget {
+  final bool favoritesOnly;
+  final String? category;
+  final VoidCallback onClearFavorites;
+  final VoidCallback onClearCategory;
+
+  const _EmptyGalleryState({
+    required this.favoritesOnly,
+    required this.category,
+    required this.onClearFavorites,
+    required this.onClearCategory,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (favoritesOnly) {
+      return EmptyState(
+        icon: Icons.favorite_border_rounded,
+        title: 'No favorites yet',
+        subtitle: 'Tap the heart on any artwork to pin it here.',
+        actionLabel: 'Browse gallery',
+        onAction: onClearFavorites,
+      );
+    }
+    if (category != null) {
+      return EmptyState(
+        icon: Icons.filter_alt_outlined,
+        title: 'Nothing in “$category”',
+        subtitle: 'Try another category or clear the filter.',
+        actionLabel: 'Clear filter',
+        onAction: onClearCategory,
+      );
+    }
+    return EmptyState(
+      icon: Icons.photo_library_outlined,
+      title: 'No artworks here yet',
+      subtitle: 'Upload a painting to start building your gallery.',
+      actionLabel: 'Add painting',
+      onAction: () => context.push('/painting/new'),
     );
   }
 }

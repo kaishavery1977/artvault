@@ -61,6 +61,77 @@ class _PressScaleState extends State<PressScale> {
   }
 }
 
+/// Subtle hover lift for desktop pointers: the child rises [lift] pixels,
+/// scales to [scale], and casts a soft shadow while the pointer is over it.
+///
+/// `MouseRegion` only fires for touch-less pointers, so touch devices see no
+/// change at all; reduced motion renders statically. Composes with
+/// [PressScale] — lift while hovering, scale while pressing.
+class HoverLift extends StatefulWidget {
+  final Widget child;
+
+  /// Rise in percent of the child's height (fraction of the implicit
+  /// [AnimatedSlide] offset), so cards of any size lift proportionally.
+  final double lift;
+  final double scale;
+  final Duration duration;
+
+  const HoverLift({
+    super.key,
+    required this.child,
+    this.lift = 0.015,
+    this.scale = 1.015,
+    this.duration = const Duration(milliseconds: 180),
+  });
+
+  @override
+  State<HoverLift> createState() => _HoverLiftState();
+}
+
+class _HoverLiftState extends State<HoverLift> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.disableAnimationsOf(context)) return widget.child;
+
+    final child = AnimatedContainer(
+      duration: widget.duration,
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: _hovered
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.16),
+                  blurRadius: 22,
+                  offset: const Offset(0, 9),
+                ),
+              ]
+            : const [],
+      ),
+      child: AnimatedSlide(
+        offset: _hovered ? Offset(0, -widget.lift) : Offset.zero,
+        duration: widget.duration,
+        curve: Curves.easeOutCubic,
+        child: AnimatedScale(
+          scale: _hovered ? widget.scale : 1.0,
+          duration: widget.duration,
+          curve: Curves.easeOutCubic,
+          child: widget.child,
+        ),
+      ),
+    );
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: child,
+    );
+  }
+}
+
 /// Number that counts up from its previous value whenever [value] changes.
 ///
 /// Runs once on first mount (0 → value) and morphs on every subsequent
