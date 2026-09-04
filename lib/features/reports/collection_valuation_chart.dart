@@ -121,6 +121,12 @@ class CollectionValuationChart extends ConsumerWidget {
                   )
                 : LineChart(
                     LineChartData(
+                      // One x-tick per data point: without explicit bounds
+                      // fl_chart emits fractional ticks (0, 0.5, 1…) that map
+                      // several ticks onto the same label — the repeated,
+                      // overlapping month labels seen on small datasets.
+                      minX: 0,
+                      maxX: (entries.length - 1).toDouble(),
                       gridData: FlGridData(
                         show: true,
                         drawVerticalLine: false,
@@ -161,6 +167,7 @@ class CollectionValuationChart extends ConsumerWidget {
                           sideTitles: SideTitles(
                             showTitles: true,
                             reservedSize: 24,
+                            interval: 1,
                             getTitlesWidget: (value, meta) {
                               final idx = value.toInt();
                               if (idx < 0 || idx >= labels.length) {
