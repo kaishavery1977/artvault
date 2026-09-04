@@ -9,6 +9,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/bits.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/widgets/states.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/providers/providers.dart';
 import '../../data/models/artist.dart';
 
@@ -252,22 +253,11 @@ class _ArtistCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: AppSpacing.xxs),
-                      if (artist.nationality.isNotEmpty)
-                        Text(
-                          artist.nationality,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: scheme.onSurface.withValues(alpha: 0.55),
-                          ),
-                        ),
-                      const SizedBox(height: AppSpacing.xs),
-                      // Mini stat chip
+                      // Worded painting count, directly under the name — the
+                      // bare number read as a mysterious "/ 1" glyph.
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
+                          horizontal: 9,
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
@@ -278,18 +268,36 @@ class _ArtistCard extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.brush, size: 11, color: gradient.$1),
-                            const SizedBox(width: 3),
-                            Text(
-                              '$paintingCount',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: gradient.$1,
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                '$paintingCount '
+                                '${L10n.t(context, paintingCount == 1 ? 'painting' : 'paintings')}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: gradient.$1,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
+                      if (artist.nationality.isNotEmpty) ...[
+                        const SizedBox(height: AppSpacing.xxs),
+                        Text(
+                          artist.nationality,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: scheme.onSurface.withValues(alpha: 0.55),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

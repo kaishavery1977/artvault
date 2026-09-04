@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/services/biometric_service.dart';
 import '../../core/widgets/motion.dart';
@@ -383,150 +385,213 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
     final signedIn = auth.user?.email.isNotEmpty ?? false;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Security')),
+      appBar: AppBar(title: Text(L10n.t(context, 'Security'))),
       body: ListView(
         padding: AppSpacing.screenPadding,
         children: [
           const SizedBox(height: AppSpacing.sm),
           ...staggerReveal([
-            GlassCard(
-              padding: AppSpacing.cardPadding,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'App lock',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  _Row(
-                    icon: Icons.lock_outline,
-                    title: 'Lock the app on launch',
-                    subtitle: 'Show a lock screen before ArtVault opens',
-                    trailing: _loading
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Switch(value: _appLock, onChanged: _toggleAppLock),
-                  ),
-                  const Divider(height: 16),
-                  _Row(
-                    icon: Icons.face_retouching_natural,
-                    title: 'Unlock with Face lock',
-                    subtitle: _faceLockRemaining > Duration.zero
-                        ? 'Locked — try again in '
-                              '${_faceLockRemaining.inSeconds}s'
-                        : _faceLock
-                        ? 'On — tap to re-scan or remove your face'
-                        : _faceAvailable
-                        ? 'Scan your face with the camera to unlock'
-                        : 'No camera available for face unlock',
-                    trailing: _loading
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Switch(
-                            value: _faceLock,
-                            onChanged: _faceAvailable ? _toggleFaceLock : null,
-                          ),
-                    onTap: _faceAvailable
-                        ? (_faceLock ? _showFaceManageSheet : null)
-                        : () => ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Face Unlock is not set up on this device. '
-                                'Enable Face Unlock in your phone settings first.',
-                              ),
-                            ),
-                          ),
-                  ),
-                  const Divider(height: 16),
-                  _Row(
-                    icon: Icons.fingerprint,
-                    title: 'Unlock with Fingerprint',
-                    subtitle: _biometric
-                        ? 'On — tap to test it. New prints are added in your phone settings'
-                        : _fingerprintAvailable
-                        ? 'Use the fingerprint sensor to unlock'
-                        : 'Not set up — add a fingerprint in your device settings',
-                    trailing: _loading
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Switch(
-                            value: _biometric,
-                            onChanged: _fingerprintAvailable
-                                ? _toggleBiometric
-                                : null,
-                          ),
-                    onTap: _fingerprintAvailable
-                        ? (_biometric ? _showFingerprintManageSheet : null)
-                        : () => ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'No fingerprint is set up on this device. '
-                                'Add one in your phone settings first.',
-                              ),
-                            ),
-                          ),
-                  ),
-                  const Divider(height: 16),
-                  _Row(
-                    icon: Icons.pin_outlined,
-                    title: 'Passcode lock',
-                    subtitle: _passcodeSet
-                        ? 'Unlock with a ${AppConstants.kPasscodeLength}-digit passcode when biometrics fail'
-                        : 'Set a ${AppConstants.kPasscodeLength}-digit passcode to unlock the vault',
-                    trailing: _loading
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Switch(
-                            value: _passcodeSet,
-                            onChanged: _togglePasscode,
-                          ),
-                    onTap: _passcodeSet ? _changePasscode : null,
-                  ),
-                  if (_appLock) ...[
-                    const Divider(height: 16),
-                    _AutoLockRow(
-                      currentSeconds: _autoLockTimeout,
-                      onChanged: (seconds) async {
-                        await SettingsRepository.instance.setAutoLockTimeout(
-                          seconds,
-                        );
-                        if (mounted) setState(() => _autoLockTimeout = seconds);
-                      },
-                    ),
-                  ],
-                  if (_available ||
-                      _faceAvailable ||
-                      _fingerprintAvailable ||
-                      _passcodeSet)
-                    Padding(
-                      padding: const EdgeInsets.only(top: AppSpacing.sm),
-                      child: Text(
-                        'Fingerprint uses the device sensor; Face lock scans with the front camera when the phone does not expose Face Unlock to apps.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: scheme.onSurface.withValues(alpha: 0.6),
-                        ),
+            // The device lock options (app launch lock, face, fingerprint,
+            // passcode) are phone-only — they read as broken dead switches
+            // on the web, so they render there as a single explanatory card.
+            if (!kIsWeb) ...[
+              GlassCard(
+                padding: AppSpacing.cardPadding,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      L10n.t(context, 'App lock'),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
                       ),
                     ),
-                ],
+                    const SizedBox(height: AppSpacing.sm),
+                    _Row(
+                      icon: Icons.lock_outline,
+                      title: L10n.t(context, 'Lock the app on launch'),
+                      subtitle: L10n.t(
+                        context,
+                        'Show a lock screen before ArtVault opens',
+                      ),
+                      trailing: _loading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Switch(value: _appLock, onChanged: _toggleAppLock),
+                    ),
+                    const Divider(height: 16),
+                    _Row(
+                      icon: Icons.face_retouching_natural,
+                      title: L10n.t(context, 'Unlock with Face lock'),
+                      subtitle: _faceLockRemaining > Duration.zero
+                          ? 'Locked — try again in '
+                                '${_faceLockRemaining.inSeconds}s'
+                          : _faceLock
+                          ? L10n.t(
+                              context,
+                              'On — tap to re-scan or remove your face',
+                            )
+                          : _faceAvailable
+                          ? L10n.t(
+                              context,
+                              'Scan your face with the camera to unlock',
+                            )
+                          : L10n.t(
+                              context,
+                              'No camera available for face unlock',
+                            ),
+                      trailing: _loading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Switch(
+                              value: _faceLock,
+                              onChanged: _faceAvailable
+                                  ? _toggleFaceLock
+                                  : null,
+                            ),
+                      onTap: _faceAvailable
+                          ? (_faceLock ? _showFaceManageSheet : null)
+                          : () => ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Face Unlock is not set up on this device. '
+                                  'Enable Face Unlock in your phone settings first.',
+                                ),
+                              ),
+                            ),
+                    ),
+                    const Divider(height: 16),
+                    _Row(
+                      icon: Icons.fingerprint,
+                      title: L10n.t(context, 'Unlock with Fingerprint'),
+                      subtitle: _biometric
+                          ? L10n.t(
+                              context,
+                              'On — tap to test it. New prints are added in your phone settings',
+                            )
+                          : _fingerprintAvailable
+                          ? L10n.t(
+                              context,
+                              'Use the fingerprint sensor to unlock',
+                            )
+                          : L10n.t(
+                              context,
+                              'Not set up — add a fingerprint in your device settings',
+                            ),
+                      trailing: _loading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Switch(
+                              value: _biometric,
+                              onChanged: _fingerprintAvailable
+                                  ? _toggleBiometric
+                                  : null,
+                            ),
+                      onTap: _fingerprintAvailable
+                          ? (_biometric ? _showFingerprintManageSheet : null)
+                          : () => ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'No fingerprint is set up on this device. '
+                                  'Add one in your phone settings first.',
+                                ),
+                              ),
+                            ),
+                    ),
+                    const Divider(height: 16),
+                    _Row(
+                      icon: Icons.pin_outlined,
+                      title: L10n.t(context, 'Passcode lock'),
+                      subtitle: _passcodeSet
+                          ? 'Unlock with a ${AppConstants.kPasscodeLength}-digit passcode when biometrics fail'
+                          : 'Set a ${AppConstants.kPasscodeLength}-digit passcode to unlock the vault',
+                      trailing: _loading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Switch(
+                              value: _passcodeSet,
+                              onChanged: _togglePasscode,
+                            ),
+                      onTap: _passcodeSet ? _changePasscode : null,
+                    ),
+                    if (_appLock) ...[
+                      const Divider(height: 16),
+                      _AutoLockRow(
+                        currentSeconds: _autoLockTimeout,
+                        onChanged: (seconds) async {
+                          await SettingsRepository.instance.setAutoLockTimeout(
+                            seconds,
+                          );
+                          if (mounted) {
+                            setState(() => _autoLockTimeout = seconds);
+                          }
+                        },
+                      ),
+                    ],
+                    if (_available ||
+                        _faceAvailable ||
+                        _fingerprintAvailable ||
+                        _passcodeSet)
+                      Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.sm),
+                        child: Text(
+                          'Fingerprint uses the device sensor; Face lock scans with the front camera when the phone does not expose Face Unlock to apps.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: scheme.onSurface.withValues(alpha: 0.6),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
+            ] else ...[
+              GlassCard(
+                padding: AppSpacing.cardPadding,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      L10n.t(context, 'Web security'),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      L10n.t(
+                        context,
+                        'ArtVault for the web protects your vault with your '
+                        'ArtVault sign-in (email + password) and Firebase '
+                        'Authentication. There is no local app to lock: close '
+                        'the tab or sign out to end the session, and use the '
+                        'account options below to change your password or send '
+                        'a reset email.',
+                      ),
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.45,
+                        color: scheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: AppSpacing.lg),
             GlassCard(
               padding: AppSpacing.cardPadding,
@@ -534,7 +599,7 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Account',
+                    L10n.t(context, 'Account'),
                     style: const TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 15,
@@ -543,18 +608,27 @@ class _SecurityScreenState extends ConsumerState<SecurityScreen> {
                   const SizedBox(height: AppSpacing.sm),
                   _Row(
                     icon: Icons.lock_reset,
-                    title: 'Change password',
+                    title: L10n.t(context, 'Change password'),
                     subtitle: signedIn
-                        ? 'Set a new password right here, no email needed'
-                        : 'Update your ArtVault sign-in password',
+                        ? L10n.t(
+                            context,
+                            'Set a new password right here, no email needed',
+                          )
+                        : L10n.t(
+                            context,
+                            'Update your ArtVault sign-in password',
+                          ),
                     trailing: const Icon(Icons.chevron_right, size: 20),
                     onTap: signedIn ? _changePasswordInApp : _notSignedIn,
                   ),
                   const Divider(height: 16),
                   _Row(
                     icon: Icons.mark_email_read_outlined,
-                    title: 'Send reset email',
-                    subtitle: 'Get a reset link by email if you forgot it',
+                    title: L10n.t(context, 'Send reset email'),
+                    subtitle: L10n.t(
+                      context,
+                      'Get a reset link by email if you forgot it',
+                    ),
                     trailing: const Icon(Icons.chevron_right, size: 20),
                     onTap: () async {
                       if (!CloudBackend.instance.isReady) {
@@ -1167,7 +1241,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Change password'),
+      title: Text(L10n.t(context, 'Change password')),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1183,7 +1257,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
             obscureText: true,
             maxLength: Validators.maxPasswordLength,
             decoration: InputDecoration(
-              labelText: 'Current password',
+              labelText: L10n.t(context, 'Current password'),
               errorText: _error,
               counterText: '',
             ),
@@ -1193,8 +1267,8 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
             controller: _next,
             obscureText: true,
             maxLength: Validators.maxPasswordLength,
-            decoration: const InputDecoration(
-              labelText: 'New password',
+            decoration: InputDecoration(
+              labelText: L10n.t(context, 'New password'),
               counterText: '',
             ),
           ),
@@ -1203,8 +1277,8 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
             controller: _confirm,
             obscureText: true,
             maxLength: Validators.maxPasswordLength,
-            decoration: const InputDecoration(
-              labelText: 'Confirm new password',
+            decoration: InputDecoration(
+              labelText: L10n.t(context, 'Confirm new password'),
               counterText: '',
             ),
           ),
@@ -1213,11 +1287,11 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancel'),
+          child: Text(L10n.t(context, 'Cancel')),
         ),
         FilledButton(
           onPressed: _saving ? null : _submit,
-          child: const Text('Update password'),
+          child: Text(L10n.t(context, 'Update password')),
         ),
       ],
     );
@@ -1250,20 +1324,20 @@ class _ResetPasswordDialogState extends State<ResetPasswordDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Reset password'),
+      title: Text(L10n.t(context, 'Reset password')),
       content: TextField(
         controller: _controller,
         keyboardType: TextInputType.emailAddress,
-        decoration: const InputDecoration(labelText: 'Email'),
+        decoration: InputDecoration(labelText: L10n.t(context, 'Email')),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(L10n.t(context, 'Cancel')),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, _controller.text.trim()),
-          child: const Text('Send reset link'),
+          child: Text(L10n.t(context, 'Send reset link')),
         ),
       ],
     );
