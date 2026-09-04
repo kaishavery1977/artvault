@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/providers/providers.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/bits.dart';
 import '../../../data/models/painting.dart';
 
 /// Collection valuation line chart — shows portfolio value over time.
@@ -64,7 +65,7 @@ class CollectionValuationChart extends ConsumerWidget {
         : spots.map((s) => s.y).reduce((a, b) => a > b ? a : b);
     final currency = ref.watch(currencyProvider);
 
-    return Container(
+    final card = Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Theme.of(context).brightness == Brightness.dark
@@ -82,10 +83,11 @@ class CollectionValuationChart extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.trending_up_rounded,
-                size: 20,
+              IconWell(
+                icon: Icons.trending_up_rounded,
                 color: AppColors.emerald500,
+                size: 32,
+                iconSize: 18,
               ),
               const SizedBox(width: 8),
               Text(
@@ -247,7 +249,10 @@ class CollectionValuationChart extends ConsumerWidget {
           ),
         ],
       ),
-    ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.03);
+    );
+    // Reduced motion renders the chart card statically — no entrance.
+    if (MediaQuery.disableAnimationsOf(context)) return card;
+    return card.animate().fadeIn(duration: 600.ms).slideY(begin: 0.03);
   }
 
   String _monthLabel(DateTime date) {

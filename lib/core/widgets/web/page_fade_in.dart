@@ -25,6 +25,7 @@ class _PageFadeInState extends State<PageFadeIn>
   late final AnimationController _ctrl;
   late final Animation<double> _fadeAnim;
   late final Animation<Offset> _slideAnim;
+  bool _resolved = false;
 
   @override
   void initState() {
@@ -39,6 +40,19 @@ class _PageFadeInState extends State<PageFadeIn>
     Future.delayed(widget.delay, () {
       if (mounted) _ctrl.forward();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reduced motion: jump to the settled frame — the page renders fully
+    // visible instead of fading in. (The scheduled [Future.delayed] forward
+    // is a no-op once the controller is already at 1.)
+    if (_resolved) return;
+    _resolved = true;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _ctrl.value = 1.0;
+    }
   }
 
   @override

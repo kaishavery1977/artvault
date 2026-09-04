@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/providers/providers.dart';
+import '../../../core/widgets/bits.dart';
 import '../../../data/models/painting.dart';
 
 /// Web activity dashboard — upload trends, medium breakdown, artist stats.
@@ -59,247 +60,256 @@ class ActivityDashboardWeb extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Upload trends bar chart
-        _DashboardCard(
-          title: 'Upload Activity',
-          icon: Icons.bar_chart_rounded,
-          child: SizedBox(
-            height: 180,
-            child: BarChart(
-              BarChartData(
-                alignment: BarChartAlignment.spaceAround,
-                maxY:
-                    (monthlyCounts.values.isEmpty
-                        ? 1
-                        : monthlyCounts.values.reduce(
-                            (a, b) => a > b ? a : b,
-                          )) *
-                    1.2,
-                barTouchData: BarTouchData(
-                  touchTooltipData: BarTouchTooltipData(
-                    getTooltipItem: (group, groupIdx, rod, rodIdx) {
-                      final keys = monthlyCounts.keys.toList();
-                      return BarTooltipItem(
-                        '${keys[group.x.toInt()]}\n${rod.toY.toInt()} paintings',
-                        const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  leftTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
+        _entrance(
+          context,
+          200,
+          _DashboardCard(
+            title: 'Upload Activity',
+            icon: Icons.bar_chart_rounded,
+            child: SizedBox(
+              height: 180,
+              child: BarChart(
+                BarChartData(
+                  alignment: BarChartAlignment.spaceAround,
+                  maxY:
+                      (monthlyCounts.values.isEmpty
+                          ? 1
+                          : monthlyCounts.values.reduce(
+                              (a, b) => a > b ? a : b,
+                            )) *
+                      1.2,
+                  barTouchData: BarTouchData(
+                    touchTooltipData: BarTouchTooltipData(
+                      getTooltipItem: (group, groupIdx, rod, rodIdx) {
                         final keys = monthlyCounts.keys.toList();
-                        final idx = value.toInt();
-                        if (idx < 0 || idx >= keys.length) {
-                          return const SizedBox.shrink();
-                        }
-                        if (idx % 2 != 0) return const SizedBox.shrink();
-                        return Text(
-                          keys[idx],
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: scheme.onSurfaceVariant.withValues(
-                              alpha: 0.5,
-                            ),
+                        return BarTooltipItem(
+                          '${keys[group.x.toInt()]}\n${rod.toY.toInt()} paintings',
+                          const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
                           ),
                         );
                       },
                     ),
                   ),
-                ),
-                borderData: FlBorderData(show: false),
-                gridData: const FlGridData(show: false),
-                barGroups: monthlyCounts.entries.toList().asMap().entries.map((
-                  entry,
-                ) {
-                  final idx = entry.key;
-                  final count = entry.value.value;
-                  return BarChartGroupData(
-                    x: idx,
-                    barRods: [
-                      BarChartRodData(
-                        toY: count.toDouble(),
-                        color: AppColors.accent.withValues(
-                          alpha: count > 0 ? 0.8 : 0.15,
-                        ),
-                        width: 14,
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(4),
-                        ),
-                        backDrawRodData: BackgroundBarChartRodData(
-                          show: true,
-                          toY:
-                              (monthlyCounts.values.isEmpty
-                                  ? 1
-                                  : monthlyCounts.values.reduce(
-                                      (a, b) => a > b ? a : b,
-                                    )) *
-                              1.2,
-                          color: AppColors.accent.withValues(alpha: 0.04),
-                        ),
+                  titlesData: FlTitlesData(
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    leftTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          final keys = monthlyCounts.keys.toList();
+                          final idx = value.toInt();
+                          if (idx < 0 || idx >= keys.length) {
+                            return const SizedBox.shrink();
+                          }
+                          if (idx % 2 != 0) return const SizedBox.shrink();
+                          return Text(
+                            keys[idx],
+                            style: TextStyle(
+                              fontSize: 9,
+                              color: scheme.onSurfaceVariant.withValues(
+                                alpha: 0.5,
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    ],
-                  );
-                }).toList(),
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  gridData: const FlGridData(show: false),
+                  barGroups: monthlyCounts.entries.toList().asMap().entries.map(
+                    (entry) {
+                      final idx = entry.key;
+                      final count = entry.value.value;
+                      return BarChartGroupData(
+                        x: idx,
+                        barRods: [
+                          BarChartRodData(
+                            toY: count.toDouble(),
+                            color: AppColors.accent.withValues(
+                              alpha: count > 0 ? 0.8 : 0.15,
+                            ),
+                            width: 14,
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(4),
+                            ),
+                            backDrawRodData: BackgroundBarChartRodData(
+                              show: true,
+                              toY:
+                                  (monthlyCounts.values.isEmpty
+                                      ? 1
+                                      : monthlyCounts.values.reduce(
+                                          (a, b) => a > b ? a : b,
+                                        )) *
+                                  1.2,
+                              color: AppColors.accent.withValues(alpha: 0.04),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ).toList(),
+                ),
               ),
             ),
           ),
-        ).animate().fadeIn(delay: 200.ms, duration: 500.ms),
+        ),
 
         const SizedBox(height: 16),
 
         // Medium breakdown + Top artists side by side
-        Row(
-          children: [
-            Expanded(
-              child: _DashboardCard(
-                title: 'Mediums',
-                icon: Icons.palette_outlined,
-                child: Column(
-                  children: mediumCounts.entries.take(5).map((e) {
-                    final fraction = paintings.isNotEmpty
-                        ? e.value / paintings.length
-                        : 0.0;
-                    final colors = [
-                      AppColors.violet500,
-                      AppColors.cyan500,
-                      AppColors.rose500,
-                      AppColors.amber500,
-                      AppColors.emerald500,
-                    ];
-                    final color =
-                        colors[mediumCounts.entries.toList().indexOf(e) %
-                            colors.length];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: Text(
-                              e.key,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Expanded(
-                            flex: 5,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: fraction,
-                                minHeight: 8,
-                                backgroundColor: color.withValues(alpha: 0.1),
-                                valueColor: AlwaysStoppedAnimation(color),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${e.value}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: color,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _DashboardCard(
-                title: 'Top Artists',
-                icon: Icons.person_outline_rounded,
-                child: Column(
-                  children: topArtists.take(5).map((e) {
-                    final colors = [
-                      AppColors.accent,
-                      AppColors.cyan400,
-                      AppColors.rose400,
-                      AppColors.amber400,
-                      AppColors.emerald400,
-                    ];
-                    final color = colors[topArtists.indexOf(e) % colors.length];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  color.withValues(alpha: 0.3),
-                                  color.withValues(alpha: 0.1),
-                                ],
-                              ),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
+        _entrance(
+          context,
+          400,
+          Row(
+            children: [
+              Expanded(
+                child: _DashboardCard(
+                  title: 'Mediums',
+                  icon: Icons.palette_outlined,
+                  child: Column(
+                    children: mediumCounts.entries.take(5).map((e) {
+                      final fraction = paintings.isNotEmpty
+                          ? e.value / paintings.length
+                          : 0.0;
+                      final colors = [
+                        AppColors.violet500,
+                        AppColors.cyan500,
+                        AppColors.rose500,
+                        AppColors.amber500,
+                        AppColors.emerald500,
+                      ];
+                      final color =
+                          colors[mediumCounts.entries.toList().indexOf(e) %
+                              colors.length];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
                               child: Text(
-                                e.key[0].toUpperCase(),
+                                e.key,
                                 style: TextStyle(
                                   fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  color: color,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Expanded(
+                              flex: 5,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: fraction,
+                                  minHeight: 8,
+                                  backgroundColor: color.withValues(alpha: 0.1),
+                                  valueColor: AlwaysStoppedAnimation(color),
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              e.key,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
+                            const SizedBox(width: 8),
+                            Text(
+                              '${e.value}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: color,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          Text(
-                            '${e.value}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: color,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
-            ),
-          ],
-        ).animate().fadeIn(delay: 400.ms, duration: 500.ms),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _DashboardCard(
+                  title: 'Top Artists',
+                  icon: Icons.person_outline_rounded,
+                  child: Column(
+                    children: topArtists.take(5).map((e) {
+                      final colors = [
+                        AppColors.accent,
+                        AppColors.cyan400,
+                        AppColors.rose400,
+                        AppColors.amber400,
+                        AppColors.emerald400,
+                      ];
+                      final color =
+                          colors[topArtists.indexOf(e) % colors.length];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    color.withValues(alpha: 0.3),
+                                    color.withValues(alpha: 0.1),
+                                  ],
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  e.key[0].toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    color: color,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                e.key,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Text(
+                              '${e.value}',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: color,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -321,6 +331,14 @@ class ActivityDashboardWeb extends ConsumerWidget {
     ];
     return '${months[date.month - 1]} ${date.year.toString().substring(2)}';
   }
+}
+
+/// Entrance fade for dashboard cards/rows. flutter_animate has no built-in
+/// reduced-motion gate, so this helper renders statically when the OS
+/// requests fewer animations.
+Widget _entrance(BuildContext context, int delayMs, Widget child) {
+  if (MediaQuery.disableAnimationsOf(context)) return child;
+  return child.animate().fadeIn(delay: delayMs.ms, duration: 500.ms);
 }
 
 class _DashboardCard extends StatelessWidget {
@@ -356,10 +374,11 @@ class _DashboardCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(
-                icon,
-                size: 18,
+              IconWell(
+                icon: icon,
                 color: Theme.of(context).colorScheme.primary,
+                size: 32,
+                iconSize: 17,
               ),
               const SizedBox(width: 8),
               Text(

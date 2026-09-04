@@ -123,13 +123,19 @@ class GlassCard extends StatelessWidget {
     }
 
     // Premium entrance: cards drift up softly as they fade in, and press
-    // down slightly when tapped.
-    return PressScale(
-      child: result
-          .animate()
-          .fadeIn(duration: 420.ms, curve: Curves.easeOutCubic)
-          .slideY(begin: 0.03, duration: 420.ms, curve: Curves.easeOutCubic),
-    );
+    // down slightly when tapped. Reduced motion renders them statically —
+    // no fade/slide on entry.
+    final entrance = MediaQuery.disableAnimationsOf(context)
+        ? result
+        : result
+              .animate()
+              .fadeIn(duration: 420.ms, curve: Curves.easeOutCubic)
+              .slideY(
+                begin: 0.03,
+                duration: 420.ms,
+                curve: Curves.easeOutCubic,
+              );
+    return PressScale(child: entrance);
   }
 }
 
@@ -150,27 +156,29 @@ class SurfaceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PressScale(
-      child:
-          Card(
-                margin: margin ?? EdgeInsets.zero,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
-                ),
-                child: InkWell(
-                  onTap: onTap,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
-                  child: Padding(padding: padding, child: child),
-                ),
-              )
+    final card = Card(
+      margin: margin ?? EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+        child: Padding(padding: padding, child: child),
+      ),
+    );
+    // Reduced motion renders the card statically — no entrance fade/slide.
+    final entrance = MediaQuery.disableAnimationsOf(context)
+        ? card
+        : card
               .animate()
               .fadeIn(duration: 420.ms, curve: Curves.easeOutCubic)
               .slideY(
                 begin: 0.03,
                 duration: 420.ms,
                 curve: Curves.easeOutCubic,
-              ),
-    );
+              );
+    return PressScale(child: entrance);
   }
 }
 
@@ -194,44 +202,47 @@ class SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-          padding: padding ?? const EdgeInsets.only(top: 8, bottom: 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: theme.textTheme.headlineSmall),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant.withValues(
-                            alpha: 0.7,
-                          ),
-                        ),
+    final header = Padding(
+      padding: padding ?? const EdgeInsets.only(top: 8, bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: theme.textTheme.headlineSmall),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.7,
                       ),
-                    ],
-                  ],
-                ),
-              ),
-              if (actionLabel != null)
-                TextButton(
-                  onPressed: onAction,
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
                     ),
                   ),
-                  child: Text(actionLabel!),
-                ),
-            ],
+                ],
+              ],
+            ),
           ),
-        )
+          if (actionLabel != null)
+            TextButton(
+              onPressed: onAction,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+              ),
+              child: Text(actionLabel!),
+            ),
+        ],
+      ),
+    );
+    // Reduced motion: no entrance animation, header renders statically.
+    if (MediaQuery.disableAnimationsOf(context)) return header;
+    return header
         .animate()
         .fadeIn(duration: 380.ms, curve: Curves.easeOutCubic)
         .slideY(begin: 0.06, duration: 380.ms, curve: Curves.easeOutCubic);

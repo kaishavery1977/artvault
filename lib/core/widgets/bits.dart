@@ -30,35 +30,38 @@ class TagChip extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final base = color ?? scheme.primary;
 
-    return Material(
-          color: base.withValues(alpha: isDark ? 0.15 : 0.08),
-          borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (icon != null) ...[
-                    Icon(icon, size: 13, color: base),
-                    const SizedBox(width: 4),
-                  ],
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: base,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ],
+    final chip = Material(
+      color: base.withValues(alpha: isDark ? 0.15 : 0.08),
+      borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 13, color: base),
+                const SizedBox(width: 4),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: base,
+                  letterSpacing: 0.2,
+                ),
               ),
-            ),
+            ],
           ),
-        )
+        ),
+      ),
+    );
+    // Reduced motion renders the chip statically — no pop-in entrance.
+    if (MediaQuery.disableAnimationsOf(context)) return chip;
+    return chip
         .animate()
         .fadeIn(duration: 320.ms, curve: Curves.easeOutCubic)
         .scale(
@@ -97,16 +100,29 @@ class IconWell extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final base = isDark ? 0.18 : 0.10;
+    final wash = color.withValues(alpha: (base * emphasis).clamp(0.0, 0.55));
+    final iconWidget = Icon(icon, size: iconSize, color: color);
+    final tile = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: wash,
+        borderRadius: BorderRadius.circular(radius),
+      ),
+      child: iconWidget,
+    );
+    // Reduced motion: the hover-emphasis wash renders statically.
+    if (MediaQuery.disableAnimationsOf(context)) return tile;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeOutCubic,
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: (base * emphasis).clamp(0.0, 0.55)),
+        color: wash,
         borderRadius: BorderRadius.circular(radius),
       ),
-      child: Icon(icon, size: iconSize, color: color),
+      child: iconWidget,
     );
   }
 }
@@ -236,106 +252,101 @@ class StatCard extends StatelessWidget {
       letterSpacing: -0.5,
     );
 
-    return PressScale(
-      child:
-          Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
-                  onTap: onTap,
-                  child: Ink(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      // Translucent fill so the ambient gradient shows
-                      // through — decoration only, layout untouched.
-                      color: surface.withValues(alpha: isDark ? 0.55 : 0.78),
-                      borderRadius: BorderRadius.circular(
-                        AppSpacing.radiusCard,
-                      ),
-                      border: Border.all(
-                        color: theme.colorScheme.outlineVariant.withValues(
-                          alpha: 0.5,
-                        ),
-                        width: 0.5,
-                      ),
-                      boxShadow: isDark
-                          ? [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.3),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ]
-                          : [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.04),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
+    final card = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+        onTap: onTap,
+        child: Ink(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            // Translucent fill so the ambient gradient shows
+            // through — decoration only, layout untouched.
+            color: surface.withValues(alpha: isDark ? 0.55 : 0.78),
+            borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+              width: 0.5,
+            ),
+            boxShadow: isDark
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
-                    // A fixed-height FittedBox(scaleDown) column: the whole
-                    // card content (icon, value, label) scales down as one
-                    // unit when the grid cell is tighter than the content, so
-                    // a StatCard can never overflow its cell on any device /
-                    // font scale. (No flex children, so FittedBox is safe.)
-                    child: SizedBox(
-                      height: 96,
-                      width: double.infinity,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.bottomLeft,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: color.withValues(
-                                  alpha: isDark ? 0.2 : 0.12,
-                                ),
-                                borderRadius: BorderRadius.circular(
-                                  AppSpacing.radiusMd,
-                                ),
-                              ),
-                              child: Icon(icon, size: 22, color: color),
-                            ),
-                            const SizedBox(height: 10),
-                            if (countValue != null && countFormat != null)
-                              AnimatedCountUp(
-                                value: countValue!,
-                                format: countFormat!,
-                                style: valueStyle,
-                              )
-                            else
-                              Text(value, style: valueStyle),
-                            const SizedBox(height: 2),
-                            Text(
-                              label,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant
-                                    .withValues(alpha: 0.7),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+          ),
+          // A fixed-height FittedBox(scaleDown) column: the whole
+          // card content (icon, value, label) scales down as one
+          // unit when the grid cell is tighter than the content, so
+          // a StatCard can never overflow its cell on any device /
+          // font scale. (No flex children, so FittedBox is safe.)
+          child: SizedBox(
+            height: 96,
+            width: double.infinity,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.bottomLeft,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: isDark ? 0.2 : 0.12),
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                    ),
+                    child: Icon(icon, size: 22, color: color),
+                  ),
+                  const SizedBox(height: 10),
+                  if (countValue != null && countFormat != null)
+                    AnimatedCountUp(
+                      value: countValue!,
+                      format: countFormat!,
+                      style: valueStyle,
+                    )
+                  else
+                    Text(value, style: valueStyle),
+                  const SizedBox(height: 2),
+                  Text(
+                    label,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.7,
                       ),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                ),
-              )
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    // Reduced motion renders the card statically — no entrance fade/slide.
+    final entrance = MediaQuery.disableAnimationsOf(context)
+        ? card
+        : card
               .animate()
               .fadeIn(duration: 420.ms, curve: Curves.easeOutCubic)
               .slideY(
                 begin: 0.04,
                 duration: 420.ms,
                 curve: Curves.easeOutCubic,
-              ),
-    );
+              );
+    return PressScale(child: entrance);
   }
 }
 
@@ -361,50 +372,50 @@ class InfoBanner extends StatelessWidget {
     final theme = Theme.of(context);
     final base = color ?? theme.colorScheme.primary;
 
-    return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: base.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-            border: Border.all(color: base.withValues(alpha: 0.15)),
+    final banner = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: base.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        border: Border.all(color: base.withValues(alpha: 0.15)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: base),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: base,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
-          child: Row(
-            children: [
-              Icon(icon, size: 20, color: base),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  message,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: base,
-                    fontWeight: FontWeight.w500,
-                  ),
+          if (actionLabel != null) ...[
+            const SizedBox(width: 8),
+            TextButton(
+              onPressed: onAction,
+              style: TextButton.styleFrom(
+                foregroundColor: base,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: Size.zero,
+              ),
+              child: Text(
+                actionLabel!,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
                 ),
               ),
-              if (actionLabel != null) ...[
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: onAction,
-                  style: TextButton.styleFrom(
-                    foregroundColor: base,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    minimumSize: Size.zero,
-                  ),
-                  child: Text(
-                    actionLabel!,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        )
+            ),
+          ],
+        ],
+      ),
+    );
+    // Reduced motion renders the banner statically — no entrance animation.
+    if (MediaQuery.disableAnimationsOf(context)) return banner;
+    return banner
         .animate()
         .fadeIn(duration: 380.ms, curve: Curves.easeOutCubic)
         .slideY(begin: 0.04, duration: 380.ms, curve: Curves.easeOutCubic);
