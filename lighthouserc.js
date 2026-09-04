@@ -9,9 +9,15 @@ module.exports = {
       // Audit the production artifact (release build), not the dev server.
       // `serve -s` rewrites unknown paths to index.html so the SPA routes
       // (/login, /gallery) resolve; LHCI starts and stops this server itself.
-      // Run locally with: flutter build web --release && lhci autorun
-      startServerCommand: 'npx --yes serve -s build/web -l 3000',
-      startServerReadyPattern: 'Accepting connections',
+      // `serve` is pre-installed (pinned) in the workflow — never resolve it
+      // through bare `npx serve`, which fetches the package at audit time and
+      // can race the server-start window (CHROME_INTERSTITIAL_ERROR).
+      // Run locally with:
+      //   flutter build web --release && npx --yes @lhci/cli autorun
+      // (bare `npx lhci` resolves an impostor placeholder package — see the
+      // Lighthouse CI workflow for the full warning.)
+      startServerCommand: 'serve -s build/web -l 3000',
+      startServerReadyPattern: 'Serving',
       startServerTimeout: 120,
       numberOfRuns: 1,
       chromeFlags: ['--headless', '--no-sandbox', '--disable-gpu'],

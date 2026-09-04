@@ -34,7 +34,7 @@ import '../../data/repositories/painting_repository.dart';
 }
 
 /// Masonry-friendly grid card for the gallery and home "recent" sections.
-class PaintingGridCard extends ConsumerWidget {
+class PaintingGridCard extends ConsumerStatefulWidget {
   final Painting painting;
   final VoidCallback? onTap;
 
@@ -66,111 +66,175 @@ class PaintingGridCard extends ConsumerWidget {
   final VoidCallback? onLongPress;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PaintingGridCard> createState() => _PaintingGridCardState();
+}
+
+class _PaintingGridCardState extends ConsumerState<PaintingGridCard> {
+  // Hover state drives the image zoom-in on desktop pointers only;
+  // MouseRegion never fires for touch, so mobile is untouched.
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final painting = widget.painting;
     // Only rebuild when canEdit changes, not on every auth state update
     // (role change, plan change, login, etc.).
     final canEdit = ref.watch(authProvider.select((a) => a.canEdit));
+    final scheme = Theme.of(context).colorScheme;
     final cover = _effectiveCover(painting);
     final image = ArtImage(path: cover.path, url: cover.url, fit: BoxFit.cover);
 
-    Widget card = ClipRRect(
-      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (heroTag != null) Hero(tag: heroTag!, child: image) else image,
-          // Bottom scrim for readability.
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.55),
-                  ],
-                  stops: const [0.45, 1.0],
+    // The artwork gently zooms in while hovered (classic gallery hover),
+    // clipped by the card's rounded corners so only the image moves.
+    Widget zoomed = AnimatedScale(
+      scale: _hovered ? 1.045 : 1.0,
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOutCubic,
+      child: image,
+    );
+    if (widget.heroTag != null) {
+      zoomed = Hero(tag: widget.heroTag!, child: zoomed);
+    }
+
+    // Selected cards get a primary ring + glow plus a tinted wash, so batch
+    // selection reads at a glance even in a dense grid.
+    Widget card = AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        border: Border.all(
+          color: widget.selected ? scheme.primary : Colors.transparent,
+          width: 2.5,
+        ),
+        boxShadow: widget.selected
+            ? [
+                BoxShadow(
+                  color: scheme.primary.withValues(alpha: 0.35),
+                  blurRadius: 18,
+                  spreadRadius: 1,
+                ),
+              ]
+            : const [],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            zoomed,
+            // Bottom scrim for readability.
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.55),
+                    ],
+                    stops: const [0.45, 1.0],
+                  ),
                 ),
               ),
             ),
-          ),
-          Positioned(
-            top: AppSpacing.xs,
-            right: AppSpacing.xs,
-            child: _FavoriteButton(painting: painting),
-          ),
-          Positioned(
-            top: AppSpacing.xs,
-            left: AppSpacing.xs,
-            child: _SyncBadge(painting: painting),
-          ),
-          Positioned(
-            left: AppSpacing.sm,
-            right: AppSpacing.sm,
-            bottom: AppSpacing.sm,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  painting.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
+            // Selected tint wash over the artwork.
+            if (widget.selected)
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: scheme.primary.withValues(alpha: 0.18),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  painting.artistName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.85),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Select mode checkbox overlay
-          if (selectMode)
+              ),
             Positioned(
               top: AppSpacing.xs,
-              left: AppSpacing.xs,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: selected
-                      ? Theme.of(context).colorScheme.primary
-                      : Colors.black45,
-                  shape: BoxShape.circle,
-                ),
-                padding: const EdgeInsets.all(2),
-                child: Icon(
-                  selected ? Icons.check_circle : Icons.circle_outlined,
-                  color: Colors.white,
-                  size: 22,
-                ),
+              right: AppSpacing.xs,
+              child: _FavoriteButton(painting: painting),
+            ),
+            // Sync badge hides while selecting — the selection check owns
+            // the same corner, and cloud chrome is noise during batch ops.
+            if (!widget.selectMode)
+              Positioned(
+                top: AppSpacing.xs,
+                left: AppSpacing.xs,
+                child: _SyncBadge(painting: painting),
+              ),
+            Positioned(
+              left: AppSpacing.sm,
+              right: AppSpacing.sm,
+              bottom: AppSpacing.sm,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    painting.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    painting.artistName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
             ),
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: selectMode
-                  ? onSelect
-                  : (onTap ?? () => context.push('/painting/${painting.id}')),
-              onLongPress: selectMode
-                  ? null
-                  : (onLongPress ??
-                        (canEdit
-                            ? () =>
-                                  context.push('/painting/edit/${painting.id}')
-                            : null)),
+            // Select mode checkbox overlay — pops in when selected.
+            if (widget.selectMode)
+              Positioned(
+                top: AppSpacing.xs,
+                left: AppSpacing.xs,
+                child: AnimatedScale(
+                  scale: widget.selected ? 1.0 : 0.8,
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.easeOutBack,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: widget.selected ? scheme.primary : Colors.black45,
+                      shape: BoxShape.circle,
+                    ),
+                    padding: const EdgeInsets.all(2),
+                    child: Icon(
+                      widget.selected
+                          ? Icons.check_circle
+                          : Icons.circle_outlined,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ),
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: widget.selectMode
+                    ? widget.onSelect
+                    : (widget.onTap ??
+                          () => context.push('/painting/${painting.id}')),
+                onLongPress: widget.selectMode
+                    ? null
+                    : (widget.onLongPress ??
+                          (canEdit
+                              ? () => context.push(
+                                  '/painting/edit/${painting.id}',
+                                )
+                              : null)),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
 
@@ -182,14 +246,26 @@ class PaintingGridCard extends ConsumerWidget {
       card = card
           .animate(
             delay: Duration(
-              milliseconds: (staggerIndex ?? 0).clamp(0, 12) * 45,
+              milliseconds: (widget.staggerIndex ?? 0).clamp(0, 12) * 45,
             ),
           )
           .fadeIn(duration: 300.ms)
           .slideY(begin: 0.05, curve: Curves.easeOut);
     }
 
-    return PressScale(child: card);
+    final scaled = PressScale(child: card);
+    if (MediaQuery.disableAnimationsOf(context)) return scaled;
+
+    // HoverLift supplies the cursor + lift; the inner MouseRegion only
+    // feeds the image-zoom state above.
+    return HoverLift(
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: scaled,
+      ),
+    );
   }
 }
 
@@ -293,83 +369,85 @@ class PaintingListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final cover = _effectiveCover(painting);
-    return PressScale(
-      child: Material(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: selectMode
-              ? onSelect
-              : (onTap ?? () => context.push('/painting/${painting.id}')),
-          onLongPress: selectMode ? null : onLongPress,
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xs),
-            child: Row(
-              children: [
-                ArtImage(
-                  path: cover.path,
-                  url: cover.url,
-                  width: 76,
-                  height: 76,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        painting.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
+    return HoverLift(
+      child: PressScale(
+        child: Material(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: selectMode
+                ? onSelect
+                : (onTap ?? () => context.push('/painting/${painting.id}')),
+            onLongPress: selectMode ? null : onLongPress,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xs),
+              child: Row(
+                children: [
+                  ArtImage(
+                    path: cover.path,
+                    url: cover.url,
+                    width: 76,
+                    height: 76,
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          painting.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${painting.artistName} · ${painting.medium}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: scheme.onSurface.withValues(alpha: 0.65),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${painting.artistName} · ${painting.medium}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: scheme.onSurface.withValues(alpha: 0.65),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          if (painting.price != null)
-                            Text(
-                              Formatters.money(
-                                painting.price,
-                                currency: painting.currency,
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            if (painting.price != null)
+                              Text(
+                                Formatters.money(
+                                  painting.price,
+                                  currency: painting.currency,
+                                ),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: scheme.primary,
+                                ),
                               ),
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
+                            const Spacer(),
+                            if (painting.isFavorite)
+                              Icon(
+                                Icons.favorite,
+                                size: 14,
                                 color: scheme.primary,
                               ),
-                            ),
-                          const Spacer(),
-                          if (painting.isFavorite)
-                            Icon(
-                              Icons.favorite,
-                              size: 14,
-                              color: scheme.primary,
-                            ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                Icon(
-                  Icons.chevron_right,
-                  color: scheme.onSurface.withValues(alpha: 0.3),
-                ),
-              ],
+                  Icon(
+                    Icons.chevron_right,
+                    color: scheme.onSurface.withValues(alpha: 0.3),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
