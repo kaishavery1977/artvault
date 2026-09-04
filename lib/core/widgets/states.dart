@@ -58,47 +58,50 @@ class EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    return Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xxl),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Floating animated icon with soft glow
-                _FloatingIcon(icon: icon, color: scheme.primary),
-                const SizedBox(height: AppSpacing.lg),
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 18,
-                  ),
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    subtitle!,
-                    textAlign: TextAlign.center,
-                    maxLines: 3,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: scheme.onSurface.withValues(alpha: 0.65),
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-                if (actionLabel != null) ...[
-                  const SizedBox(height: AppSpacing.lg),
-                  FilledButton.icon(
-                    onPressed: onAction,
-                    icon: const Icon(Icons.add, size: 20),
-                    label: Text(actionLabel!),
-                  ),
-                ],
-              ],
+    final state = Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Floating animated icon with soft glow
+            _FloatingIcon(icon: icon, color: scheme.primary),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+              ),
             ),
-          ),
-        )
+            if (subtitle != null) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                subtitle!,
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurface.withValues(alpha: 0.65),
+                  height: 1.4,
+                ),
+              ),
+            ],
+            if (actionLabel != null) ...[
+              const SizedBox(height: AppSpacing.lg),
+              FilledButton.icon(
+                onPressed: onAction,
+                icon: const Icon(Icons.add, size: 20),
+                label: Text(actionLabel!),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+    // Reduced motion renders the empty state statically — no entrance.
+    if (MediaQuery.disableAnimationsOf(context)) return state;
+    return state
         .animate()
         .fadeIn(duration: 400.ms)
         .slideY(begin: 0.06, duration: 400.ms, curve: Curves.easeOutCubic);
@@ -114,7 +117,7 @@ class ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    final state = Center(
       child: Padding(
         padding: AppSpacing.screenPadding,
         child: Column(
@@ -137,7 +140,10 @@ class ErrorState extends StatelessWidget {
           ],
         ),
       ),
-    ).animate().fadeIn(duration: 300.ms);
+    );
+    // Reduced motion renders the error state statically.
+    if (MediaQuery.disableAnimationsOf(context)) return state;
+    return state.animate().fadeIn(duration: 300.ms);
   }
 }
 
@@ -155,6 +161,7 @@ class _FloatingIcon extends StatefulWidget {
 class _FloatingIconState extends State<_FloatingIcon>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
+  bool _started = false;
 
   @override
   void initState() {
@@ -162,7 +169,18 @@ class _FloatingIconState extends State<_FloatingIcon>
     _ctrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2200),
-    )..repeat(reverse: true);
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reduced motion keeps the icon at rest — no perpetual float.
+    if (_started) return;
+    _started = true;
+    if (!MediaQuery.disableAnimationsOf(context)) {
+      _ctrl.repeat(reverse: true);
+    }
   }
 
   @override

@@ -188,6 +188,12 @@ class _AnimatedCountUpState extends State<AnimatedCountUp>
   @override
   Widget build(BuildContext context) {
     final target = widget.value;
+    // Reduced motion: jump straight to the final figure — a static number,
+    // never a 0→value count-up. (StatCards, the home value chips, the admin
+    // dashboard and the About stats all use this primitive.)
+    if (MediaQuery.disableAnimationsOf(context)) {
+      return Text(widget.format(target), style: widget.style);
+    }
     final from = _display == 0 ? 0.0 : _display;
     return AnimatedBuilder(
       animation: _controller,
@@ -214,7 +220,20 @@ class _AuroraBackgroundState extends State<AuroraBackground>
   late final AnimationController _controller = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 14),
-  )..repeat(reverse: true);
+  );
+  bool _started = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    // Reduced motion renders the blobs at their static drift-phase-zero
+    // positions — no repeating movement.
+    if (!MediaQuery.disableAnimationsOf(context)) {
+      _controller.repeat(reverse: true);
+    }
+  }
 
   @override
   void dispose() {

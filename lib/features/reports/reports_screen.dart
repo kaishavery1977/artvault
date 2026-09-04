@@ -2,7 +2,9 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:shimmer/shimmer.dart';
 import 'collection_valuation_chart.dart';
 import 'activity_dashboard_web.dart';
 
@@ -14,6 +16,7 @@ import '../../core/services/share_service.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/bits.dart';
 import '../../core/widgets/motion.dart';
+import '../../core/widgets/states.dart';
 import '../../core/widgets/surfaces.dart';
 import '../../core/widgets/web/content_column.dart';
 import '../../core/providers/providers.dart';
@@ -66,47 +69,84 @@ class ReportsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final paintings =
-        (ref.watch(paintingsProvider).valueOrNull ?? const <Painting>[])
-            .where((p) => !p.isDeleted)
-            .toList();
+    final paintingsAsync = ref.watch(paintingsProvider);
+    final rawPaintings = paintingsAsync.valueOrNull ?? const <Painting>[];
+    // First paint only: while the vault is still loading, show shimmer
+    // skeletons — never a false zeroed summary or an empty-state flash.
+    final loading =
+        paintingsAsync.isLoading && paintingsAsync.valueOrNull == null;
+    final paintings = rawPaintings.where((p) => !p.isDeleted).toList();
     final artists = (ref.watch(artistsProvider).valueOrNull ?? const [])
         .where((a) => !a.isDeleted)
         .toList();
-    final canSeeAnalytics = ref.watch(
-      authProvider.select((a) => a.canSeeAnalytics),
+    final flags = ref.watch(
+      authProvider.select(
+        (a) => (canSeeAnalytics: a.canSeeAnalytics, canEdit: a.canEdit),
+      ),
     );
 
-    final content = staggerReveal([
-      _SummaryRow(
-        paintings: paintings,
-        artists: artists,
-        currency: ref.watch(currencyProvider),
-      ),
-      const SizedBox(height: AppSpacing.lg),
-      // Web-only: enhanced charts and dashboard
-      if (kIsWeb && canSeeAnalytics) ...[
-        const CollectionValuationChart(),
-        const SizedBox(height: AppSpacing.lg),
-        const ActivityDashboardWeb(),
-        const SizedBox(height: AppSpacing.lg),
-      ],
-      if (canSeeAnalytics) ...[
-        SectionHeader(title: 'Collection breakdown'),
-        _BarCard(title: 'Most common mediums', data: _topMediums(paintings)),
-        const SizedBox(height: AppSpacing.md),
-        _BarCard(
-          title: 'Upload trend (last 6 months)',
-          data: _uploadTrend(paintings),
+    final List<Widget> content;
+    if (loading) {
+      content = const [_ReportsSkeleton()];
+    } else if (paintings.isEmpty) {
+      // Empty vault: the one state that matters is the add action — the
+      // summary, charts and export card are all meaningless at zero, so the
+      // empty state owns the single CTA (mirrors the #33 FAB dedupe).
+      content = [
+        EmptyState(
+          icon: Icons.query_stats_rounded,
+          title: 'No collection data yet',
+          subtitle:
+              'Portfolio value trends, medium breakdowns and exports appear '
+              'here once your vault holds artwork.',
+          actionLabel: flags.canEdit ? 'Add your first painting' : null,
+          onAction: flags.canEdit ? () => context.push('/painting/new') : null,
         ),
-        const SizedBox(height: AppSpacing.md),
-        _InsightsCard(paintings: paintings),
-      ],
-      const SizedBox(height: AppSpacing.lg),
-      SectionHeader(title: 'Export & print'),
-      _ExportCard(onExport: (kind) => _export(context, kind, paintings)),
-      const SizedBox(height: AppSpacing.xl),
-    ], context: context);
+      ];
+    } else {
+      content = staggerReveal([
+        _SummaryRow(
+          paintings: paintings,
+          artists: artists,
+          currency: ref.watch(currencyProvider),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        // Web-only: enhanced charts and dashboard
+        if (kIsWeb && flags.canSeeAnalytics) ...[
+          const CollectionValuationChart(),
+          const SizedBox(height: AppSpacing.lg),
+          const ActivityDashboardWeb(),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+        if (flags.canSeeAnalytics) ...[
+          // On web the activity dashboard already covers uploads and
+          // mediums, so the bar-chart breakdown stays on the phone layout
+          // only — no duplicated charts in the reading column.
+          if (!kIsWeb) ...[
+            SectionHeader(title: 'Collection breakdown'),
+            _BarCard(
+              title: 'Most common mediums',
+              data: _topMediums(paintings),
+              icon: Icons.palette_outlined,
+              iconColor: AppColors.violet500,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _BarCard(
+              title: 'Upload trend (last 6 months)',
+              data: _uploadTrend(paintings),
+              icon: Icons.schedule_rounded,
+              iconColor: AppColors.cyan500,
+            ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+          _InsightsCard(paintings: paintings),
+        ],
+        const SizedBox(height: AppSpacing.lg),
+        SectionHeader(title: 'Export & print'),
+        _ExportCard(onExport: (kind) => _export(context, kind, paintings)),
+        const SizedBox(height: AppSpacing.xl),
+      ], context: context);
+    }
 
     return Scaffold(
       body: CustomScrollView(
@@ -180,6 +220,54 @@ class ReportsScreen extends ConsumerWidget {
       result.add((DateFormat('MMM').format(month), count.toDouble()));
     }
     return result;
+  }
+}
+
+/// Shimmer skeleton shown while the vault first loads — mirrors the
+/// documents/artists loading language so reports never flashes a false
+/// zeroed summary or a premature empty state.
+class _ReportsSkeleton extends StatelessWidget {
+  const _ReportsSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Shimmer.fromColors(
+      baseColor: scheme.surfaceContainerHigh,
+      highlightColor: scheme.surfaceContainerHighest.withValues(alpha: 0.7),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Stat-row placeholders (4 up on wide layouts, 2×2 on narrow).
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final cols = constraints.maxWidth >= 700 ? 4 : 2;
+              return GridView.count(
+                crossAxisCount: cols,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: AppSpacing.sm,
+                crossAxisSpacing: AppSpacing.sm,
+                mainAxisExtent: 132,
+                children: [
+                  for (var i = 0; i < 4; i++)
+                    const SkeletonBox(
+                      height: 132,
+                      radius: AppSpacing.radiusCard,
+                    ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          const SkeletonBox(height: 264, radius: AppSpacing.radiusCard),
+          const SizedBox(height: AppSpacing.lg),
+          const SkeletonBox(height: 210, radius: AppSpacing.radiusCard),
+          const SizedBox(height: AppSpacing.lg),
+          const SkeletonBox(height: 210, radius: AppSpacing.radiusCard),
+        ],
+      ),
+    );
   }
 }
 
@@ -258,15 +346,30 @@ class _SummaryRow extends StatelessWidget {
 class _BarCard extends StatelessWidget {
   final String title;
   final List<(String, double)> data;
+  final IconData icon;
+  final Color iconColor;
 
-  const _BarCard({required this.title, required this.data});
+  const _BarCard({
+    required this.title,
+    required this.data,
+    required this.icon,
+    required this.iconColor,
+  });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
     if (data.isEmpty) {
-      return GlassCard(padding: AppSpacing.cardPadding, child: Text(title));
+      return GlassCard(
+        padding: AppSpacing.cardPadding,
+        child: Text(
+          title,
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
+      );
     }
 
     final maxVal = data.fold<double>(1, (m, e) => e.$2 > m ? e.$2 : m);
@@ -284,11 +387,19 @@ class _BarCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          Row(
+            children: [
+              IconWell(icon: icon, color: iconColor, size: 32, iconSize: 16),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: AppSpacing.lg),
           SizedBox(
@@ -389,7 +500,10 @@ class _BarCard extends StatelessWidget {
                     ),
                 ],
               ),
-              duration: const Duration(milliseconds: 600),
+              // Reduced motion swaps bars instantly — no grow animation.
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 600),
               curve: Curves.easeOutCubic,
             ),
           ),
@@ -429,7 +543,12 @@ class _InsightsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.insights, size: 20, color: scheme.primary),
+              IconWell(
+                icon: Icons.insights,
+                color: scheme.primary,
+                size: 32,
+                iconSize: 17,
+              ),
               const SizedBox(width: AppSpacing.xs),
               Text(
                 'AI Collection Analytics',
@@ -514,6 +633,17 @@ extension _ExportKindX on _ExportKind {
     _ExportKind.qrLabels => Icons.qr_code_2_outlined,
     _ExportKind.print => Icons.print_outlined,
   };
+
+  /// Hue for the leading icon well — the six export actions read as one
+  /// family with distinct accents (same rhythm as document tiles).
+  Color get color => switch (this) {
+    _ExportKind.pdf => AppColors.violet500,
+    _ExportKind.excel => AppColors.success,
+    _ExportKind.csv => AppColors.info,
+    _ExportKind.insurance => AppColors.accent,
+    _ExportKind.qrLabels => AppColors.secondary,
+    _ExportKind.print => AppColors.amber500,
+  };
 }
 
 class _ExportCard extends StatelessWidget {
@@ -525,18 +655,33 @@ class _ExportCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GlassCard(
       padding: AppSpacing.cardPadding,
-      child: Column(
-        children: [
-          for (final kind in _ExportKind.values)
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(kind.icon),
-              title: Text(kind.label),
-              trailing: const Icon(Icons.arrow_forward, size: 18),
-              onTap: () => onExport(kind),
-            ),
-        ],
+      // Material ancestor so the export rows get ink ripples + hover
+      // washes. Grouped rows keep native hover — lift stays reserved for
+      // standalone tiles, per the settings/documents pass.
+      child: Material(
+        color: Colors.transparent,
+        child: Column(
+          children: [
+            for (final kind in _ExportKind.values)
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
+                ),
+                hoverColor: kind.color.withValues(alpha: 0.05),
+                leading: IconWell(
+                  icon: kind.icon,
+                  color: kind.color,
+                  size: 36,
+                  iconSize: 18,
+                ),
+                title: Text(kind.label),
+                trailing: const Icon(Icons.arrow_forward, size: 18),
+                onTap: () => onExport(kind),
+              ),
+          ],
+        ),
       ),
     );
   }
