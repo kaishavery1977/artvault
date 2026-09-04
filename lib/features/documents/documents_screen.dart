@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/pro_limits.dart';
@@ -12,6 +13,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/share_service.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/widgets/bits.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/surfaces.dart';
@@ -32,6 +34,7 @@ class DocumentsScreen extends ConsumerWidget {
     final docs = (docsAsync.valueOrNull ?? const <ArtDocument>[])
         .where((d) => !d.isDeleted)
         .toList();
+    final loading = docsAsync.isLoading && docsAsync.valueOrNull == null;
     final paintings = ref.watch(paintingsProvider).valueOrNull ?? const [];
     final canEdit = ref.watch(authProvider.select((a) => a.canEdit));
 
@@ -43,12 +46,19 @@ class DocumentsScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      body: docs.isEmpty
-          ? const EmptyState(
+      body: loading
+          ? const _DocumentsSkeletonList()
+          : docs.isEmpty
+          ? EmptyState(
               icon: Icons.folder_open_outlined,
               title: 'No documents yet',
               subtitle:
-                  'Certificates, invoices and provenance files will appear here.',
+                  'Certificates, provenance files, invoices and '
+                  'restoration reports for your artworks live here.',
+              actionLabel: canEdit ? 'Add document' : null,
+              onAction: canEdit
+                  ? () => _addDocument(context, ref, paintings)
+                  : null,
             )
           : RefreshIndicator(
               onRefresh: () async {
@@ -128,7 +138,9 @@ class DocumentsScreen extends ConsumerWidget {
                 ],
               ),
             ),
-      floatingActionButton: canEdit
+      // The FAB hides while the roster is empty — the empty state's own
+      // CTA owns the add action there, so the two never stack.
+      floatingActionButton: canEdit && docs.isNotEmpty
           ? FloatingActionButton.extended(
               onPressed: () => _addDocument(context, ref, paintings),
               icon: const Icon(Icons.upload_file),
@@ -295,93 +307,94 @@ class _DocumentTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scheme = Theme.of(context).colorScheme;
-    return GlassCard(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.sm),
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: scheme.primary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
+    return HoverLift(
+      child: GlassCard(
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: IconWell(
+            icon: _icon(doc.type),
+            color: _accent(doc.type, scheme),
+            size: 44,
+            iconSize: 22,
           ),
-          child: Icon(_icon(doc.type), color: scheme.primary, size: 22),
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                doc.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  doc.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-            ),
-            if (paintingTitle == 'Unknown artwork' && doc.paintingId.isNotEmpty)
-              Tooltip(
-                message: 'Unlinked — painting deleted',
-                child: Icon(Icons.link_off, size: 16, color: scheme.error),
+              if (paintingTitle == 'Unknown artwork' &&
+                  doc.paintingId.isNotEmpty)
+                Tooltip(
+                  message: 'Unlinked — painting deleted',
+                  child: Icon(Icons.link_off, size: 16, color: scheme.error),
+                ),
+            ],
+          ),
+          subtitle: Text(
+            '${doc.type} · ${Formatters.bytes(doc.sizeBytes)} · ${Formatters.date(doc.createdAt)}${paintingTitle == 'Unknown artwork' && doc.paintingId.isNotEmpty ? ' · Unlinked' : ''}',
+            style: const TextStyle(fontSize: 11),
+          ),
+          isThreeLine: false,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                tooltip: 'Share',
+                icon: const Icon(Icons.share_outlined, size: 18),
+                onPressed: onOpen,
               ),
-          ],
-        ),
-        subtitle: Text(
-          '${doc.type} · ${Formatters.bytes(doc.sizeBytes)} · ${Formatters.date(doc.createdAt)}${paintingTitle == 'Unknown artwork' && doc.paintingId.isNotEmpty ? ' · Unlinked' : ''}',
-          style: const TextStyle(fontSize: 11),
-        ),
-        isThreeLine: false,
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              tooltip: 'Share',
-              icon: const Icon(Icons.share_outlined, size: 18),
-              onPressed: onOpen,
-            ),
-            IconButton(
-              tooltip: 'View painting',
-              icon: const Icon(Icons.open_in_new, size: 18),
-              onPressed: onTapPainting,
-            ),
-            if (canEdit)
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, size: 18),
-                onSelected: (action) async {
-                  final repo = DocumentRepository.instance;
-                  switch (action) {
-                    case 'rename':
-                      final name = await showDialog<String>(
-                        context: context,
-                        // The dialog owns its TextEditingController and
-                        // disposes it only when the route fully unmounts.
-                        builder: (_) => RenameDocumentDialog(initial: doc.name),
-                      );
-                      if (name != null && name.isNotEmpty) {
-                        await repo.rename(doc.id, name);
-                      }
-                    case 'delete':
-                      await repo.delete(doc.id);
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context)
-                          ..hideCurrentSnackBar()
-                          ..showSnackBar(
-                            SnackBar(
-                              content: Text('"${doc.name}" deleted'),
-                              action: SnackBarAction(
-                                label: 'Undo',
-                                onPressed: () => repo.restore(doc.id),
+              IconButton(
+                tooltip: 'View painting',
+                icon: const Icon(Icons.open_in_new, size: 18),
+                onPressed: onTapPainting,
+              ),
+              if (canEdit)
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, size: 18),
+                  onSelected: (action) async {
+                    final repo = DocumentRepository.instance;
+                    switch (action) {
+                      case 'rename':
+                        final name = await showDialog<String>(
+                          context: context,
+                          // The dialog owns its TextEditingController and
+                          // disposes it only when the route fully unmounts.
+                          builder: (_) =>
+                              RenameDocumentDialog(initial: doc.name),
+                        );
+                        if (name != null && name.isNotEmpty) {
+                          await repo.rename(doc.id, name);
+                        }
+                      case 'delete':
+                        await repo.delete(doc.id);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context)
+                            ..hideCurrentSnackBar()
+                            ..showSnackBar(
+                              SnackBar(
+                                content: Text('"${doc.name}" deleted'),
+                                action: SnackBarAction(
+                                  label: 'Undo',
+                                  onPressed: () => repo.restore(doc.id),
+                                ),
                               ),
-                            ),
-                          );
-                      }
-                  }
-                },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(value: 'rename', child: Text('Rename')),
-                  PopupMenuItem(value: 'delete', child: Text('Delete')),
-                ],
-              ),
-          ],
+                            );
+                        }
+                    }
+                  },
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(value: 'rename', child: Text('Rename')),
+                    PopupMenuItem(value: 'delete', child: Text('Delete')),
+                  ],
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -397,6 +410,48 @@ class _DocumentTile extends ConsumerWidget {
     'Appraisal' => Icons.stacked_line_chart,
     _ => Icons.description_outlined,
   };
+
+  /// Type-aware accent so each document kind reads distinctly at a glance
+  /// while staying inside the theme's guaranteed-contrast hues.
+  static Color _accent(String type, ColorScheme scheme) => switch (type) {
+    'Certificate' || 'Ownership' || 'Restoration Report' => scheme.tertiary,
+    'Invoice' || 'Biography' || 'Appraisal' => scheme.secondary,
+    _ => scheme.primary,
+  };
+}
+
+/// Shimmer roster shown while documents are first loading — mirrors the
+/// reading-column row shape so content doesn't jump when it lands.
+class _DocumentsSkeletonList extends StatelessWidget {
+  const _DocumentsSkeletonList();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ListView(
+      padding: AppSpacing.screenPadding,
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        for (var i = 0; i < 6; i++)
+          WebContentColumn(
+            maxWidth: 1000,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+              child: Shimmer.fromColors(
+                baseColor: scheme.surfaceContainerHigh,
+                highlightColor: scheme.surfaceContainerHighest.withValues(
+                  alpha: 0.7,
+                ),
+                child: const SkeletonBox(
+                  height: 76,
+                  radius: AppSpacing.radiusCard,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 /// Rename-document dialog. Owns its [TextEditingController] and disposes it

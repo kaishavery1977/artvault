@@ -48,6 +48,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final notificationsOn = settings.notificationsEnabled;
     final autoBackup = settings.autoBackup;
     final restore = ref.watch(restoreProgressProvider);
+    final scheme = Theme.of(context).colorScheme;
 
     // Header + each settings group cascade in one after another.
     final sections = staggerReveal(
@@ -94,7 +95,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           title: 'Notifications & backup',
           children: [
             SwitchListTile(
-              secondary: const Icon(Icons.notifications_outlined),
+              secondary: IconWell(
+                icon: Icons.notifications_outlined,
+                color: scheme.primary,
+                size: 36,
+                iconSize: 18,
+              ),
               title: const Text('Notifications'),
               subtitle: const Text('Uploads, backups, duplicates'),
               value: notificationsOn,
@@ -104,7 +110,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               },
             ),
             SwitchListTile(
-              secondary: const Icon(Icons.cloud_upload_outlined),
+              secondary: IconWell(
+                icon: Icons.cloud_upload_outlined,
+                color: scheme.primary,
+                size: 36,
+                iconSize: 18,
+              ),
               title: const Text('Auto cloud backup'),
               subtitle: const Text('Backup after each change'),
               value: autoBackup,
@@ -114,7 +125,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.backup_outlined),
+              leading: IconWell(
+                icon: Icons.backup_outlined,
+                color: scheme.primary,
+                size: 36,
+                iconSize: 18,
+              ),
               title: const Text('Back up now'),
               subtitle: const Text('Local file + cloud (if connected)'),
               trailing: const Icon(Icons.arrow_forward, size: 18),
@@ -228,7 +244,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               onTap: () => context.push('/about'),
             ),
             ListTile(
-              leading: const Icon(Icons.logout, color: Colors.redAccent),
+              leading: IconWell(
+                icon: Icons.logout,
+                color: Theme.of(context).colorScheme.error,
+                size: 36,
+                iconSize: 18,
+              ),
               title: const Text(
                 'Sign out',
                 style: TextStyle(color: Colors.redAccent),
@@ -713,8 +734,9 @@ class _SettingTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return ListTile(
-      leading: Icon(icon),
+      leading: IconWell(icon: icon, color: scheme.primary),
       title: Text(title),
       subtitle: subtitle == null
           ? null
@@ -864,10 +886,13 @@ class _GoogleDriveTileState extends State<_GoogleDriveTile> {
     final drive = GoogleDriveService.instance;
     final connected = drive.isReady;
 
+    final scheme = Theme.of(context).colorScheme;
     return ListTile(
-      leading: Icon(
-        connected ? Icons.cloud_done_outlined : Icons.cloud_outlined,
-        color: connected ? Colors.green : null,
+      leading: IconWell(
+        icon: connected ? Icons.cloud_done_outlined : Icons.cloud_outlined,
+        color: connected ? Colors.green : scheme.primary,
+        size: 36,
+        iconSize: 18,
       ),
       title: const Text('Google Drive'),
       subtitle: Text(
