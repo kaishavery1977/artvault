@@ -69,6 +69,48 @@ class TagChip extends StatelessWidget {
   }
 }
 
+/// Tinted rounded icon tile — the shared leading-icon unit for list rows,
+/// cards and quick actions. One icon-chip family across screens: a soft
+/// translucent wash in the accent color under a rounded-square crop.
+class IconWell extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final double size;
+  final double iconSize;
+  final double radius;
+
+  /// Multiplier on the wash alpha — pass >1 for hover emphasis. The wash
+  /// animates so hover states ease rather than snap.
+  final double emphasis;
+
+  const IconWell({
+    super.key,
+    required this.icon,
+    required this.color,
+    this.size = 40,
+    this.iconSize = 20,
+    this.radius = AppSpacing.radiusMd,
+    this.emphasis = 1.0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final base = isDark ? 0.18 : 0.10;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: (base * emphasis).clamp(0.0, 0.55)),
+        borderRadius: BorderRadius.circular(radius),
+      ),
+      child: Icon(icon, size: iconSize, color: color),
+    );
+  }
+}
+
 /// Circular avatar from an image or initials with refined design.
 class Avatar extends StatelessWidget {
   final String name;
