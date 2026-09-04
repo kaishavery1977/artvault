@@ -27,11 +27,22 @@ jobs:
       - name: Install Lighthouse CI
         run: npm install -g @lhci/cli
 
+      # Pinned static server for the audit. lighthouserc.js invokes the
+      # `serve` binary directly (no bare `npx serve`, which downloads the
+      # package at audit time and has raced the server-start window).
+      - name: Install static server (pinned)
+        run: npm install -g serve@14.2.4
+
       - name: Build Flutter Web
         run: flutter build web --release
 
       # LHCI starts its own static server for the release build
       # (lighthouserc.js startServerCommand) — do NOT pre-start one on :3000.
+      #
+      # NOTE: never run `lhci` locally via bare `npx lhci` — the npm package
+      # named `lhci` (v4.x) is an impostor placeholder that prints a banner
+      # and exits 0 without auditing anything. The real CLI is `@lhci/cli`;
+      # local audits must use `npx --yes @lhci/cli autorun`.
       - name: Run Lighthouse CI
         run: lhci autorun
         env:
