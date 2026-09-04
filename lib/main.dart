@@ -11,6 +11,7 @@ import 'core/theme/app_theme.dart';
 import 'utils/http_overrides.dart';
 import 'core/widgets/ambient_background.dart';
 import 'core/widgets/resume_intro_observer.dart';
+import 'core/l10n/app_strings.dart';
 import 'core/providers/providers.dart';
 import 'core/router/app_router.dart';
 import 'core/services/device_resolution_service.dart';
@@ -85,58 +86,64 @@ class ArtVaultApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
     final router = ref.watch(routerProvider);
+    // Persisted UI language ('en', 'hi', …). Drives both the MaterialApp
+    // locale and the [L10n] scope that translates in-app copy.
+    final languageCode = ref.watch(localeProvider);
 
-    return MaterialApp.router(
-      title: AppConstants.appName,
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: themeMode,
-      routerConfig: router,
-      // Paint the ambient gradient behind every route so translucent
-      // surfaces (GlassCard, nav bar, dialogs) read as glass, and watch the
-      // app lifecycle so returning from the background replays the splash
-      // intro instead of just cold starts.
-      builder: (context, child) {
-        // Detect/resync resolution on every build (handles rotation,
-        // fold/unfold, display setting changes). The service persists it
-        // to Hive so the value survives process restarts.
-        //
-        // Use sizeOf + paddingOf instead of MediaQuery.of to avoid
-        // subscribing to ALL media query changes (keyboard, text scale,
-        // etc.) — only size and padding affect the layout.
-        final size = MediaQuery.sizeOf(context);
-        final padding = MediaQuery.paddingOf(context);
-        DeviceResolutionService.instance.detect(
-          MediaQueryData(size: size, padding: padding),
-        );
-        // Re-apply orientation policy on device changes (e.g. fold/unfold
-        // on a foldable might switch from phone to tablet mode).
-        if (!kIsWeb) OrientationService.instance.applyForDevice();
-        final profile = DeviceResolutionService.instance.current!;
-        Widget appContent = AdaptiveLayout(
-          profile: profile,
-          child: AppResumeIntroObserver(
-            child: AmbientBackground(child: child ?? const SizedBox.shrink()),
-          ),
-        );
-        // Web-only: wrap with keyboard shortcuts handler
-        if (kIsWeb) {
-          appContent = WebShortcutsHandler(child: appContent);
-        }
-        return appContent;
-      },
-      locale: null,
-      supportedLocales: const [Locale('en')],
-      // Wire the real localization delegates so MaterialLocalizations is
-      // always available (AppBar, NavigationBar, tooltips, …). Without these,
-      // any non-English locale resolves to no MaterialLocalizations at all
-      // and those widgets crash with "No MaterialLocalizations found".
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ],
+    return L10n(
+      languageCode: languageCode,
+      child: MaterialApp.router(
+        title: AppConstants.appName,
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeMode: themeMode,
+        routerConfig: router,
+        // Paint the ambient gradient behind every route so translucent
+        // surfaces (GlassCard, nav bar, dialogs) read as glass, and watch the
+        // app lifecycle so returning from the background replays the splash
+        // intro instead of just cold starts.
+        builder: (context, child) {
+          // Detect/resync resolution on every build (handles rotation,
+          // fold/unfold, display setting changes). The service persists it
+          // to Hive so the value survives process restarts.
+          //
+          // Use sizeOf + paddingOf instead of MediaQuery.of to avoid
+          // subscribing to ALL media query changes (keyboard, text scale,
+          // etc.) — only size and padding affect the layout.
+          final size = MediaQuery.sizeOf(context);
+          final padding = MediaQuery.paddingOf(context);
+          DeviceResolutionService.instance.detect(
+            MediaQueryData(size: size, padding: padding),
+          );
+          // Re-apply orientation policy on device changes (e.g. fold/unfold
+          // on a foldable might switch from phone to tablet mode).
+          if (!kIsWeb) OrientationService.instance.applyForDevice();
+          final profile = DeviceResolutionService.instance.current!;
+          Widget appContent = AdaptiveLayout(
+            profile: profile,
+            child: AppResumeIntroObserver(
+              child: AmbientBackground(child: child ?? const SizedBox.shrink()),
+            ),
+          );
+          // Web-only: wrap with keyboard shortcuts handler
+          if (kIsWeb) {
+            appContent = WebShortcutsHandler(child: appContent);
+          }
+          return appContent;
+        },
+        locale: Locale(languageCode),
+        supportedLocales: const [Locale('en'), Locale('hi')],
+        // Wire the real localization delegates so MaterialLocalizations is
+        // always available (AppBar, NavigationBar, tooltips, …). Without these,
+        // any non-English locale resolves to no MaterialLocalizations at all
+        // and those widgets crash with "No MaterialLocalizations found".
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+        ],
+      ),
     );
   }
 }

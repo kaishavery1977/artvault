@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/nav_destinations.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/services/device_resolution_service.dart';
 import '../../core/providers/providers.dart';
@@ -165,7 +166,7 @@ class _AppShellState extends ConsumerState<AppShell>
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       selectedIcon: Icon(d.selectedIcon, color: d.color),
-                      label: d.label,
+                      label: L10n.t(context, d.label),
                     ),
                 ],
               ),
@@ -263,7 +264,7 @@ class _DesktopNav extends StatelessWidget {
             NavigationRailDestination(
               icon: Icon(d.icon),
               selectedIcon: Icon(d.selectedIcon),
-              label: Text(d.label),
+              label: Text(L10n.t(context, d.label)),
             ),
         ],
       ),

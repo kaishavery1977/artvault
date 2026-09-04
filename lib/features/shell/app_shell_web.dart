@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/nav_destinations.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/providers/providers.dart';
 import '../../core/widgets/a11y.dart';
 import '../../core/widgets/web/pwa_install_banner.dart';
@@ -358,7 +359,7 @@ class _RailBrand extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Private Gallery',
+                    L10n.t(context, 'Private Gallery'),
                     style: TextStyle(
                       fontSize: 10.5,
                       letterSpacing: 1.1,
@@ -434,6 +435,12 @@ class _RailItem extends StatelessWidget {
             : null,
       ),
       child: Row(
+        // Compact (icon-only) rail: center the icon inside its pill — the
+        // stretched container otherwise anchors the tile to the pill's left
+        // edge, leaving the icon looking pushed left of the rail's middle.
+        mainAxisAlignment: expanded
+            ? MainAxisAlignment.start
+            : MainAxisAlignment.center,
         children: [
           // Icon tile
           Container(
@@ -464,7 +471,7 @@ class _RailItem extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                dest.label,
+                L10n.t(context, dest.label),
                 style: TextStyle(
                   fontSize: 13.5,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
@@ -486,7 +493,9 @@ class _RailItem extends StatelessWidget {
     );
 
     final child = Semantics(
-      label: '${dest.label}${isSelected ? ', current page' : ''}',
+      label:
+          '${L10n.t(context, dest.label)}'
+          '${isSelected ? ', ${L10n.t(context, 'current page')}' : ''}',
       selected: isSelected,
       button: true,
       child: MouseRegion(
@@ -495,7 +504,7 @@ class _RailItem extends StatelessWidget {
         cursor: SystemMouseCursors.click,
         child: KeyboardActivatable(
           onActivate: onTap,
-          semanticsLabel: dest.label,
+          semanticsLabel: L10n.t(context, dest.label),
           child: GestureDetector(onTap: onTap, child: content),
         ),
       ),
@@ -504,7 +513,7 @@ class _RailItem extends StatelessWidget {
     // Tooltip supplies the label while the rail is collapsed.
     if (!expanded && !isSelected) {
       return Tooltip(
-        message: dest.label,
+        message: L10n.t(context, dest.label),
         waitDuration: const Duration(milliseconds: 450),
         child: child,
       );
@@ -781,7 +790,7 @@ class _UnifiedTopBar extends StatelessWidget {
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             child: Text(
-              title,
+              L10n.t(context, title),
               key: ValueKey(title),
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w700,

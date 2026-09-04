@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/services/backup_service.dart';
@@ -60,39 +61,43 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ),
         const SizedBox(height: AppSpacing.md),
         _Group(
-          title: 'Appearance',
+          title: L10n.t(context, 'Appearance'),
           children: [
             _SettingTile(
               icon: Icons.dark_mode_outlined,
-              title: 'Dark mode',
+              title: L10n.t(context, 'Dark mode'),
               trailing: _ThemeSelector(),
             ),
             _SettingTile(
               icon: Icons.language,
               title: 'Language',
-              subtitle: 'English (more languages coming soon)',
+              subtitle: L10n.t(
+                context,
+                settings.locale == 'hi' ? 'Hindi' : 'English',
+              ),
+              onTap: () => _showLanguageSheet(context, ref),
             ),
           ],
         ),
         _Group(
-          title: 'Preferences',
+          title: L10n.t(context, 'Preferences'),
           children: [
             _SettingTile(
               icon: Icons.currency_exchange,
-              title: 'Preferred currency',
+              title: L10n.t(context, 'Preferred currency'),
               subtitle: settings.preferredCurrency,
               onTap: () => _showCurrencySheet(context, ref),
             ),
             _SettingTile(
               icon: Icons.home_outlined,
-              title: 'Library location',
+              title: L10n.t(context, 'Library location'),
               subtitle: settings.libraryLocation,
               onTap: () => _editLibraryLocation(context),
             ),
           ],
         ),
         _Group(
-          title: 'Notifications & backup',
+          title: L10n.t(context, 'Notifications & backup'),
           children: [
             SwitchListTile(
               secondary: IconWell(
@@ -101,8 +106,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 size: 36,
                 iconSize: 18,
               ),
-              title: const Text('Notifications'),
-              subtitle: const Text('Uploads, backups, duplicates'),
+              title: Text(L10n.t(context, 'Notifications')),
+              subtitle: Text(L10n.t(context, 'Uploads, backups, duplicates')),
               value: notificationsOn,
               onChanged: (v) {
                 HapticFeedback.lightImpact();
@@ -116,8 +121,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 size: 36,
                 iconSize: 18,
               ),
-              title: const Text('Auto cloud backup'),
-              subtitle: const Text('Backup after each change'),
+              title: Text(L10n.t(context, 'Auto cloud backup')),
+              subtitle: Text(L10n.t(context, 'Backup after each change')),
               value: autoBackup,
               onChanged: (v) {
                 HapticFeedback.lightImpact();
@@ -131,8 +136,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 size: 36,
                 iconSize: 18,
               ),
-              title: const Text('Back up now'),
-              subtitle: const Text('Local file + cloud (if connected)'),
+              title: Text(L10n.t(context, 'Back up now')),
+              subtitle: Text(
+                L10n.t(context, 'Local file + cloud (if connected)'),
+              ),
               trailing: const Icon(Icons.arrow_forward, size: 18),
               onTap: () async {
                 final result = await BackupService.instance.runBackup();
@@ -154,43 +161,54 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ],
         ),
         _Group(
-          title: 'Security',
+          title: L10n.t(context, 'Security'),
           children: [
             _SettingTile(
               icon: Icons.shield_outlined,
-              title: 'Lock & security',
-              subtitle: 'App lock, passcode, face & fingerprint',
+              title: L10n.t(context, 'Security'),
+              subtitle: kIsWeb
+                  ? L10n.t(context, 'Password, sign-in & session security')
+                  : L10n.t(context, 'App lock, passcode, face & fingerprint'),
               onTap: () => context.push('/security'),
             ),
           ],
         ),
         _Group(
-          title: 'Account',
+          title: L10n.t(context, 'Account'),
           children: [
             _SettingTile(
               icon: Icons.person_outline,
-              title: 'Profile',
+              title: L10n.t(context, 'Profile'),
               onTap: () => context.push('/profile'),
             ),
             if (auth.canManageUsers) ...[
               _SettingTile(
                 icon: Icons.admin_panel_settings,
-                title: 'User & role management',
+                title: L10n.t(context, 'User & role management'),
                 onTap: () => context.push('/users'),
               ),
               _SettingTile(
                 icon: Icons.history,
-                title: 'Activity log',
-                subtitle: 'View all user actions across the vault',
+                title: L10n.t(context, 'Activity log'),
+                subtitle: L10n.t(
+                  context,
+                  'View all user actions across the vault',
+                ),
                 onTap: () => context.push('/activity-log'),
               ),
             ],
             _SettingTile(
               icon: Icons.workspace_premium,
-              title: 'ArtVault Pro',
+              title: L10n.t(context, 'ArtVault Pro'),
               subtitle: user?.plan.isPro == true
-                  ? 'Active — unlimited capacity & premium gallery features'
-                  : 'Free plan — unlock unlimited capacity, analytics & watermarking',
+                  ? L10n.t(
+                      context,
+                      'Active — unlimited capacity & premium gallery features',
+                    )
+                  : L10n.t(
+                      context,
+                      'Free plan — unlock unlimited capacity, analytics & watermarking',
+                    ),
               trailing: user?.plan.isPro == true
                   ? const _ProBadge()
                   : TagChip(
@@ -201,15 +219,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             _SettingTile(
               icon: Icons.backup_outlined,
-              title: 'Backup & restore',
+              title: L10n.t(context, 'Backup & restore'),
               onTap: () => context.push('/backup'),
             ),
             _SettingTile(
               icon: Icons.cloud_download_outlined,
-              title: 'Restore from cloud',
+              title: L10n.t(context, 'Restore from cloud'),
               subtitle: restore?.running == true
                   ? restore!.stage
-                  : 'Re-download your whole vault from the cloud',
+                  : L10n.t(
+                      context,
+                      'Re-download your whole vault from the cloud',
+                    ),
               trailing: restore?.running == true
                   ? const SizedBox(
                       width: 18,
@@ -223,24 +244,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
             _SettingTile(
               icon: Icons.delete_sweep_outlined,
-              title: 'Storage & data',
+              title: L10n.t(context, 'Storage & data'),
               onTap: () => context.push('/storage'),
             ),
             _SettingTile(
               icon: Icons.healing_outlined,
-              title: 'Repair images',
+              title: L10n.t(context, 'Repair images'),
               subtitle: _repairSubtitle(ref),
               onTap: () => context.push('/repair-images'),
             ),
             _SettingTile(
               icon: Icons.delete_outline,
-              title: 'Recently deleted',
+              title: L10n.t(context, 'Recently deleted'),
               subtitle: _trashSubtitle(ref),
               onTap: () => context.push('/trash'),
             ),
             _SettingTile(
               icon: Icons.info_outline,
-              title: 'About ArtVault',
+              title: L10n.t(context, 'About ArtVault'),
               onTap: () => context.push('/about'),
             ),
             ListTile(
@@ -250,9 +271,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 size: 36,
                 iconSize: 18,
               ),
-              title: const Text(
-                'Sign out',
-                style: TextStyle(color: Colors.redAccent),
+              title: Text(
+                L10n.t(context, 'Sign out'),
+                style: const TextStyle(color: Colors.redAccent),
               ),
               onTap: () async {
                 final confirmed = await showDialog<bool>(
@@ -440,6 +461,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     });
   }
 
+  static void _showLanguageSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            for (final code in const ['en', 'hi'])
+              ListTile(
+                leading: Icon(
+                  code == 'hi' ? Icons.translate : Icons.language,
+                  size: 20,
+                ),
+                title: Text(
+                  L10n.t(context, code == 'hi' ? 'Hindi' : 'English'),
+                ),
+                trailing: SettingsRepository.instance.locale == code
+                    ? const Icon(Icons.check)
+                    : null,
+                onTap: () => Navigator.pop(context, code),
+              ),
+          ],
+        ),
+      ),
+    ).then((code) {
+      if (code == null || !context.mounted) return;
+      HapticFeedback.selectionClick();
+      SettingsRepository.instance.setLocale(code);
+      ref.read(localeProvider.notifier).state = code;
+    });
+  }
+
   static void _editLibraryLocation(BuildContext context) {
     // The dialog owns its TextEditingController in a private StatefulWidget
     // and disposes it only when the route fully unmounts (after the exit
@@ -602,7 +656,7 @@ class _UserCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final name = user?.displayName ?? 'Guest';
+    final name = user?.displayName ?? L10n.t(context, 'Guest');
     final email = user?.email ?? '';
     return GlassCard(
       padding: AppSpacing.cardPadding,
@@ -628,7 +682,7 @@ class _UserCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  email.isEmpty ? 'Local session' : email,
+                  email.isEmpty ? L10n.t(context, 'Local session') : email,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -639,22 +693,32 @@ class _UserCard extends StatelessWidget {
               ],
             ),
           ),
-          // Flexible so the chips can wrap onto a second line at large text
-          // scales instead of overflowing the card's row.
+          // Role + plan pinned to the right edge of the card. End-aligned so
+          // the chips always hug the right side; when Pro is active the role
+          // chip and the Pro badge sit side by side (a plan chip fills the
+          // slot for free accounts so the trailing side is never empty).
           Flexible(
             child: Wrap(
               spacing: 6,
+              runSpacing: 6,
+              alignment: WrapAlignment.end,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 TagChip(
-                  label: role?.label ?? 'Viewer',
+                  label: L10n.t(context, role?.label ?? 'Viewer'),
                   color: switch (role) {
                     AppRole.admin => scheme.primary,
                     AppRole.curator => const Color(0xFFF59E0B),
                     _ => scheme.onSurface,
                   },
                 ),
-                if (plan?.isPro == true) const _ProBadge(),
+                if (plan?.isPro == true)
+                  const _ProBadge()
+                else if (user != null)
+                  TagChip(
+                    label: L10n.t(context, 'Free'),
+                    color: scheme.onSurfaceVariant,
+                  ),
               ],
             ),
           ),
@@ -822,7 +886,10 @@ class _ThemeSelector extends ConsumerWidget {
           children: [
             Icon(_options.firstWhere((o) => o.$1 == currentKey).$2, size: 16),
             const SizedBox(width: 4),
-            Text(currentLabel, style: const TextStyle(fontSize: 12)),
+            Text(
+              L10n.t(context, currentLabel),
+              style: const TextStyle(fontSize: 12),
+            ),
             const SizedBox(width: 2),
             const Icon(Icons.arrow_drop_down, size: 16),
           ],
@@ -846,7 +913,7 @@ class _ThemeSelector extends ConsumerWidget {
             for (final option in _options)
               ListTile(
                 leading: Icon(option.$2),
-                title: Text(option.$3),
+                title: Text(L10n.t(context, option.$3)),
                 trailing: current == option.$1 ? const Icon(Icons.check) : null,
                 onTap: () => Navigator.pop(context, option.$1),
               ),
